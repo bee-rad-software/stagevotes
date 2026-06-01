@@ -5,8 +5,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
 
-export default function HostPage({ params }: { params: { eventId: string } }) {
-  const eventId = params.eventId;
+import { useParams } from 'next/navigation';
+const params = useParams();
+const eventId = params.eventId as string;
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
