@@ -7,6 +7,8 @@ import Link from 'next/link';
 
 import { useParams } from 'next/navigation';
 export default function HostPage() {
+  const params = useParams();
+const eventId = params.eventId as string;
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
