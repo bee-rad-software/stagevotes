@@ -6,8 +6,7 @@ import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
 
 import { useParams } from 'next/navigation';
-const params = useParams();
-const eventId = params.eventId as string;
+export default function HostPage() {
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
