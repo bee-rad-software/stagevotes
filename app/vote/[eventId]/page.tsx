@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { supabase, EventRow, PerformanceRow } from '@/lib/supabase';
 
+import { useParams } from 'next/navigation';
+
 function getVoterKey() {
   if (typeof window === 'undefined') return '';
   const existing = localStorage.getItem('karavote_voter_key');
@@ -12,7 +14,9 @@ function getVoterKey() {
   return key;
 }
 
-export default function VotePage({ params }: { params: { eventId: string } }) {
+export default function VotePage() {
+  const params = useParams();
+  const eventId = params.eventId as string;
   const eventId = params.eventId;
   const [event, setEvent] = useState<EventRow | null>(null);
   const [current, setCurrent] = useState<PerformanceRow | null>(null);
