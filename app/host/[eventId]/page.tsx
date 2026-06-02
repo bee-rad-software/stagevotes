@@ -21,6 +21,10 @@ export default function HostPage() {
     typeof window !== 'undefined'
       ? `${window.location.origin}/vote/${eventId}`
       : '';
+  const signupUrl =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/signup/${eventId}`
+    : '';
 
   useEffect(() => {
     loadAll();
@@ -142,7 +146,16 @@ export default function HostPage() {
             <button className="secondary">Open Voting Page</button>
           </Link>
         </div>
-
+<div className="card">
+  <h2>Singer signup link</h2>
+  <div className="qr-box">
+    {signupUrl && <QRCodeSVG value={signupUrl} size={220} />}
+  </div>
+  <p className="small">{signupUrl}</p>
+  <Link href={`/signup/${eventId}`}>
+    <button className="secondary">Open Signup Page</button>
+  </Link>
+</div>
         <div className="card">
           <h2>Now singing</h2>
           {current ? (
