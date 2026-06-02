@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
@@ -160,7 +160,7 @@ return (
 <div className="card">
 <h2>Now singing</h2>
 {current ? (
-<>
+<React.Fragment>
 <h3>{current.singer_name}</h3>
 <p>{current.song_title}{current.artist ? ` by ${current.artist}` : ''}</p>
 <p>Voting: <span className="badge">{event?.is_voting_open ? 'Open' : 'Closed'}</span></p>
@@ -168,7 +168,7 @@ return (
 <button onClick={() => toggleVoting(true)}>Open Voting</button>
 <button className="danger" onClick={() => toggleVoting(false)}>Close Voting</button>
 </div>
-</>
+</></React.Fragment>
 ) : (
 <p>No current singer selected.</p>
 )}
