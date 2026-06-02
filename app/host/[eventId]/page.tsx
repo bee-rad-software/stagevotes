@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
-
 import { useParams } from 'next/navigation';
+
 export default function HostPage() {
   const params = useParams();
-const eventId = params.eventId as string;
+  const eventId = params.eventId as string;
+
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
@@ -16,14 +17,16 @@ const eventId = params.eventId as string;
   const [songTitle, setSongTitle] = useState('');
   const [artist, setArtist] = useState('');
 
-  const voteUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/vote/${eventId}`
-    : '';
+  const voteUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/vote/${eventId}`
+      : '';
 
   useEffect(() => {
     loadAll();
 
-    const channel = supabase.channel(`host-${eventId}`)
+    const channel = supabase
+      .channel(`host-${eventId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `id=eq.${eventId}` }, loadEvent)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'performances', filter: `event_id=eq.${eventId}` }, loadPerformances)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'votes', filter: `event_id=eq.${eventId}` }, loadVotes)
@@ -49,6 +52,7 @@ const eventId = params.eventId as string;
       .select('*')
       .eq('event_id', eventId)
       .order('queue_order', { ascending: true });
+
     setPerformances(data || []);
   }
 
@@ -59,55 +63,74 @@ const eventId = params.eventId as string;
 
   async function addPerformance() {
     const nextOrder = performances.length + 1;
-    await supabase.from('performances').insert({
+
+    const { error } = await supabase.from('performances').insert({
       event_id: eventId,
       singer_name: singerName,
       song_title: songTitle,
       artist,
       queue_order: nextOrder
     });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
     setSingerName('');
     setSongTitle('');
     setArtist('');
-    loadPerformances();
+    await loadPerformances();
   }
 
   async function setCurrent(performanceId: string) {
-  const { error } = await supabase
-    .from('events')
-    .update({
-      current_performance_id: performanceId,
-      is_voting_open: false
-    })
-    .eq('id', eventId);
+    const { error } = await supabase
+      .from('events')
+      .update({
+        current_performance_id: performanceId,
+        is_voting_open: false
+      })
+      .eq('id', eventId);
 
-  if (error) {
-    alert(error.message);
-    return;
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadAll();
   }
-
-  await loadAll();
-}
 
   async function toggleVoting(open: boolean) {
-    await supabase.from('events').update({ is_voting_open: open }).eq('id', eventId);
-    loadEvent();
+    const { error } = await supabase
+      .from('events')
+      .update({ is_voting_open: open })
+      .eq('id', eventId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadEvent();
   }
 
-  const current = performances.find(p => p.id === event?.current_performance_id);
+  const current = performances.find((p) => p.id === event?.current_performance_id);
 
   const leaderboard = useMemo(() => {
-    return performances.map(p => {
-      const pv = votes.filter(v => v.performance_id === p.id);
-      const avg = pv.length ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
-      return { ...p, avg, voteCount: pv.length };
-    }).sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount);
+    return performances
+      .map((p) => {
+        const pv = votes.filter((v) => v.performance_id === p.id);
+        const avg = pv.length > 0 ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
+        return { ...p, avg, voteCount: pv.length };
+      })
+      .sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount);
   }, [performances, votes]);
 
   return (
     <main className="container">
       <h1>Host Dashboard</h1>
-     <p className="small">{event?.name}{event?.venue ? ` at ${event.venue}` : ''}</p>
+      <p className="small">{event?.name}{event?.venue ? ` at ${event.venue}` : ''}</p>
+
       <div className="grid">
         <div className="card">
           <h2>Audience voting link</h2>
@@ -115,7 +138,9 @@ const eventId = params.eventId as string;
             {voteUrl && <QRCodeSVG value={voteUrl} size={220} />}
           </div>
           <p className="small">{voteUrl}</p>
-          <Link href={`/vote/${eventId}`}><button className="secondary">Open Voting Page</button></Link>
+          <Link href={`/vote/${eventId}`}>
+            <button className="secondary">Open Voting Page</button>
+          </Link>
         </div>
 
         <div className="card">
@@ -124,15 +149,15 @@ const eventId = params.eventId as string;
             <>
               <h3>{current.singer_name}</h3>
               <p>{current.song_title}{current.artist ? ` by ${current.artist}` : ''}</p>
-              <p>
-                Voting: <span className="badge">{event?.is_voting_open ? 'Open' : 'Closed'}</span>
-              </p>
+              <p>Voting: <span className="badge">{event?.is_voting_open ? 'Open' : 'Closed'}</span></p>
               <div className="row">
                 <button onClick={() => toggleVoting(true)}>Open Voting</button>
                 <button className="danger" onClick={() => toggleVoting(false)}>Close Voting</button>
               </div>
             </>
-          ) : <p>No current singer selected.</p>}
+          ) : (
+            <p>No current singer selected.</p>
+          )}
         </div>
       </div>
 
@@ -149,7 +174,7 @@ const eventId = params.eventId as string;
 
       <div className="card">
         <h2>Queue</h2>
-        {performances.map(p => (
+        {performances.map((p) => (
           <div className="leaderboard-row" key={p.id}>
             <div>
               <strong>{p.queue_order}. {p.singer_name}</strong>
