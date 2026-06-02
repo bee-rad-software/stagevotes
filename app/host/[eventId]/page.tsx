@@ -377,22 +377,7 @@ const fairQueue = useMemo(() => {
 </div>
       <div className="grid">
        
-<div className="card">
- <h2 style={{ color: '#38bdf8' }}>
-  TV Display
-</h2>
 
-  <p className="small">
-    Open on a TV or projector
-  </p>
-
-  <button
-  className="secondary"
-  onClick={() => window.open(`/display/${eventId}`, '_blank')}
->
-  Launch TV Display
-</button>
-</div>
         <div className="card">
           <h2
   style={{
