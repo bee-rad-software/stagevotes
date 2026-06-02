@@ -44,9 +44,10 @@ export default function VotePage() {
     if (ev?.current_performance_id) {
       const { data: perf } = await supabase
         .from('performances')
-        .select('*')
-        .eq('id', ev.current_performance_id)
-        .single();
+.select('*')
+.eq('id', ev.current_performance_id)
+.maybeSingle();
+      console.log('Performance lookup:', perf);
       setCurrent(perf);
     } else {
       setCurrent(null);
