@@ -188,7 +188,7 @@ return (
 
 <div className="card">
 <h2>Queue</h2>
-{performances.map((p) => (
+{rotatedQueue.map((p) => (
 <div className="leaderboard-row" key={p.id}>
 <div>
 <strong>{p.queue_order}. {p.singer_name}</strong>
