@@ -107,8 +107,10 @@ const eventId = params.eventId as string;
   return (
     <main className="container">
       <h1>Host Dashboard</h1>
-      <p className="small">{event?.name} {event?.venue && <>at {event.venue}</>}</p>
-
+     <p className="small">
+  {event?.name}
+  {event?.venue ? ` at ${event.venue}` : ''}
+</p>
       <div className="grid">
         <div className="card">
           <h2>Audience voting link</h2>
