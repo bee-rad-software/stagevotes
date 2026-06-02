@@ -265,13 +265,44 @@ const fairQueue = useMemo(() => {
   }, [performances, votes]);
 
   return (
-    <main className="container">
-      <h1>Host Dashboard</h1>
-      <p className="small">
-        {event?.name}
-        {event?.venue ? ` at ${event.venue}` : ''}
-      </p>
+    <main
+  className="container"
+  style={{
+    maxWidth: 1400,
+    padding: 32
+  }}
+>
+     <div
+  style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24
+  }}
+>
+  <div>
+    <h1 style={{ fontSize: 44, marginBottom: 6 }}>
+      🎤 Host Dashboard
+    </h1>
 
+    <p className="small">
+      {event?.name}
+      {event?.venue ? ` at ${event.venue}` : ''}
+    </p>
+  </div>
+
+  <div
+    style={{
+      padding: '10px 18px',
+      borderRadius: 999,
+      background: event?.is_voting_open ? '#16a34a' : '#6b7280',
+      color: 'white',
+      fontWeight: 800
+    }}
+  >
+    {event?.is_voting_open ? 'Voting Open' : 'Voting Closed'}
+  </div>
+</div>
       <div className="grid">
         <div className="card">
           <h2>Audience voting link</h2>
