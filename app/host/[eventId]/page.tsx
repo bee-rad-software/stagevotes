@@ -311,9 +311,9 @@ const fairQueue = useMemo(() => {
         {rotatedQueue.map((p) => (
           <div className="leaderboard-row" key={p.id}>
             <div>
-              <strong>
-                {p.queue_order}. {p.singer_name}
-              </strong>
+             <strong>
+  {p.singer_name} (Song #{p.songNumber})
+</strong>
               <div className="small">
                 {p.song_title}
                 {p.artist ? ` by ${p.artist}` : ''}
