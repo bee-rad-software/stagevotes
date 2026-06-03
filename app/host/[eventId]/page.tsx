@@ -425,6 +425,22 @@ const fairQueue = useMemo(() => {
   )
 );
   
+  const activeQueue = rotatedQueue.filter(
+  (p) => p.status !== 'completed' && p.status !== 'skipped'
+);
+
+const singerGroups = activeQueue.reduce((groups, p) => {
+  const singer = p.singer_name.trim();
+
+  if (!groups[singer]) {
+    groups[singer] = [];
+  }
+
+  groups[singer].push(p);
+
+  return groups;
+}, {} as Record<string, typeof activeQueue>);
+  
   return (
     <main
   className="container"
@@ -667,7 +683,7 @@ const fairQueue = useMemo(() => {
   </button>
 </div>
         
-      {singerView ? (
+     {singerView ? (
   Object.entries(singerGroups).map(([singer, songs]) => (
     <div className="leaderboard-row" key={singer}>
       <div style={{ width: '100%' }}>
@@ -717,7 +733,7 @@ const fairQueue = useMemo(() => {
     </div>
   ))
 )}
-
+        
   <div className="card">
   <h2 style={{ color: '#38bdf8' }}>✅ Completed Tonight</h2>
 
