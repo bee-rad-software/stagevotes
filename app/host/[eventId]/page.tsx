@@ -546,7 +546,8 @@ const fairQueue = useMemo(() => {
   🏁 End Show
 </button>
 
-<button onClick={newShow}>
+<button
+  onClick={newShow}
   style={{
     background: '#c2410c',
     color: 'white',
