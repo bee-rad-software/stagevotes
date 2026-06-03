@@ -334,20 +334,49 @@ const fairQueue = useMemo(() => {
     p.status !== 'completed'
 );
   const leaderboard = useMemo(() => {
-    return performances
-      .map((p) => {
-        const pv = votes.filter((v) => v.performance_id === p.id);
-        const avg = pv.length > 0 ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
+  const singerScores = new Map<
+    string,
+    {
+      singer_name: string;
+      totalScore: number;
+      totalVotes: number;
+      performances: number;
+    }
+  >();
 
-        return {
-          ...p,
-          avg,
-          voteCount: pv.length
-        };
-      })
-      .sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount);
-  }, [performances, votes]);
+  performances.forEach((p) => {
+    const pv = votes.filter((v) => v.performance_id === p.id);
 
+    if (pv.length === 0) return;
+
+    const performanceAverage =
+      pv.reduce((sum, v) => sum + v.score, 0) / pv.length;
+
+    const key = p.singer_name.trim().toLowerCase();
+
+    if (!singerScores.has(key)) {
+      singerScores.set(key, {
+        singer_name: p.singer_name,
+        totalScore: 0,
+        totalVotes: 0,
+        performances: 0
+      });
+    }
+
+    const singer = singerScores.get(key)!;
+
+    singer.totalScore += performanceAverage;
+    singer.totalVotes += pv.length;
+    singer.performances += 1;
+  });
+
+  return Array.from(singerScores.values())
+    .map((s) => ({
+      ...s,
+      averageScore: s.totalScore / s.performances
+    }))
+    .sort((a, b) => b.averageScore - a.averageScore);
+}, [performances, votes]);
   return (
     <main
   className="container"
@@ -628,14 +657,15 @@ const fairQueue = useMemo(() => {
 </h2>
         {leaderboard.map((p, index) => (
           <div className="leaderboard-row" key={p.id}>
-            <div>
-              <strong>
-                #{index + 1} {p.singer_name}
-              </strong>
-              <div className="small">{p.song_title}</div>
-            </div>
-            <div>
-              {p.avg.toFixed(2)} / 5 · {p.voteCount} votes
+          <div>
+  <strong>
+    #{index + 1} {p.singer_name}
+  </strong>
+</div>
+
+<div>
+  {p.averageScore.toFixed(2)} ⭐
+</div>
             </div>
           </div>
         ))}
