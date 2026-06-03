@@ -80,7 +80,7 @@ export default function VotePage() {
       performance_id: current.id,
       voter_key: voterKey,
       score,
-      device_id: getDeviceId()
+      device_id: getDeviceId(),
 
 if (existingVote) {
   alert('You have already voted for this performance.');
