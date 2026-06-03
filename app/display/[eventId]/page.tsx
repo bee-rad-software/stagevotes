@@ -64,12 +64,42 @@ const signupUrl =
 
   const current = performances.find((p) => p.id === event?.current_performance_id);
 
-  const activeQueue = performances.filter((p) => p.status !== 'completed');
+ const rotatedQueue = useMemo(() => {
+  const singerFirstOrder = new Map<string, number>();
+  const singerSongCounts = new Map<string, number>();
 
-  const upcoming = activeQueue
-    .filter((p) => p.id !== event?.current_performance_id)
-    .slice(0, 5);
+  const withRotation = performances
+    .slice()
+    .sort((a, b) => a.queue_order - b.queue_order)
+    .map((p) => {
+      const singerKey = p.singer_name.trim().toLowerCase();
 
+      if (!singerFirstOrder.has(singerKey)) {
+        singerFirstOrder.set(singerKey, p.queue_order);
+      }
+
+      const songNumber = (singerSongCounts.get(singerKey) || 0) + 1;
+      singerSongCounts.set(singerKey, songNumber);
+
+      return {
+        ...p,
+        singerFirstOrder: singerFirstOrder.get(singerKey) || p.queue_order,
+        songNumber
+      };
+    });
+
+  return withRotation.sort((a, b) => {
+    if (a.songNumber !== b.songNumber) {
+      return a.songNumber - b.songNumber;
+    }
+
+    return a.singerFirstOrder - b.singerFirstOrder;
+  });
+}, [performances]);
+
+const upcoming = rotatedQueue
+  .filter((p) => p.id !== event?.current_performance_id && p.status !== 'completed')
+  .slice(0, 5);
   const leaderboard = useMemo(() => {
     return performances
       .map((p) => {
