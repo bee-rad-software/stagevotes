@@ -688,8 +688,9 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     <div className="leaderboard-row" key={singer}>
       <div style={{ width: '100%' }}>
         <strong style={{ color: '#38bdf8', fontSize: 22 }}>
-          {singer}
-        </strong>
+  {singer} ({(songs as PerformanceRow[]).length} song
+  {(songs as PerformanceRow[]).length !== 1 ? 's' : ''})
+</strong>
 
         {(songs as PerformanceRow[]).map((p) => (
           <div
