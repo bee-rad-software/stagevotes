@@ -666,7 +666,7 @@ const fairQueue = useMemo(() => {
 <div>
   {p.averageScore.toFixed(2)} ⭐
 </div>
-            </div>
+     
           </div>
         ))}
       </div>
