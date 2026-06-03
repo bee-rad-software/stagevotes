@@ -57,12 +57,27 @@ export default function SignupPage() {
       return;
     }
 
-    const { data: existing } = await supabase
-      .from('performances')
-      .select('*')
-      .eq('event_id', eventId);
+    const deviceId = getDeviceId();
 
-    const startingOrder = (existing?.length || 0) + 1;
+const { data: existingSignup } = await supabase
+  .from('performances')
+  .select('id')
+  .eq('event_id', eventId)
+  .eq('device_id', deviceId)
+  .neq('status', 'completed')
+  .maybeSingle();
+
+if (existingSignup) {
+  setMessage('You are already in the queue. Ask the host if you need to make a change.');
+  return;
+}
+
+const { data: existing } = await supabase
+  .from('performances')
+  .select('*')
+  .eq('event_id', eventId);
+
+const startingOrder = (existing?.length || 0) + 1;
 
     const rows = validSongs.map((song, index) => ({
       event_id: eventId,
