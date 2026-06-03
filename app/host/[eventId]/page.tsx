@@ -667,7 +667,7 @@ const fairQueue = useMemo(() => {
   </button>
 </div>
         
-        {singerView ? (
+       {singerView ? (
   Object.entries(singerGroups).map(([singer, songs]) => (
     <div className="leaderboard-row" key={singer}>
       <div style={{ width: '100%' }}>
@@ -700,6 +700,7 @@ const fairQueue = useMemo(() => {
         <strong>
           {p.singer_name} (Song #{p.songNumber})
         </strong>
+
         <div className="small">
           {p.song_title}
           {p.artist ? ` by ${p.artist}` : ''}
@@ -785,4 +786,4 @@ const fairQueue = useMemo(() => {
 </div>
     </main>
   );
-
+      }
