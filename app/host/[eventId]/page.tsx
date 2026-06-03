@@ -72,7 +72,7 @@ export default function HostPage() {
 
     setEvent(data);
   }
-
+  
   async function endShow() {
   if (!confirm('End the show and show awards?')) return;
 
@@ -164,7 +164,26 @@ export default function HostPage() {
 
     await loadAll();
   }
-async function startShow() {
+
+async function newShow() {
+  if (
+    !confirm(
+      'Start a new show? This event will be archived.'
+    )
+  ) return;
+
+  await supabase
+    .from('events')
+    .update({
+      is_archived: true,
+      is_show_ended: true
+    })
+    .eq('id', eventId);
+
+  window.location.href = '/';
+}
+  
+  async function startShow() {
   const firstSinger = rotatedQueue.find((p) => p.status !== 'completed');
 
   if (!firstSinger) {
@@ -526,6 +545,10 @@ const fairQueue = useMemo(() => {
 >
   🏁 End Show
 </button>
+
+<button onClick={newShow}>
+  ➕ New Show
+</button>    
   </div>
 </div>
       <div className="grid">
