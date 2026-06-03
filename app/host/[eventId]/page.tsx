@@ -802,4 +802,4 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
     </main>
   );
-      }
+
