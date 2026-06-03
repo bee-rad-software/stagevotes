@@ -692,7 +692,7 @@ const fairQueue = useMemo(() => {
         ))}
       </div>
     </div>
-  ))
+  ))}
 ) : (
   activeQueue.map((p) => (
     <div className="leaderboard-row" key={p.id}>
