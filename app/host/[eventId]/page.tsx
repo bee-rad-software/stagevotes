@@ -652,6 +652,12 @@ const fairQueue = useMemo(() => {
         <h2 style={{ color: '#38bdf8' }}>
   📋 Queue
 </h2>
+        <div style={{ marginBottom: 12 }}>
+  <button onClick={() => setSingerView(!singerView)}>
+    {singerView ? 'Normal View' : 'Singer View'}
+  </button>
+</div>
+        
         {rotatedQueue
   .filter((p) => p.status !== 'completed')
   .map((p) => (
