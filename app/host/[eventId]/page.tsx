@@ -759,25 +759,25 @@ const queueBySinger = activeRotatedQueue.reduce((groups, p) => {
   )}
 </div>    
       
-      <div className="card">
-        <h2 style={{ color: '#38bdf8' }}>
-  🏆 Leaderboard
-</h2>
-        {leaderboard.map((p, index) => (
-          <div className="leaderboard-row" key={p.singer_name}>
-          <div>
-  <strong>
-    #{index + 1} {p.singer_name}
-  </strong>
-</div>
+     <div className="card">
+  <h2 style={{ color: '#38bdf8' }}>
+    🏆 Leaderboard
+  </h2>
 
-<div>
-  {p.averageScore.toFixed(2)} ⭐
-</div>
-     
-          </div>
-        ))}
+  {leaderboard.map((p, index) => (
+    <div className="leaderboard-row" key={p.singer_name}>
+      <div>
+        <strong>
+          #{index + 1} {p.singer_name}
+        </strong>
       </div>
+
+      <div>
+        {p.averageScore.toFixed(2)} ⭐
+      </div>
+    </div>
+  ))}
+</div>
    <div
   style={{
     marginTop: 40,
