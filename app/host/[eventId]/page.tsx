@@ -199,7 +199,31 @@ async function skipSinger(performanceId: string) {
 
   await loadAll();
 }
+async function moveSinger(performanceId: string, direction: 'up' | 'down') {
+  const visibleQueue = rotatedQueue.filter(
+    (p) => p.status !== 'completed' && p.status !== 'skipped'
+  );
 
+  const index = visibleQueue.findIndex((p) => p.id === performanceId);
+  const swapWith = direction === 'up' ? index - 1 : index + 1;
+
+  if (index < 0 || swapWith < 0 || swapWith >= visibleQueue.length) return;
+
+  const currentItem = visibleQueue[index];
+  const otherItem = visibleQueue[swapWith];
+
+  await supabase
+    .from('performances')
+    .update({ queue_order: otherItem.queue_order })
+    .eq('id', currentItem.id);
+
+  await supabase
+    .from('performances')
+    .update({ queue_order: currentItem.queue_order })
+    .eq('id', otherItem.id);
+
+  await loadAll();
+}
   async function nextSinger() {
   const completedId = event?.current_performance_id;
 
