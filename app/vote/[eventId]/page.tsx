@@ -6,16 +6,17 @@ import { supabase, EventRow, PerformanceRow } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 
 function getDeviceId() {
-  let id = localStorage.getItem('karavote_device_id');
+  if (typeof window === 'undefined') return '';
+
+  let id = window.localStorage.getItem('karavote_device_id');
 
   if (!id) {
     id = crypto.randomUUID();
-    localStorage.setItem('karavote_device_id', id);
+    window.localStorage.setItem('karavote_device_id', id);
   }
 
   return id;
 }
-
 function getVoterKey() {
   if (typeof window === 'undefined') return '';
   const existing = localStorage.getItem('karavote_voter_key');
