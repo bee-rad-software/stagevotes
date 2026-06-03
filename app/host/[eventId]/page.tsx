@@ -145,7 +145,32 @@ export default function HostPage() {
 
     await loadAll();
   }
-async function nextSinger() {
+async function startShow() {
+  const firstSinger = rotatedQueue.find((p) => p.status !== 'completed');
+
+  if (!firstSinger) {
+    alert('No singers in the queue yet.');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      current_performance_id: firstSinger.id,
+      is_voting_open: true
+    })
+    .eq('id', eventId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  window.open(`/display/${eventId}`, '_blank');
+
+  await loadAll();
+}
+  async function nextSinger() {
   const completedId = event?.current_performance_id;
 
   if (completedId) {
@@ -350,6 +375,31 @@ const fairQueue = useMemo(() => {
   <h2 style={{ color: '#38bdf8' }}>⚡ Quick Actions</h2>
 
   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+   async function startShow() {
+  const firstSinger = rotatedQueue.find((p) => p.status !== 'completed');
+
+  if (!firstSinger) {
+    alert('No singers in the queue yet.');
+    return;
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      current_performance_id: firstSinger.id,
+      is_voting_open: true
+    })
+    .eq('id', eventId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  window.open(`/display/${eventId}`, '_blank');
+
+  await loadAll();
+}
     <button
       className="secondary"
       onClick={() => window.open(`/display/${eventId}`, '_blank')}
