@@ -675,7 +675,7 @@ const fairQueue = useMemo(() => {
           {singer}
         </strong>
 
-        {songs.map((p) => (
+        {(songs as PerformanceRow[]).map((p) => (
           <div
             key={p.id}
             style={{
