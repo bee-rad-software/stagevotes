@@ -16,6 +16,7 @@ export default function HostPage() {
   const [singerName, setSingerName] = useState('');
   const [songTitle, setSongTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [singerView, setSingerView] = useState(false);
 
   const voteUrl =
     typeof window !== 'undefined'
