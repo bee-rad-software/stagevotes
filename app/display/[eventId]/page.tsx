@@ -100,22 +100,49 @@ const signupUrl =
 const upcoming = rotatedQueue
   .filter((p) => p.id !== event?.current_performance_id && p.status !== 'completed')
   .slice(0, 5);
-  const leaderboard = useMemo(() => {
-    return performances
-      .map((p) => {
-        const pv = votes.filter((v) => v.performance_id === p.id);
-        const avg = pv.length > 0 ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
+ const leaderboard = useMemo(() => {
+  const singerScores = new Map<
+    string,
+    {
+      singer_name: string;
+      totalScore: number;
+      totalVotes: number;
+      performances: number;
+    }
+  >();
 
-        return {
-          ...p,
-          avg,
-          voteCount: pv.length
-        };
-      })
-      .filter((p) => p.voteCount > 0)
-      .sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount)
-      .slice(0, 5);
-  }, [performances, votes]);
+  performances.forEach((p) => {
+    const pv = votes.filter((v) => v.performance_id === p.id);
+    if (pv.length === 0) return;
+
+    const performanceAverage =
+      pv.reduce((sum, v) => sum + v.score, 0) / pv.length;
+
+    const key = p.singer_name.trim().toLowerCase();
+
+    if (!singerScores.has(key)) {
+      singerScores.set(key, {
+        singer_name: p.singer_name,
+        totalScore: 0,
+        totalVotes: 0,
+        performances: 0
+      });
+    }
+
+    const singer = singerScores.get(key)!;
+    singer.totalScore += performanceAverage;
+    singer.totalVotes += pv.length;
+    singer.performances += 1;
+  });
+
+  return Array.from(singerScores.values())
+    .map((s) => ({
+      ...s,
+      averageScore: s.totalScore / s.performances
+    }))
+    .sort((a, b) => b.averageScore - a.averageScore)
+    .slice(0, 5);
+}, [performances, votes]);
 
   return (
   <main
@@ -173,7 +200,7 @@ const upcoming = rotatedQueue
         {leaderboard.length > 0 ? (
           leaderboard.slice(0, 5).map((p, index) => (
             <div
-              key={p.id}
+              key={p.singer_name}
               style={{
                 padding: '16px 0',
                 borderBottom: '1px solid rgba(255,255,255,0.15)'
@@ -183,7 +210,7 @@ const upcoming = rotatedQueue
                 {index + 1}. {p.singer_name}
               </div>
               <div style={{ fontSize: 24, color: '#facc15', fontWeight: 900 }}>
-                {p.avg.toFixed(2)} ⭐
+               {p.averageScore.toFixed(2)}⭐
               </div>
             </div>
           ))
