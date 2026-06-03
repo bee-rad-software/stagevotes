@@ -81,20 +81,11 @@ export default function VotePage() {
       voter_key: voterKey,
       score,
       device_id: getDeviceId(),
-
+  });
 if (existingVote) {
   alert('You have already voted for this performance.');
   return;
 }
-
-const { error } = await supabase
-  .from('votes')
-  .insert({
-    performance_id: current.id,
-    voter_key: voterKey,
-    score,
-    device_id: deviceId,
-  });
 
     if (error) {
       if (error.message.includes('duplicate')) {
