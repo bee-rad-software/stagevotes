@@ -600,6 +600,28 @@ const fairQueue = useMemo(() => {
         ))}
       </div>
 
+  <div className="card">
+  <h2 style={{ color: '#38bdf8' }}>✅ Completed Tonight</h2>
+
+  {performances.filter((p) => p.status === 'completed').length > 0 ? (
+    performances
+      .filter((p) => p.status === 'completed')
+      .map((p) => (
+        <div className="leaderboard-row" key={p.id}>
+          <div>
+            <strong>{p.singer_name}</strong>
+            <div className="small">
+              {p.song_title}
+              {p.artist ? ` by ${p.artist}` : ''}
+            </div>
+          </div>
+        </div>
+      ))
+  ) : (
+    <p className="small">No completed songs yet.</p>
+  )}
+</div>    
+      
       <div className="card">
         <h2 style={{ color: '#38bdf8' }}>
   🏆 Leaderboard
