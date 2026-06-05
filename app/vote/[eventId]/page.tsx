@@ -132,13 +132,36 @@ async function vote(score: number) {
             <p>{current.song_title}{current.artist ? ` by ${current.artist}` : ''}</p>
             <p>Voting is <span className="badge">{event?.is_voting_open ? 'Open' : 'Closed'}</span></p>
 
-            <div className="row">
-              {[1,2,3,4,5].map(score => (
-                <button className="vote-button" key={score} onClick={() => vote(score)}>
-                  {score}
-                </button>
-              ))}
-            </div>
+            {categories.map((category) => (
+  <div key={category.id} className="card">
+    <h3>{category.category_name}</h3>
+
+    <div className="row">
+      {[1, 2, 3, 4, 5].map((score) => (
+        <button
+          className="vote-button"
+          key={score}
+          onClick={() =>
+            setScores({
+              ...scores,
+              [category.id]: score
+            })
+          }
+        >
+          {score}
+        </button>
+      ))}
+    </div>
+
+    {scores[category.id] && (
+      <p className="small">Selected: {scores[category.id]} stars</p>
+    )}
+  </div>
+))}
+
+<button onClick={submitCategoryVotes}>
+  Submit Votes
+</button>
             <p className="small">1 = rough night, 5 = karaoke legend</p>
             {message && <p>{message}</p>}
           </>
