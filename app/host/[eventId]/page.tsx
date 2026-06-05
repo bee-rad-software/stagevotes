@@ -605,6 +605,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     </button>
 
     <button
+  className="secondary"
+  onClick={() => window.open(`/peopleschoice/${eventId}`, '_blank')}
+>
+  🎉 People’s Choice
+</button>
+
+    <button
   onClick={endShow}
   style={{
     background: '#c2410c',
