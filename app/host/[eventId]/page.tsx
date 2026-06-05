@@ -938,6 +938,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     </div>
   </div>
 
+<div style={{ textAlign: 'center' }}>
+  {peoplesChoiceUrl && <QRCodeSVG value={peoplesChoiceUrl} size={60} />}
+  <div style={{ color: '#facc15', fontSize: 12 }}>
+    People's Choice
+  </div>
+</div>
+    
   <div style={{ textAlign: 'center' }}>
     {voteUrl && <QRCodeSVG value={voteUrl} size={60} />}
     <div style={{ color: '#c2410c', fontSize: 12 }}>
