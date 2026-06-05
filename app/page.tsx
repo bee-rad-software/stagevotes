@@ -10,6 +10,9 @@ export default function HomePage() {
   const [pin, setPin] = useState('1234');
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [categories, setCategories] = useState<string[]>([
+  'Overall Performance'
+]);
 
   async function createEvent() {
     setError('');
