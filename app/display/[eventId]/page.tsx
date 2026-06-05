@@ -339,35 +339,6 @@ const upcoming = rotatedQueue
       </div>
       </section>
 
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 24,
-        right: 24,
-        textAlign: 'center',
-        background: 'rgba(15,23,42,0.9)',
-        padding: 16,
-        borderRadius: 16,
-        border: '1px solid rgba(255,255,255,0.2)',
-        zIndex: 999
-      }}
-    >
-      {peoplesChoiceUrl && (
-        <QRCodeSVG value={peoplesChoiceUrl} size={120} />
-      )}
-
-      <div
-        style={{
-          color: '#facc15',
-          fontSize: 18,
-          fontWeight: 'bold',
-          marginTop: 8
-        }}
-      >
-        People's Choice
-      </div>
-    </div>
-
   </main>
 );
 }
