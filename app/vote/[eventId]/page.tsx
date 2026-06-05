@@ -120,6 +120,55 @@ async function vote(score: number) {
   setMessage(`Thanks. Your ${score}-star vote was counted.`);
 }
 
+async function submitCategoryVotes() {
+  setMessage('');
+
+  if (!event?.is_voting_open || !current) {
+    setMessage('Voting is closed right now.');
+    return;
+  }
+
+  const missingScore = categories.some((category) => !scores[category.id]);
+
+  if (missingScore) {
+    setMessage('Please vote in every category.');
+    return;
+  }
+
+  const voterKey = getVoterKey();
+  const deviceId = getDeviceId();
+
+  const { data: existingVote } = await supabase
+    .from('votes')
+    .select('id')
+    .eq('performance_id', current.id)
+    .eq('device_id', deviceId)
+    .maybeSingle();
+
+  if (existingVote) {
+    setMessage('You have already voted for this performance.');
+    return;
+  }
+
+  const rows = categories.map((category) => ({
+    event_id: eventId,
+    performance_id: current.id,
+    voter_key: voterKey,
+    device_id: deviceId,
+    category_id: category.id,
+    score: scores[category.id]
+  }));
+
+  const { error } = await supabase.from('votes').insert(rows);
+
+  if (error) {
+    setMessage(error.message);
+    return;
+  }
+
+  setMessage('Thanks. Your votes were counted.');
+}
+  
   return (
     <main className="container">
       <h1>Vote</h1>
