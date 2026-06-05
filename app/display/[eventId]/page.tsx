@@ -215,6 +215,15 @@ const upcoming = rotatedQueue
       <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>VOTE</div>
     </div>
 
+<div style={{ textAlign: 'center' }}>
+  {peoplesChoiceUrl && (
+    <QRCodeSVG value={peoplesChoiceUrl} size={60} />
+  )}
+  <div style={{ color: '#facc15', fontSize: 12 }}>
+    People's Choice
+  </div>
+</div>
+    
     <header style={{ textAlign: 'center', marginBottom: 24 }}>
       <div style={{ fontSize: 26, letterSpacing: 5, color: '#facc15', fontWeight: 900 }}>
         KARAOKE CONTEST LIVE
