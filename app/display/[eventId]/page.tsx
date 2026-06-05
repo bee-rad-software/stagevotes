@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
-import { QRCodeSVG } from 'qrcode.react';
+
 
 export default function DisplayPage() {
   const params = useParams();
