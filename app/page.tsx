@@ -27,7 +27,27 @@ export default function HomePage() {
       return;
     }
 
-    setCreatedId(data.id);
+    const validCategories = categories
+  .map((c) => c.trim())
+  .filter(Boolean);
+
+if (validCategories.length > 0) {
+  const { error: categoryError } = await supabase
+    .from('vote_categories')
+    .insert(
+      validCategories.map((category) => ({
+        event_id: data.id,
+        category_name: category
+      }))
+    );
+
+  if (categoryError) {
+    setError(categoryError.message);
+    return;
+  }
+}
+
+setCreatedId(data.id);
   }
 
   return (
