@@ -5,6 +5,12 @@ import { supabase, EventRow, PerformanceRow } from '@/lib/supabase';
 
 import { useParams } from 'next/navigation';
 
+type VoteCategory = {
+  id: string;
+  event_id: string;
+  category_name: string;
+};
+
 function getDeviceId() {
   if (typeof window === 'undefined') return '';
 
