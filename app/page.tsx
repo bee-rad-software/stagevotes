@@ -46,6 +46,28 @@ export default function HomePage() {
         <label>Host PIN</label>
         <input value={pin} onChange={(e) => setPin(e.target.value)} />
 
+        <h3>Voting Categories</h3>
+
+{categories.map((category, index) => (
+  <input
+    key={index}
+    value={category}
+    onChange={(e) => {
+      const updated = [...categories];
+      updated[index] = e.target.value;
+      setCategories(updated);
+    }}
+    placeholder={`Category ${index + 1}`}
+  />
+))}
+
+<button
+  className="secondary"
+  onClick={() => setCategories([...categories, ''])}
+>
+  Add Category
+</button>
+
         <button onClick={createEvent}>Create Event</button>
 
         {error && <p>{error}</p>}
