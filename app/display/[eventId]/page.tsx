@@ -347,36 +347,7 @@ const upcoming = rotatedQueue
         )}
       </div>
       </section>
-<div
-  style={{
-    position: 'fixed',
-    bottom: 24,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    display: 'flex',
-    gap: 40,
-    alignItems: 'center',
-    background: 'rgba(15,23,42,0.9)',
-    padding: '14px 20px',
-    borderRadius: 18,
-    border: '1px solid rgba(255,255,255,0.2)'
-  }}
->
-  <div style={{ textAlign: 'center' }}>
-    {signupUrl && <QRCodeSVG value={signupUrl} size={70} />}
-    <div style={{ color: '#38bdf8', fontSize: 12 }}>Signup</div>
-  </div>
 
-  <div style={{ textAlign: 'center' }}>
-    {voteUrl && <QRCodeSVG value={voteUrl} size={70} />}
-    <div style={{ color: '#c2410c', fontSize: 12 }}>Vote</div>
-  </div>
-
-  <div style={{ textAlign: 'center' }}>
-    {peoplesChoiceUrl && <QRCodeSVG value={peoplesChoiceUrl} size={70} />}
-    <div style={{ color: '#facc15', fontSize: 12 }}>People's Choice</div>
-  </div>
-</div>
   </main>
 );
 }
