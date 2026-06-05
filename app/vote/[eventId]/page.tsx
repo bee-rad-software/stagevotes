@@ -56,6 +56,13 @@ const [scores, setScores] = useState<Record<string, number>>({});
   async function load() {
     const { data: ev } = await supabase.from('events').select('*').eq('id', eventId).single();
     setEvent(ev);
+
+    const { data: cats } = await supabase
+  .from('vote_categories')
+  .select('*')
+  .eq('event_id', eventId);
+
+setCategories(cats || []);
     
     console.log('Vote page event:', ev);
     console.log('Current performance id:', ev?.current_performance_id);
