@@ -420,6 +420,23 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
     await loadEvent();
   }
 
+async function toggleQrSetting(
+  field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr',
+  value: boolean
+) {
+  const { error } = await supabase
+    .from('events')
+    .update({ [field]: value })
+    .eq('id', eventId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await loadEvent();
+}
+  
   const current = performances.find((p) => p.id === event?.current_performance_id);
 
   const rotatedQueue = useMemo(() => {
