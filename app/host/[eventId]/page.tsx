@@ -526,7 +526,7 @@ const fairQueue = useMemo(() => {
 );
 
 const tiebreakerVotes = pv.filter(
-  (v) => v.category_id === tiebreakerCategory?.id
+  (v) => (v as any).category_id === tiebreakerCategory?.id
 );
     
 if (tiebreakerVotes.length > 0) {
