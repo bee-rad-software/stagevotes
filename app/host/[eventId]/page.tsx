@@ -463,6 +463,7 @@ const fairQueue = useMemo(() => {
       totalScore: number;
       totalVotes: number;
       performances: number;
+      tiebreakerScore: number;
     }
   >();
 
