@@ -85,6 +85,11 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
 ]);
   }
 
+async function copyLink(label: string, url: string) {
+  await navigator.clipboard.writeText(url);
+  alert(`${label} link copied!`);
+}
+  
   async function loadEvent() {
     const { data, error } = await supabase
       .from('events')
