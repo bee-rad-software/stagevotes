@@ -790,9 +790,28 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       />
       {' '}Show People's Choice QR
     </div>
+ </div>
+</div>
+
+<div className="card">
+  <h2>🔗 Share Links</h2>
+
+  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+    <button onClick={() => copyLink('Signup', signupUrl)}>
+      Copy Signup Link
+    </button>
+
+    <button onClick={() => copyLink('Judging', voteUrl)}>
+      Copy Judging Link
+    </button>
+
+    <button onClick={() => copyLink("People's Choice", peoplesChoiceUrl)}>
+      Copy People's Choice Link
+    </button>
   </div>
 </div>
-      <div className="grid">
+
+<div className="grid">
        
 
         <div className="card">
