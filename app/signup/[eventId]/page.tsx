@@ -65,6 +65,11 @@ useEffect(() => {
       return;
     }
 
+localStorage.setItem(
+  'karavote_singer_name',
+  singerName.trim()
+);
+    
     const deviceId = getDeviceId();
 
 const { data: existingSignup } = await supabase
