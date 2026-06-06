@@ -319,7 +319,7 @@ if (tiebreakerVotes.length > 0) {
       overflow: 'hidden'
     }}
   >
-    {event?.show_signup_qr && (
+ {(event as any)?.show_signup_qr && (
 <div style={{ position: 'fixed', bottom: 24, left: 24, textAlign: 'center' }}>
       <div style={{ background: 'white', padding: 10, borderRadius: 14 }}>
         {signupUrl && <QRCodeSVG value={signupUrl} size={125} />}
@@ -328,7 +328,7 @@ if (tiebreakerVotes.length > 0) {
     </div>
     )}
 
-    {event?.show_voting_qr && (
+    {(event as any)?.show_voting_qr && (
 <div style={{ position: 'fixed', bottom: 24, right: 24, textAlign: 'center' }}>
       <div style={{ background: 'white', padding: 10, borderRadius: 14 }}>
         {voteUrl && <QRCodeSVG value={voteUrl} size={125} />}
@@ -336,8 +336,8 @@ if (tiebreakerVotes.length > 0) {
       <div style={{ marginTop: 8, fontSize: 20, fontWeight: 900 }}>VOTE</div>
     </div>
     )}
-
-{event?.show_peoples_choice_qr && (
+    
+{(event as any)?.show_peoples_choice_qr && (
 <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)' }}>
   <div style={{ background: 'white', padding: 10, borderRadius: 14 }}>
     {peoplesChoiceUrl && <QRCodeSVG value={peoplesChoiceUrl} size={125} />}
