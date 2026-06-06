@@ -51,21 +51,7 @@ if (validCategories.length > 0) {
 setCreatedId(data.id);
   }
 
-<label>Tiebreaker Category</label>
-<select
-  value={tiebreakerCategory}
-  onChange={(e) => setTiebreakerCategory(e.target.value)}
->
-  {categories
-    .map((c) => c.trim())
-    .filter(Boolean)
-    .map((category) => (
-      <option key={category} value={category}>
-        {category}
-      </option>
-    ))}
-</select>
-  
+
   return (
     <main className="container">
       <h1>KaraVote</h1>
