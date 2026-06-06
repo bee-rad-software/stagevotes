@@ -519,13 +519,16 @@ const fairQueue = useMemo(() => {
 
     singer.totalScore += performanceAverage;
 
-    const tiebreakerVotes = pv.filter((v) => {
-const categoryName = (v as any).vote_categories?.category_name?.trim().toLowerCase();
-const tiebreakerName = (event as any)?.tiebreaker_category_name?.trim().toLowerCase();
+   const tiebreakerCategory = categories.find(
+  (c) =>
+    c.category_name.trim().toLowerCase() ===
+    (event as any)?.tiebreaker_category_name?.trim().toLowerCase()
+);
 
-return categoryName === tiebreakerName;
-});
-
+const tiebreakerVotes = pv.filter(
+  (v) => v.category_id === tiebreakerCategory?.id
+);
+    
 if (tiebreakerVotes.length > 0) {
   const tiebreakerAverage =
     tiebreakerVotes.reduce((sum, v) => sum + v.score, 0) / tiebreakerVotes.length;
