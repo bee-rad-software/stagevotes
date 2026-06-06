@@ -154,6 +154,25 @@ const startingOrder = (existing?.length || 0) + 1;
     <main className="container">
       <h1>Karaoke Signup</h1>
 
+{twoAway && (
+  <div
+    className="card"
+    style={{
+      background: 'rgba(250,204,21,0.15)',
+      border: '2px solid #facc15'
+    }}
+  >
+    <h2>🔔 2 Songs Away</h2>
+    <p>
+      <strong>{twoAway.singer_name}</strong> is coming up soon.
+    </p>
+    <p className="small">
+      {twoAway.song_title}
+      {twoAway.artist ? ` by ${twoAway.artist}` : ''}
+    </p>
+  </div>
+)}
+      
       <div className="card">
         <label>Your name</label>
         <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
