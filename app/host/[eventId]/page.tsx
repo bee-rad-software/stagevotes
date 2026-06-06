@@ -76,7 +76,13 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   }, [eventId]);
 
   async function loadAll() {
-    await Promise.all([loadEvent(), loadPerformances(), loadPeoplesChoice(), loadVotes()]); 
+   await Promise.all([
+  loadEvent(),
+  loadPerformances(),
+  loadPeoplesChoice(),
+  loadVotes(),
+  loadCategories()
+]);
   }
 
   async function loadEvent() {
