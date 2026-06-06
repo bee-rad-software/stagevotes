@@ -166,22 +166,17 @@ const twoAway = queue[2];
     <main className="container">
       <h1>Karaoke Signup</h1>
 
-{twoAway && (
-  <div
-    className="card"
-    style={{
-      background: 'rgba(250,204,21,0.15)',
-      border: '2px solid #facc15'
-    }}
-  >
-    <h2>🔔 2 Songs Away</h2>
-    <p>
-      <strong>{twoAway.singer_name}</strong> is coming up soon.
-    </p>
-    <p className="small">
-      {twoAway.song_title}
-      {twoAway.artist ? ` by ${twoAway.artist}` : ''}
-    </p>
+{myPosition && (
+  <div className="card">
+    <h2>
+      {myPosition === 1
+        ? "🎤 You're up now!"
+        : myPosition === 2
+        ? "⏭️ You're on deck!"
+        : myPosition === 3
+        ? "🔔 You're 2 songs away!"
+        : `🎶 You're #${myPosition} in line`}
+    </h2>
   </div>
 )}
       
