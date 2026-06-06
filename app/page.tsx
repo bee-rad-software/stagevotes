@@ -111,33 +111,44 @@ setCreatedId(data.id);
 
         <h3>QR Code Options</h3>
 
-<div style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
-  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+<div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    marginBottom: 24,
+    alignItems: 'flex-start'
+  }}
+>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
     <input
       type="checkbox"
       checked={showSignupQR}
       onChange={(e) => setShowSignupQR(e.target.checked)}
+      style={{ width: 18, height: 18 }}
     />
-    Show Signup QR
-  </label>
+    <span>Show Signup QR</span>
+  </div>
 
-  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
     <input
       type="checkbox"
       checked={showVotingQR}
       onChange={(e) => setShowVotingQR(e.target.checked)}
+      style={{ width: 18, height: 18 }}
     />
-    Show Voting QR
-  </label>
+    <span>Show Voting QR</span>
+  </div>
 
-  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
     <input
       type="checkbox"
       checked={showPeoplesChoiceQR}
       onChange={(e) => setShowPeoplesChoiceQR(e.target.checked)}
+      style={{ width: 18, height: 18 }}
     />
-    Show People&apos;s Choice QR
-  </label>
+    <span>Show People&apos;s Choice QR</span>
+  </div>
 </div>
         
 <button
