@@ -89,6 +89,20 @@ const signupUrl =
     setVotes(data || []);
   }
 
+async function loadCategories() {
+  const { data, error } = await supabase
+    .from('vote_categories')
+    .select('id, category_name')
+    .eq('event_id', eventId);
+
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  setCategories(data || []);
+}
+  
 async function loadPeoplesChoice() {
   const { data, error } = await supabase
     .from('peoples_choice_votes')
