@@ -43,6 +43,10 @@ const [scores, setScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
     load();
+useEffect(() => {
+  setScores({});
+  setMessage('');
+}, [current?.id]);
 
     const channel = supabase.channel(`vote-${eventId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: `id=eq.${eventId}` }, load)
