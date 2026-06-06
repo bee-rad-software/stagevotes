@@ -491,6 +491,7 @@ const fairQueue = useMemo(() => {
 
     singer.totalScore += performanceAverage;
 
+    const tiebreakerVotes = pv.filter((v) => {
 const categoryName = (v as any).vote_categories?.category_name?.trim().toLowerCase();
 const tiebreakerName = (event as any)?.tiebreaker_category_name?.trim().toLowerCase();
 
