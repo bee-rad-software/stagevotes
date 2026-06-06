@@ -26,7 +26,22 @@ useEffect(() => {
   if (savedName) {
     setSingerName(savedName);
   }
-}, []);
+
+  loadQueue();
+
+  const channel = supabase
+    .channel(`signup-${eventId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'performances', filter: `event_id=eq.${eventId}` },
+      loadQueue
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [eventId]);
   
  function getDeviceId() {
   if (typeof window === 'undefined') return '';
