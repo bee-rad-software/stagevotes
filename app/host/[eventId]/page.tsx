@@ -491,7 +491,17 @@ const fairQueue = useMemo(() => {
 
     singer.totalScore += performanceAverage;
 
+const tiebreakerVotes = pv.filter((v) => {
+  const categoryName = (v as any).vote_categories?.category_name;
+  return categoryName === (event as any)?.tiebreaker_category_name;
+});
 
+if (tiebreakerVotes.length > 0) {
+  const tiebreakerAverage =
+    tiebreakerVotes.reduce((sum, v) => sum + v.score, 0) / tiebreakerVotes.length;
+
+  singer.tiebreakerScore += tiebreakerAverage;
+}
 
     singer.totalVotes += pv.length;
     singer.performances += 1;
