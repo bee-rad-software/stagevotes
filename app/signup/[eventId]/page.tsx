@@ -61,7 +61,7 @@ export default function SignupPage() {
 
 const { data: existingSignup } = await supabase
   .from('performances')
-  .select('id')
+  .select('id, singer_name')
   .eq('event_id', eventId)
   .eq('device_id', deviceId)
   .neq('status', 'completed')
