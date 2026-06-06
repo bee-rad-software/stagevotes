@@ -165,8 +165,6 @@ const myIndex = queue.findIndex(
     savedSingerName &&
     p.singer_name.trim().toLowerCase() === savedSingerName.trim().toLowerCase()
 );
-
-const myPosition = myIndex >= 0 ? myIndex + 1 : null;
   
 const myPosition = myIndex >= 0 ? myIndex + 1 : null;
 const twoAway = queue[2];
