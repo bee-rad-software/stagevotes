@@ -478,10 +478,11 @@ const fairQueue = useMemo(() => {
 
     if (!singerScores.has(key)) {
       singerScores.set(key, {
-        singer_name: p.singer_name,
-        totalScore: 0,
-        totalVotes: 0,
-        performances: 0
+  singer_name: p.singer_name,
+  totalScore: 0,
+  totalVotes: 0,
+  performances: 0,
+  tiebreakerScore: 0
       });
     }
 
