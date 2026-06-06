@@ -920,7 +920,10 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
 
 <div>
-  {p.averageScore.toFixed(2)} ⭐
+ {p.averageScore.toFixed(2)} ⭐
+<div className="small">
+  TB: {((p.tiebreakerScore || 0) / p.performances).toFixed(2)}
+</div>
 </div>
      
           </div>
