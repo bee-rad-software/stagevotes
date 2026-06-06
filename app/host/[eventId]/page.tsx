@@ -60,6 +60,11 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
         { event: '*', schema: 'public', table: 'votes', filter: `event_id=eq.${eventId}` },
         loadVotes
       )
+      .on(
+  'postgres_changes',
+  { event: '*', schema: 'public', table: 'peoples_choice_votes', filter: `event_id=eq.${eventId}` },
+  loadPeoplesChoice
+)
       .subscribe();
 
     return () => {
