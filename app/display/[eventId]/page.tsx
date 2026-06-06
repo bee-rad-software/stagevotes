@@ -16,6 +16,9 @@ export default function DisplayPage() {
   const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   { singer_name: string; votes: number }[]
 >([]);
+  const [categories, setCategories] = useState<
+  { id: string; category_name: string }[]
+>([]);
 
   const voteUrl =
   typeof window !== 'undefined'
