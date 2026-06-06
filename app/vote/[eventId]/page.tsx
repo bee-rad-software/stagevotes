@@ -227,7 +227,25 @@ const allCategoriesScored = completed === categories.length;
   </div>
 ))}
 
-<button onClick={submitCategoryVotes}>
+{!allCategoriesScored && (
+  <p
+    style={{
+      color: '#fbbf24',
+      fontWeight: 'bold'
+    }}
+  >
+    Please score all categories before submitting.
+  </p>
+)}
+            
+<button
+  onClick={submitCategoryVotes}
+  disabled={!allCategoriesScored}
+  style={{
+    opacity: allCategoriesScored ? 1 : 0.5,
+    cursor: allCategoriesScored ? 'pointer' : 'not-allowed'
+  }}
+>
   Submit Votes
 </button>
             <p className="small">1 = rough night, 5 = karaoke legend</p>
