@@ -584,7 +584,8 @@ if (tiebreakerVotes.length > 0) {
   const activeQueue = rotatedQueue.filter(
   (p) => p.status !== 'completed' && p.status !== 'skipped'
 );
-
+const twoAway = activeQueue[2];
+  
 const singerGroups = activeQueue.reduce((groups, p) => {
   const singer = p.singer_name.trim();
 
