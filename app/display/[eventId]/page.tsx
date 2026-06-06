@@ -214,6 +214,37 @@ const upcoming = rotatedQueue
         </div>
       )}
 
+<div
+  style={{
+    marginTop: 40,
+    padding: 32,
+    borderRadius: 24,
+    background: 'rgba(250,204,21,0.12)',
+    border: '1px solid rgba(250,204,21,0.35)'
+  }}
+>
+  <div style={{ fontSize: 34, color: '#facc15', fontWeight: 900 }}>
+    🎉 People&apos;s Choice
+  </div>
+
+  {peoplesChoiceResults.length > 0 ? (
+    <>
+      <div style={{ fontSize: 72, fontWeight: 900, marginTop: 16 }}>
+        {peoplesChoiceResults[0].singer_name}
+      </div>
+
+      <div style={{ fontSize: 28, opacity: 0.8 }}>
+        {peoplesChoiceResults[0].votes} vote
+        {peoplesChoiceResults[0].votes !== 1 ? 's' : ''}
+      </div>
+    </>
+  ) : (
+    <div style={{ fontSize: 28, marginTop: 16 }}>
+      No People&apos;s Choice votes yet.
+    </div>
+  )}
+</div>
+      
       <p style={{ fontSize: 32, marginTop: 40 }}>
         Thanks for singing!
       </p>
