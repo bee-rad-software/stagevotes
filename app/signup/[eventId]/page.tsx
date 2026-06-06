@@ -67,11 +67,13 @@ const { data: existingSignup } = await supabase
   .neq('status', 'completed')
   .maybeSingle();
 
-if (existingSignup) {
-  setMessage('You are already in the queue. Ask the host if you need to make a change.');
+if (
+  existingSignup &&
+  existingSignup.singer_name.toLowerCase().trim() !== singerName.toLowerCase().trim()
+) {
+  setMessage('This phone is already signed up under a different name. Ask the host if you need to make a change.');
   return;
 }
-
 const { data: existing } = await supabase
   .from('performances')
   .select('*')
