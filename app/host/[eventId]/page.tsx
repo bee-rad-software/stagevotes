@@ -155,7 +155,12 @@ async function loadPeoplesChoice() {
   async function loadVotes() {
     const { data, error } = await supabase
       .from('votes')
-      .select('*, vote_categories(category_name)')
+     .select(`
+  *,
+  vote_categories!votes_category_id_fkey (
+    category_name
+  )
+`)
       .eq('event_id', eventId);
 
     if (error) {
