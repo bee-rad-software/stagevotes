@@ -744,9 +744,9 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   }}
 >
   ➕ New Show
-747 </button>
-748 </div>
-749 </div>
+ </button>
+</div>
+ </div>
 
 <div className="card">
   <h2>📱 QR Code Settings</h2>
