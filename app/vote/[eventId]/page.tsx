@@ -201,6 +201,11 @@ async function submitCategoryVotes() {
         <button
           className="vote-button"
           key={score}
+          style={{
+  background: scores[category.id] >= score ? '#facc15' : 'white',
+  color: scores[category.id] >= score ? '#111827' : '#111827',
+  border: scores[category.id] === score ? '3px solid #f97316' : '1px solid #ccc'
+}}
           onClick={() =>
             setScores({
               ...scores,
