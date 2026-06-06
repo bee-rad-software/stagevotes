@@ -13,6 +13,9 @@ export default function DisplayPage() {
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
+  const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
+  { singer_name: string; votes: number }[]
+>([]);
 
   const voteUrl =
   typeof window !== 'undefined'
