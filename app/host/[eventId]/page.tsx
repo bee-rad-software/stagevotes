@@ -174,6 +174,20 @@ async function loadPeoplesChoice() {
     setVotes(data || []);
   }
 
+async function loadCategories() {
+  const { data, error } = await supabase
+    .from('vote_categories')
+    .select('id, category_name')
+    .eq('event_id', eventId);
+
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  setCategories(data || []);
+}
+  
   async function addPerformance() {
     if (!singerName.trim() || !songTitle.trim()) {
       alert('Singer name and song title are required.');
