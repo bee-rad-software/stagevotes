@@ -111,36 +111,34 @@ setCreatedId(data.id);
 
         <h3>QR Code Options</h3>
 
-<label>
-  <input
-    type="checkbox"
-    checked={showSignupQR}
-    onChange={(e) => setShowSignupQR(e.target.checked)}
-  />
-  Show Signup QR
-</label>
+<div style={{ display: 'grid', gap: 10, marginBottom: 20 }}>
+  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <input
+      type="checkbox"
+      checked={showSignupQR}
+      onChange={(e) => setShowSignupQR(e.target.checked)}
+    />
+    Show Signup QR
+  </label>
 
-<label>
-  <input
-    type="checkbox"
-    checked={showVotingQR}
-    onChange={(e) => setShowVotingQR(e.target.checked)}
-  />
-  Show Voting QR
-</label>
+  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <input
+      type="checkbox"
+      checked={showVotingQR}
+      onChange={(e) => setShowVotingQR(e.target.checked)}
+    />
+    Show Voting QR
+  </label>
 
-<label>
-  <input
-    type="checkbox"
-    checked={showPeoplesChoiceQR}
-    onChange={(e) => setShowPeoplesChoiceQR(e.target.checked)}
-  />
-  Show People's Choice QR
-</label>
-
-<button onClick={createEvent}>
-  Create Contest
-</button>
+  <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+    <input
+      type="checkbox"
+      checked={showPeoplesChoiceQR}
+      onChange={(e) => setShowPeoplesChoiceQR(e.target.checked)}
+    />
+    Show People&apos;s Choice QR
+  </label>
+</div>
         
 <button
   className="secondary"
