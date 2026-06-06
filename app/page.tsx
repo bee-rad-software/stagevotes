@@ -14,6 +14,9 @@ export default function HomePage() {
   'Overall Performance'
 ]);
   const [tiebreakerCategory, setTiebreakerCategory] = useState('Overall Performance');
+  const [showSignupQR, setShowSignupQR] = useState(true);
+const [showVotingQR, setShowVotingQR] = useState(true);
+const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
 
   async function createEvent() {
     setError('');
