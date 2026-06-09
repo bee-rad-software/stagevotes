@@ -65,7 +65,7 @@ setCreatedId(data.id);
 
   return (
     <main className="container">
-      <h1>KaraVote</h1>
+      <h1>StageVotes</h1>
       <p className="small">Karaoke contest queue + audience voting + live leaderboard.</p>
 
       <div className="card">
