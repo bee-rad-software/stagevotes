@@ -89,6 +89,33 @@ async function copyLink(label: string, url: string) {
   await navigator.clipboard.writeText(url);
   alert(`${label} link copied!`);
 }
+
+function downloadQR(url: string, filename: string) {
+  const canvas = document.createElement('canvas');
+  const size = 1200;
+  const margin = 80;
+
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.fillStyle = 'white';
+  ctx.fillRect(0, 0, size, size);
+
+  const img = new Image();
+  img.onload = () => {
+    ctx.drawImage(img, margin, margin, size - margin * 2, size - margin * 2);
+
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  };
+
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
+}
   
   async function loadEvent() {
     const { data, error } = await supabase
