@@ -90,6 +90,10 @@ async function loadQueue() {
   }
 
   setQueue(data || []);
+  const queueData = data || [];
+
+setCurrentSinger(queueData[0] || null);
+setOnDeckSinger(queueData[1] || null);
 }
   
   async function submitSignup() {
