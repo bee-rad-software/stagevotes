@@ -164,7 +164,15 @@ const twoAway = queue[2];
 
   return (
     <main className="container">
-      <h1>Karaoke Signup</h1>
+     <div style={{ textAlign: 'center', marginBottom: 20 }}>
+  <Image
+    src="/stagevotes-logo.png"
+    alt="StageVotes"
+    width={250}
+    height={125}
+  />
+  <h1>StageVotes Signup</h1>
+</div>
 
 {myPosition && (
   <div className="card">
