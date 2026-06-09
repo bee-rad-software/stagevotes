@@ -290,6 +290,41 @@ const isOnDeckSinger =
   }}
 />
 
+{activeSongIndex === index && songSuggestions.length > 0 && (
+  <div
+    style={{
+      background: '#222',
+      border: '1px solid #444',
+      borderRadius: 8,
+      maxHeight: 250,
+      overflowY: 'auto',
+      marginTop: 4
+    }}
+  >
+    {songSuggestions.map((suggestion) => (
+      <div
+        key={suggestion.id}
+        style={{
+          padding: 10,
+          cursor: 'pointer',
+          borderBottom: '1px solid #333'
+        }}
+        onClick={() => {
+          updateSong(index, 'songTitle', suggestion.title);
+          updateSong(index, 'artist', suggestion.artist || '');
+
+          setSongSuggestions([]);
+          setActiveSongIndex(null);
+        }}
+      >
+        <strong>{suggestion.title}</strong>
+        <br />
+        <small>{suggestion.artist}</small>
+      </div>
+    ))}
+  </div>
+)}
+            
             <label>Artist</label>
             <input
               value={song.artist}
