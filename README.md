@@ -1,4 +1,4 @@
-# KaraVote MVP
+# StageVotes
 
 A web-based karaoke contest companion app inspired by the workflow of KaraFun, but focused on singer queue management, audience voting, and leaderboard results.
 
