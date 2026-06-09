@@ -104,7 +104,8 @@ function downloadQR(url: string, filename: string) {
   ctx.fillStyle = 'white';
   ctx.fillRect(0, 0, size, size);
 
-  const img = new Image();
+ const img = new Image();
+img.crossOrigin = 'anonymous';
   img.onload = () => {
     ctx.drawImage(img, margin, margin, size - margin * 2, size - margin * 2);
 
@@ -114,7 +115,7 @@ function downloadQR(url: string, filename: string) {
     link.click();
   };
 
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${encodeURIComponent(url)}`;
+ img.src = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&format=png&data=${encodeURIComponent(url)}`;
 }
   
   async function loadEvent() {
