@@ -214,8 +214,17 @@ const isOnDeckSinger =
 )}
 {onDeckSinger && (
   <div className="card">
-    <h3>⏭ On Deck</h3>
-    <p>{onDeckSinger.singer_name}</p>
+    {isOnDeckSinger ? (
+      <>
+        <h2>⏭ You're On Deck!</h2>
+        <p>Get ready to sing.</p>
+      </>
+    ) : (
+      <>
+        <h3>⏭ On Deck</h3>
+        <p>{onDeckSinger.singer_name}</p>
+      </>
+    )}
   </div>
 )}
       
