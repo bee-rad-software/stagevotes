@@ -97,6 +97,24 @@ async function loadQueue() {
 setCurrentSinger(queueData[0] || null);
 setOnDeckSinger(queueData[1] || null);
 }
+
+async function searchSongs(searchText: string, songIndex: number) {
+  if (searchText.length < 2) {
+    setSongSuggestions([]);
+    return;
+  }
+
+  const { data } = await supabase
+    .from('songs')
+    .select('id,title,artist')
+    .or(
+      `title.ilike.%${searchText}%,artist.ilike.%${searchText}%`
+    )
+    .limit(10);
+
+  setSongSuggestions(data || []);
+  setActiveSongIndex(songIndex);
+}
   
   async function submitSignup() {
     setMessage('');
