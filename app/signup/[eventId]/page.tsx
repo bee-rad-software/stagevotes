@@ -160,6 +160,11 @@ const myIndex = queue.findIndex(
 );
   
 const myPosition = myIndex >= 0 ? myIndex + 1 : null;
+  const averageMinutesPerSong = 4;
+const estimatedWaitMinutes =
+  myPosition && myPosition > 1
+    ? (myPosition - 1) * averageMinutesPerSong
+    : 0;
 const twoAway = queue[2];
 
   return (
