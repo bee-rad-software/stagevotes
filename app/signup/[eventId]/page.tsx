@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 
 type SongEntry = {
   songTitle: string;
