@@ -357,12 +357,14 @@ checkDuplicateSong(e.target.value);
           borderBottom: '1px solid #333'
         }}
         onClick={() => {
-          updateSong(index, 'songTitle', suggestion.title);
-          updateSong(index, 'artist', suggestion.artist || '');
+  updateSong(index, 'songTitle', suggestion.title);
+  updateSong(index, 'artist', suggestion.artist || '');
 
-          setSongSuggestions([]);
-          setActiveSongIndex(null);
-        }}
+  checkDuplicateSong(suggestion.title);
+
+  setSongSuggestions([]);
+  setActiveSongIndex(null);
+}}
       >
         <strong>{suggestion.title}</strong>
         <br />
