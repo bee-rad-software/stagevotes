@@ -332,7 +332,8 @@ const isOnDeckSinger =
   value={song.songTitle}
   onChange={(e) => {
     updateSong(index, 'songTitle', e.target.value);
-    searchSongs(e.target.value, index);
+searchSongs(e.target.value, index);
+checkDuplicateSong(e.target.value);
   }}
 />
 
