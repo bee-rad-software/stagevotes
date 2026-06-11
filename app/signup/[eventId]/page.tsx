@@ -348,15 +348,45 @@ const isOnDeckSinger =
 )}
             
             <label>Artist</label>
-   <input
+  <input
   value={song.artist}
   onChange={(e) => {
     updateSong(index, 'artist', e.target.value);
     searchArtists(e.target.value);
   }}
 />
-            
-            {songs.length > 1 && (
+
+{artistSuggestions.length > 0 && (
+  <div
+    style={{
+      background: '#222',
+      border: '1px solid #444',
+      borderRadius: 8,
+      maxHeight: 250,
+      overflowY: 'auto',
+      marginTop: 4
+    }}
+  >
+    {artistSuggestions.map((artist) => (
+      <div
+        key={artist.artist}
+        style={{
+          padding: 10,
+          cursor: 'pointer',
+          borderBottom: '1px solid #333'
+        }}
+        onClick={() => {
+          updateSong(index, 'artist', artist.artist);
+          setArtistSuggestions([]);
+        }}
+      >
+        {artist.artist}
+      </div>
+    ))}
+  </div>
+)}
+
+{songs.length > 1 && (
               <button className="danger" onClick={() => removeSongField(index)}>
                 Remove Song
               </button>
