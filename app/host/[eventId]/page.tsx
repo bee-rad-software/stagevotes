@@ -846,6 +846,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   Download Signup QR
 </button>
 
+<button onClick={() => copyLink('Check-In', checkinUrl)}>
+  Copy Check-In Link
+</button>
+
+<button onClick={() => downloadQR(checkinUrl, `checkin-qr-${eventId}.png`)}>
+  Download Check-In QR
+</button>
+    
     <button onClick={() => copyLink("People's Choice", peoplesChoiceUrl)}>
   Copy People's Choice Link
 </button>
