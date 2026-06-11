@@ -348,11 +348,14 @@ const isOnDeckSinger =
 )}
             
             <label>Artist</label>
-            <input
-              value={song.artist}
-              onChange={(e) => updateSong(index, 'artist', e.target.value)}
-            />
-
+   <input
+  value={song.artist}
+  onChange={(e) => {
+    updateSong(index, 'artist', e.target.value);
+    searchArtists(e.target.value);
+  }}
+/>
+            
             {songs.length > 1 && (
               <button className="danger" onClick={() => removeSongField(index)}>
                 Remove Song
