@@ -39,6 +39,37 @@ export default function CheckInPage() {
 
     setEvent(ev);
 
+if (!ev?.venue_lat || !ev?.venue_lng) {
+  setMessage('Venue location is not set for this event.');
+  return;
+}
+
+const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+  navigator.geolocation.getCurrentPosition(resolve, reject, {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  });
+});
+
+const distanceMeters = getDistanceMeters(
+  position.coords.latitude,
+  position.coords.longitude,
+  ev.venue_lat,
+  ev.venue_lng
+);
+
+const allowedRadius = ev.checkin_radius_meters || 150;
+
+if (distanceMeters > allowedRadius) {
+  setMessage(
+    `You must be at the venue to check in. You appear to be about ${Math.round(
+      distanceMeters
+    )} meters away.`
+  );
+  return;
+}
+    
     const { error } = await supabase
       .from('event_checkins')
       .upsert(
