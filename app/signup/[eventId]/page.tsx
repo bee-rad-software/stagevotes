@@ -138,6 +138,29 @@ async function searchArtists(searchText: string) {
 
   setArtistSuggestions(uniqueArtists);
 }
+
+async function checkDuplicateSong(songTitle: string) {
+  if (songTitle.trim().length < 3) {
+    setDuplicateWarning('');
+    return;
+  }
+
+  const { data } = await supabase
+    .from('performances')
+    .select('singer_name, song_title')
+    .eq('event_id', eventId)
+    .neq('status', 'completed')
+    .ilike('song_title', songTitle.trim())
+    .limit(1);
+
+  if (data && data.length > 0) {
+    setDuplicateWarning(
+      `⚠️ "${data[0].song_title}" is already queued by ${data[0].singer_name}.`
+    );
+  } else {
+    setDuplicateWarning('');
+  }
+}
   
   async function submitSignup() {
     setMessage('');
