@@ -78,29 +78,9 @@ const isOnDeckSinger =
     savedSingerName.trim().toLowerCase();
   
 useEffect(() => {
-  console.log('Notification debug:', {
-    notificationPermission,
-    browserPermission:
-      'Notification' in window ? Notification.permission : 'not supported',
-    isOnDeckSinger,
-    isCurrentSinger,
-    notifiedOnDeck,
-    notifiedCurrent
-  });
-
-  if (!('Notification' in window)) {
-    console.log('Notifications not supported');
-    return;
-  }
-
-  if (Notification.permission !== 'granted') {
-    console.log('Permission not granted:', Notification.permission);
-    return;
-  }
+  if (notificationPermission !== 'granted') return;
 
   if (isOnDeckSinger && !notifiedOnDeck) {
-    console.log('Sending on deck notification');
-
     new Notification('🎤 StageVotes', {
       body: "You're on deck! Get ready to sing."
     });
@@ -109,8 +89,6 @@ useEffect(() => {
   }
 
   if (isCurrentSinger && !notifiedCurrent) {
-    console.log('Sending current notification');
-
     new Notification('🎤 StageVotes', {
       body: "You're up now! Head to the stage."
     });
