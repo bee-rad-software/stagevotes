@@ -964,6 +964,25 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     Check-in radius: {event?.checkin_radius_meters || 150} meters
   </p>
 </div>
+
+<div className="card">
+  <h2>📍 Check-In Stats</h2>
+
+  <p>
+    <strong>Checked In:</strong> {checkinCount}
+  </p>
+
+  <p>
+    <strong>People’s Choice Votes:</strong> {peopleChoiceResults.reduce((sum, p) => sum + p.votes, 0)}
+  </p>
+
+  <p>
+    <strong>Participation:</strong>{' '}
+    {checkinCount > 0
+      ? `${Math.round((peopleChoiceResults.reduce((sum, p) => sum + p.votes, 0) / checkinCount) * 100)}%`
+      : '0%'}
+  </p>
+</div>
       
 <div className="grid">
        
