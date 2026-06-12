@@ -230,6 +230,9 @@ localStorage.setItem(
 );
 
 setSavedSingerName(singerName.trim());
+
+setNotifiedOnDeck(false);
+setNotifiedCurrent(false);
     
     const deviceId = getDeviceId();
 
