@@ -1111,7 +1111,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     </div>
   ))
 ) : (
-  activeQueue.map((p) => (
+  {activeQueue.map((p, index) => (
     <div className="leaderboard-row" key={p.id}>
       <div>
         {editingId === p.id ? (
@@ -1137,7 +1137,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 ) : (
   <div>
     <strong>
-      {p.singer_name} (Song #{p.songNumber})
+      #{index + 1} {p.singer_name} (Song #{p.songNumber})
     </strong>
 
     <div className="small">
