@@ -1170,7 +1170,9 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     ))}
   </>
 )}
-  <div className="card">
+</div>
+
+<div className="card">
   <h2 style={{ color: '#38bdf8' }}>✅ Completed Tonight</h2>
 
   {performances.filter((p) => p.status === 'completed').length > 0 ? (
