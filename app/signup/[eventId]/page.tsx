@@ -291,7 +291,7 @@ const isOnDeckSinger =
   </div>
 )}
       
-{currentSinger && (
+{currentSinger && !isCurrentSinger && (
   <div className="card">
     {isCurrentSinger ? (
       <>
@@ -306,7 +306,7 @@ const isOnDeckSinger =
     )}
   </div>
 )}
-{onDeckSinger && (
+{onDeckSinger && !isOnDeckSinger && (
   <div className="card">
     {isOnDeckSinger ? (
       <>
