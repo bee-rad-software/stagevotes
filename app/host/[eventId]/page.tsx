@@ -334,6 +334,44 @@ function cancelEditing() {
   setEditArtist('');
 }
 
+function useCurrentLocationForCheckin() {
+  if (!navigator.geolocation) {
+    alert('Geolocation is not supported by this browser.');
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const { latitude, longitude } = position.coords;
+
+      const { error } = await supabase
+        .from('events')
+        .update({
+          venue_lat: latitude,
+          venue_lng: longitude,
+          checkin_radius_meters: event?.checkin_radius_meters || 150
+        })
+        .eq('id', eventId);
+
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      alert('Venue location saved.');
+      await loadEvent();
+    },
+    () => {
+      alert('Unable to get your location.');
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
+  
 async function saveEdit(performanceId: string) {
   if (!editSingerName.trim() || !editSongTitle.trim()) {
     alert('Singer name and song title are required.');
