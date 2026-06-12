@@ -320,6 +320,20 @@ async function newShow() {
   await loadAll();
 }
 
+async function toggleCheckinRequired(required: boolean) {
+  const { error } = await supabase
+    .from('events')
+    .update({ checkin_required: required })
+    .eq('id', eventId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await loadEvent();
+}
+  
   function startEditing(p: PerformanceRow) {
   setEditingId(p.id);
   setEditSingerName(p.singer_name);
