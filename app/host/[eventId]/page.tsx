@@ -86,6 +86,15 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
 ) 
       .subscribe();
 
+const interval = setInterval(() => {
+  loadAll();
+}, 3000);
+
+    return () => {
+  clearInterval(interval);
+  supabase.removeChannel(channel);
+};
+    
     return () => {
       supabase.removeChannel(channel);
     };
