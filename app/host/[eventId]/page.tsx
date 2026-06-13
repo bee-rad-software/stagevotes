@@ -712,9 +712,13 @@ if (tiebreakerVotes.length > 0) {
   
   const activeQueue = performances
   .filter((p) => p.status !== 'completed' && p.status !== 'skipped')
-  .sort((a, b) => a.queue_order - b.queue_order);
-const twoAway = activeQueue[2];
+  .sort((a: any, b: any) => {
+    const roundDiff = (a.round || 1) - (b.round || 1);
+    if (roundDiff !== 0) return roundDiff;
 
+    return a.queue_order - b.queue_order;
+  });
+  
 const judgeBallotCount = new Set(
   votes.map((v: any) => `${v.performance_id}-${v.device_id}`)
 ).size;
