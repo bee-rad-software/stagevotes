@@ -1160,7 +1160,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
           ) : (
             <div>
               <strong>
-                #{index + 1} {p.singer_name} (Song #{p.songNumber})
+              #{index + 1} {p.singer_name} (Queue #{p.queue_order})
               </strong>
 
               <div className="small">
