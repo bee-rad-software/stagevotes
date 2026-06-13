@@ -582,37 +582,16 @@ async function toggleQrSetting(
   const current = performances.find((p) => p.id === event?.current_performance_id);
 
   const rotatedQueue = useMemo(() => {
-    const singerFirstOrder = new Map<string, number>();
-    const singerSongCounts = new Map<string, number>();
+  return performances
+    .filter((p) => p.status !== 'completed' && p.status !== 'skipped')
+    .slice()
+    .sort((a: any, b: any) => {
+      const roundDiff = (a.round || 1) - (b.round || 1);
+      if (roundDiff !== 0) return roundDiff;
 
-    const withRotation = performances
-      .slice()
-      .sort((a, b) => a.queue_order - b.queue_order)
-      .map((p) => {
-        const singerKey = p.singer_name.trim().toLowerCase();
-
-        if (!singerFirstOrder.has(singerKey)) {
-          singerFirstOrder.set(singerKey, p.queue_order);
-        }
-
-        const songNumber = (singerSongCounts.get(singerKey) || 0) + 1;
-        singerSongCounts.set(singerKey, songNumber);
-
-        return {
-          ...p,
-          singerFirstOrder: singerFirstOrder.get(singerKey) || p.queue_order,
-          songNumber
-        };
-      });
-
-    return withRotation.sort((a, b) => {
-      if (a.songNumber !== b.songNumber) {
-        return a.songNumber - b.songNumber;
-      }
-
-      return a.singerFirstOrder - b.singerFirstOrder;
+      return (a.queue_order || 0) - (b.queue_order || 0);
     });
-  }, [performances]);
+}, [performances]);
 const fairQueue = useMemo(() => {
   const sorted = [...performances].sort((a, b) => a.queue_order - b.queue_order);
   const singerCounts = new Map<string, number>();
