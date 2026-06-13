@@ -282,21 +282,24 @@ function getCurrentActiveRound() {
       alert('Singer name and song title are required.');
       return;
     }
-const maxQueueOrder =
-  performances.length > 0
-    ? Math.max(...performances.map((p: any) => p.queue_order || 0))
-    : 0;
+const currentRound = getCurrentActiveRound();
 
+const maxOrderInCurrentRound =
+  performances
+    .filter((p: any) => (p.round || 1) === currentRound)
+    .reduce((max, p: any) => Math.max(max, p.queue_order || 0), 0);
+
+const nextOrder = maxOrderInCurrentRound + 1;
 const nextOrder = maxQueueOrder + 1;
 
     const { error } = await supabase.from('performances').insert({
-      event_id: eventId,
-      singer_name: singerName.trim(),
-      song_title: songTitle.trim(),
-      artist: artist.trim(),
-      queue_order: nextOrder,
-      round: getCurrentActiveRound()
-    });
+  event_id: eventId,
+  singer_name: singerName.trim(),
+  song_title: songTitle.trim(),
+  artist: artist.trim(),
+  queue_order: nextOrder,
+  round: currentRound
+});
 
     if (error) {
       alert(error.message);
