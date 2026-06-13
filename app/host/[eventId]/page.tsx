@@ -272,8 +272,12 @@ async function loadCategories() {
       alert('Singer name and song title are required.');
       return;
     }
+const maxQueueOrder =
+  performances.length > 0
+    ? Math.max(...performances.map((p: any) => p.queue_order || 0))
+    : 0;
 
-    const nextOrder = performances.length + 1;
+const nextOrder = maxQueueOrder + 1;
 
     const { error } = await supabase.from('performances').insert({
       event_id: eventId,
