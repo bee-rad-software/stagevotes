@@ -266,6 +266,16 @@ async function loadCategories() {
 
   setCategories(data || []);
 }
+
+function getCurrentActiveRound() {
+  const active = performances.filter(
+    (p: any) => p.status !== 'completed' && p.status !== 'skipped'
+  );
+
+  if (active.length === 0) return 1;
+
+  return Math.min(...active.map((p: any) => p.round || 1));
+}
   
   async function addPerformance() {
     if (!singerName.trim() || !songTitle.trim()) {
@@ -285,6 +295,7 @@ const nextOrder = maxQueueOrder + 1;
       song_title: songTitle.trim(),
       artist: artist.trim(),
       queue_order: nextOrder
+      round: getCurrentActiveRound()
     });
 
     if (error) {
