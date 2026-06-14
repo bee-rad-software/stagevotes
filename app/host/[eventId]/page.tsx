@@ -1124,6 +1124,23 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
  </div>
 
+ <div className="card">
+        <h2 style={{ color: '#38bdf8' }}>
+  🎤 Singer Signup
+</h2>
+        <label>Singer name</label>
+        <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
+
+        <label>Song title</label>
+        <input value={songTitle} onChange={(e) => setSongTitle(e.target.value)} />
+
+        <label>Artist</label>
+        <input value={artist} onChange={(e) => setArtist(e.target.value)} />
+
+        <button onClick={addPerformance}>Add to Queue</button>
+      </div>
+
+      
 <div className="card">
   <h2>📱 QR Code Settings</h2>
 
@@ -1250,22 +1267,6 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       
 <div className="grid">
              </div>
-
-      <div className="card">
-        <h2 style={{ color: '#38bdf8' }}>
-  🎤 Singer Signup
-</h2>
-        <label>Singer name</label>
-        <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
-
-        <label>Song title</label>
-        <input value={songTitle} onChange={(e) => setSongTitle(e.target.value)} />
-
-        <label>Artist</label>
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} />
-
-        <button onClick={addPerformance}>Add to Queue</button>
-      </div>
 
 <div className="card">
   <h2 style={{ color: '#38bdf8' }}>✅ Completed Tonight</h2>
