@@ -1153,19 +1153,19 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     <div>
       <h3>Voting</h3>
       <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
-      <button onClick={() => downloadQr(voteUrl, 'voting-qr.png')}>Download QR</button>
+      <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
 
     <div>
       <h3>People's Choice</h3>
       <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
-      <button onClick={() => downloadQr(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
+      <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
 
     <div>
       <h3>Check-In</h3>
       <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
-      <button onClick={() => downloadQr(checkinUrl, 'checkin-qr.png')}>Download QR</button>
+      <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
     </div>
   </div>
 
