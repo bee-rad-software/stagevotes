@@ -288,10 +288,9 @@ const singerKey = singerName.trim().toLowerCase();
 
 const singerExistingSongs = performances.filter(
   (p: any) =>
-    p.singer_name.trim().toLowerCase() === singerKey &&
-    p.status !== 'skipped'
+    p.singer_name.trim().toLowerCase() === singerKey
 );
-
+    
 const singerNextRound = singerExistingSongs.length + 1;
 
 const assignedRound = Math.max(currentRound, singerNextRound);
