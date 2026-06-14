@@ -1190,8 +1190,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
               />
             </div>
           ) : (
-            <div>
-              <strong>
+         <div style={{ flex: 1 }}>
+              <strong style={{ fontSize: 18 }}>
               #{index + 1} {p.singer_name} (Queue #{p.queue_order})
               </strong>
 
@@ -1203,7 +1203,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div
+  style={{
+    display: 'flex',
+    gap: 6,
+    alignItems: 'center'
+  }}
+>
           {editingId === p.id ? (
             <>
               <button onClick={() => saveEdit(p.id)}>Save</button>
@@ -1211,12 +1217,47 @@ const singerGroups = activeQueue.reduce((groups, p) => {
             </>
           ) : (
             <>
-             <button className="btn-small primary" onClick={() => setCurrent(p.id)}>Current</button>
-<button className="btn-small" onClick={() => moveSinger(p.id, 'up')}>↑</button>
-<button className="btn-small" onClick={() => moveSinger(p.id, 'down')}>↓</button>
-<button className="btn-small warning" onClick={() => skipSinger(p.id)}>Skip</button>
-<button className="btn-small danger" onClick={() => removeSinger(p.id)}>Remove</button>
-<button className="btn-small" onClick={() => startEditing(p)}>Edit</button>
+           <button
+  className="btn-small primary"
+  onClick={() => setCurrent(p.id)}
+>
+  ▶
+</button>
+
+<button
+  className="btn-small"
+  onClick={() => moveSinger(p.id, 'up')}
+>
+  ↑
+</button>
+
+<button
+  className="btn-small"
+  onClick={() => moveSinger(p.id, 'down')}
+>
+  ↓
+</button>
+
+<button
+  className="btn-small warning"
+  onClick={() => skipSinger(p.id)}
+>
+  Skip
+</button>
+
+<button
+  className="btn-small danger"
+  onClick={() => removeSinger(p.id)}
+>
+  ✕
+</button>
+
+<button
+  className="btn-small"
+  onClick={() => startEditing(p)}
+>
+  Edit
+</button>
             </>
           )}
         </div>
