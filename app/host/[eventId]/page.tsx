@@ -1140,84 +1140,52 @@ const singerGroups = activeQueue.reduce((groups, p) => {
         <button onClick={addPerformance}>Add to Queue</button>
       </div>
 
-      
 <div className="card">
-  <h2>📱 QR Code Settings</h2>
+  <h2>📱 Audience Access</h2>
 
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+  <div style={{ display: 'grid', gap: 16 }}>
     <div>
-      <input
-        type="checkbox"
-        checked={(event as any)?.show_signup_qr ?? true}
-        onChange={(e) =>
-          toggleQrSetting('show_signup_qr', e.target.checked)
-        }
-      />
-      {' '}Show Signup QR
+      <h3>Signup</h3>
+      <button onClick={() => navigator.clipboard.writeText(signupUrl)}>Copy Link</button>
+      <button onClick={() => downloadQr(signupUrl, 'signup-qr.png')}>Download QR</button>
     </div>
 
     <div>
-      <input
-        type="checkbox"
-        checked={(event as any)?.show_voting_qr ?? true}
-        onChange={(e) =>
-          toggleQrSetting('show_voting_qr', e.target.checked)
-        }
-      />
-      {' '}Show Voting QR
+      <h3>Voting</h3>
+      <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
+      <button onClick={() => downloadQr(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
 
     <div>
-      <input
-        type="checkbox"
-        checked={(event as any)?.show_peoples_choice_qr ?? true}
-        onChange={(e) =>
-          toggleQrSetting('show_peoples_choice_qr', e.target.checked)
-        }
-      />
-      {' '}Show People's Choice QR
+      <h3>People's Choice</h3>
+      <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
+      <button onClick={() => downloadQr(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
- </div>
-</div>
 
-<div className="card">
-  <h2>🔗 Share Links</h2>
-
-  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-   <button onClick={() => copyLink('Signup', signupUrl)}>
-  Copy Signup Link
-</button>
-
-<button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>
-  Download Signup QR
-</button>
-
-   <button onClick={() => copyLink('Signup', signupUrl)}>
-  Copy Signup Link
-</button>
-
-<button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>
-  Download Signup QR
-</button>
-
-<button onClick={() => copyLink('Check-In', checkinUrl)}>
-  Copy Check-In Link
-</button>
-
-<button onClick={() => downloadQR(checkinUrl, `checkin-qr-${eventId}.png`)}>
-  Download Check-In QR
-</button>
-    
-    <button onClick={() => copyLink("People's Choice", peoplesChoiceUrl)}>
-  Copy People's Choice Link
-</button>
-
-<button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>
-  Download People's Choice QR
-</button>
+    <div>
+      <h3>Check-In</h3>
+      <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
+      <button onClick={() => downloadQr(checkinUrl, 'checkin-qr.png')}>Download QR</button>
+    </div>
   </div>
-</div>
 
+  <hr style={{ margin: '24px 0', opacity: 0.15 }} />
+
+  <label>
+    <input type="checkbox" checked={showSignupQr} onChange={() => toggleQrSetting('show_signup_qr')} />
+    Show Signup QR
+  </label>
+
+  <label>
+    <input type="checkbox" checked={showVotingQr} onChange={() => toggleQrSetting('show_voting_qr')} />
+    Show Voting QR
+  </label>
+
+  <label>
+    <input type="checkbox" checked={showPeoplesChoiceQr} onChange={() => toggleQrSetting('show_peoples_choice_qr')} />
+    Show People's Choice QR
+  </label>
+</div>
 <div className="card">
   <h2>📍 Check-In Settings</h2>
 
