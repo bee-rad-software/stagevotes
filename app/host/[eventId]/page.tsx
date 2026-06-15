@@ -1154,8 +1154,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <h3>Signup</h3>
 
   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-    <button ...>Copy Link</button>
-    <button ...>Download QR</button>
+  <button onClick={() => navigator.clipboard.writeText(signupUrl)}>
+  Copy Link
+</button>
+
+<button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>
+  Download QR
+</button>
   </div>
 
   <label
