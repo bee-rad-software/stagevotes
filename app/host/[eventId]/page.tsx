@@ -1266,44 +1266,6 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     </div>
       </div>
   </div>
-
-  <hr style={{ margin: '24px 0', opacity: 0.15 }} />
-
-  <label>
-  <input
-    type="checkbox"
-    checked={!!event?.show_signup_qr}
-    onChange={(e) =>
-      toggleQrSetting('show_signup_qr', e.target.checked)
-    }
-  />
-  Show Signup QR
-</label>
-
-<label>
-  <input
-    type="checkbox"
-    checked={!!event?.show_voting_qr}
-    onChange={(e) =>
-      toggleQrSetting('show_voting_qr', e.target.checked)
-    }
-  />
-  Show Voting QR
-</label>
-
-<label>
-  <input
-    type="checkbox"
-    checked={!!event?.show_peoples_choice_qr}
-    onChange={(e) =>
-      toggleQrSetting(
-        'show_peoples_choice_qr',
-        e.target.checked
-      )
-    }
-  />
-  Show People's Choice QR
-</label>
   
 </div>
 <div className="card">
