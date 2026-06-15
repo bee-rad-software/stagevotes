@@ -1173,7 +1173,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
+      gap: 4,
       marginTop: 4
     }}
   >
@@ -1205,7 +1205,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
+      gap: 4,
       marginTop: 4
     }}
   >
@@ -1237,7 +1237,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 6,
+      gap: 4,
       marginTop: 4
     }}
   >
