@@ -1150,12 +1150,31 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     gap: 16
   }}
 >
-    <div>
-      <h3>Signup</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-      <button onClick={() => navigator.clipboard.writeText(signupUrl)}>Copy Link</button>
-      <button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>Download QR</button>
-    </div>
+  <div>
+  <h3>Signup</h3>
+
+  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <button ...>Copy Link</button>
+    <button ...>Download QR</button>
+  </div>
+
+  <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={!!event?.show_signup_qr}
+      onChange={(e) =>
+        toggleQrSetting('show_signup_qr', e.target.checked)
+      }
+    />
+    Show on TV
+  </label>
 </div>
       
     <div>
@@ -1164,6 +1183,24 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
+
+        <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={!!event?.show_voting_qr}
+      onChange={(e) =>
+       toggleQrSetting('show_voting_qr', e.target.checked)
+      }
+    />
+    Show on TV
+  </label>
 </div>
       
     <div>
@@ -1172,7 +1209,25 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
-      </div>
+      
+    <label
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12
+    }}
+  >
+    <input
+      type="checkbox"
+      checked={!!event?.show_peoples_choice_qr}
+      onChange={(e) =>
+       toggleQrSetting('show_peoples_choice_qr', e.target.checked)
+      }
+    />
+    Show on TV
+  </label>
+</div>
 
     <div>
       <h3>Check-In</h3>
