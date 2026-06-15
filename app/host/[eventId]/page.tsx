@@ -1153,7 +1153,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <div>
   <h3>Signup</h3>
 
-  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+<div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  }}
+>
   <button onClick={() => navigator.clipboard.writeText(signupUrl)}>
   Copy Link
 </button>
@@ -1167,8 +1173,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      marginTop: 12
+      gap: 6,
+      marginTop: 4
     }}
   >
     <input
@@ -1184,7 +1190,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       
     <div>
       <h3>Voting</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+     <div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  }}
+>
       <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
@@ -1193,8 +1205,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      marginTop: 12
+      gap: 6,
+      marginTop: 4
     }}
   >
     <input
@@ -1210,7 +1222,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       
     <div>
       <h3>People's Choice</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  }}
+>
       <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
@@ -1219,8 +1237,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     style={{
       display: 'flex',
       alignItems: 'center',
-      gap: 8,
-      marginTop: 12
+      gap: 6,
+      marginTop: 4
     }}
   >
     <input
@@ -1236,7 +1254,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 
     <div>
       <h3>Check-In</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8
+  }}
+>
       <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
     </div>
