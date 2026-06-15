@@ -1143,27 +1143,37 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 <div className="card">
   <h2>📱 Audience Access</h2>
 
-  <div style={{ display: 'grid', gap: 16 }}>
+ <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 16
+  }}
+>
     <div>
       <h3>Signup</h3>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <button onClick={() => navigator.clipboard.writeText(signupUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>Download QR</button>
     </div>
 
     <div>
       <h3>Voting</h3>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
 
     <div>
       <h3>People's Choice</h3>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
 
     <div>
       <h3>Check-In</h3>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
     </div>
