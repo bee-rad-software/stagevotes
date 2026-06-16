@@ -1061,14 +1061,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 )}
 </div>
       
-    <div
-  className="card"
-  style={{
-    position: 'sticky',
-    top: 260,
-    zIndex: 10
-  }}
->
+   <div className="card">
+  <h2 style={{ color: '#38bdf8' }}>⚡ Quick Actions</h2>
   <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
    <button
   onClick={startShow}
