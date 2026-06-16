@@ -1343,7 +1343,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   </p>
   </>
   )}
-</div>
+
 
 <div className="card">
   <h2>📍 Check-In Stats</h2>
