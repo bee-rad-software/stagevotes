@@ -587,7 +587,7 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
   }
 
 async function toggleQrSetting(
-  field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr?',
+  field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr',
   value: boolean
 ) {
   const { error } = await supabase
