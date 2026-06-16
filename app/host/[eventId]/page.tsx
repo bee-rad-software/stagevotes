@@ -33,6 +33,8 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showCheckinSettings, setShowCheckinSettings] = useState(false);
   const [showCheckinStats, setShowCheckinStats] = useState(false);
   const [showCompletedTonight, setShowCompletedTonight] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(true);
+const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
   
   const voteUrl =
     typeof window !== 'undefined'
@@ -1417,9 +1419,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>    
       
       <div className="card">
-        <h2 style={{ color: '#38bdf8' }}>
-  🏆 Leaderboard
+       <h2
+  style={{ color: '#38bdf8', cursor: 'pointer' }}
+  onClick={() => setShowLeaderboard(!showLeaderboard)}
+>
+  🏆 Leaderboard {showLeaderboard ? '▲' : '▼'}
 </h2>
+        {showLeaderboard && (
+  <>
         {leaderboard.map((p, index) => (
           <div className="leaderboard-row" key={p.singer_name}>
           <div>
@@ -1437,12 +1444,19 @@ const singerGroups = activeQueue.reduce((groups, p) => {
      
           </div>
         ))}
+     </>
+)} 
       </div>
    
       <div className="card">
-  <h2 style={{ color: '#c2410c' }}>
-    🎉 People's Choice
-  </h2>
+  <h2
+  style={{ color: '#c2410c', cursor: 'pointer' }}
+  onClick={() => setShowPeoplesChoice(!showPeoplesChoice)}
+>
+  🎉 People's Choice {showPeoplesChoice ? '▲' : '▼'}
+</h2>
+        {showPeoplesChoice && (
+  <>
 
   {peoplesChoiceResults.length === 0 ? (
     <p className="small">No votes yet.</p>
@@ -1461,6 +1475,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       </div>
     ))
   )}
+      </>
+)}
 </div>
               
       <div
