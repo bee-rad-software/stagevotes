@@ -21,6 +21,7 @@ checkin_required: boolean | null;
   show_signup_qr?: boolean;
 show_voting_qr?: boolean;
 show_peoples_choice_qr?: boolean;
+  show_checkin_qr?: boolean;
 };
 
 export type PerformanceRow = {
