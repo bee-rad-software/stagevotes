@@ -833,7 +833,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
      </div>
    
-<div className="card">
+<div
+  className="card"
+  style={{
+    position: 'sticky',
+    top: 16,
+    zIndex: 20
+  }}
+>
           <h2
   style={{
     color: '#c2410c',
