@@ -29,6 +29,7 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
 >([]);
   const [checkinCount, setCheckinCount] = useState(0);
   const [showSingerSignup, setShowSingerSignup] = useState(false);
+  const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   
   const voteUrl =
     typeof window !== 'undefined'
@@ -1147,7 +1148,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 )}
 
 <div className="card">
-  <h2>📱 Audience Access</h2>
+ <h2
+  style={{ cursor: 'pointer' }}
+  onClick={() => setShowAudienceAccess(!showAudienceAccess)}
+>
+  📱 Audience Access {showAudienceAccess ? '▲' : '▼'}
+</h2>
+  {showAudienceAccess && (
+  <>
 
  <div
   style={{
@@ -1298,7 +1306,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </label>
       </div>
   </div>
-  
+    </>
+)}
 </div>
 <div className="card">
   <h2>📍 Check-In Settings</h2>
