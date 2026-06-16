@@ -32,6 +32,7 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   const [showCheckinSettings, setShowCheckinSettings] = useState(false);
   const [showCheckinStats, setShowCheckinStats] = useState(false);
+  const [showCompletedTonight, setShowCompletedTonight] = useState(false);
   
   const voteUrl =
     typeof window !== 'undefined'
@@ -1385,7 +1386,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
              </div>
 
 <div className="card">
-  <h2 style={{ color: '#38bdf8' }}>✅ Completed Tonight</h2>
+<h2
+  style={{ color: '#38bdf8', cursor: 'pointer' }}
+  onClick={() => setShowCompletedTonight(!showCompletedTonight)}
+>
+  ✅ Completed Tonight {showCompletedTonight ? '▲' : '▼'}
+</h2>
+  {showCompletedTonight && (
+  <>
 
   {performances.filter((p) => p.status === 'completed').length > 0 ? (
     performances
@@ -1404,6 +1412,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   ) : (
     <p className="small">No completed songs yet.</p>
   )}
+      </>
+)}
 </div>    
       
       <div className="card">
