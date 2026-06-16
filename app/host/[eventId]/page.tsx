@@ -1370,11 +1370,12 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       ? `${Math.round((peoplesChoiceResults.reduce((sum, p) => sum + p.votes, 0) / checkinCount) * 100)}%`
       : '0%'}
   </p>
+        </>
+)}
 </div>
       
 <div className="grid">
-    </>
-)}
+
              </div>
 
 <div className="card">
