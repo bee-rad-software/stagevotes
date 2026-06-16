@@ -1145,7 +1145,6 @@ const singerGroups = activeQueue.reduce((groups, p) => {
         <button onClick={addPerformance}>Add to Queue</button>
       </>
 )}
-      </div>
 
 <div className="card">
   <h2>📱 Audience Access</h2>
