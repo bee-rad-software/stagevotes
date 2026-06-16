@@ -1270,6 +1270,26 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
       <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
     </div>
+
+      <label
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    width: 'fit-content',
+    alignSelf: 'center'
+  }}
+>
+  <input
+    type="checkbox"
+    checked={!event?.show_checkin_qr}
+    onChange={(e) =>
+      toggleQrSetting('show_checkin_qr', e.target.checked)
+    }
+  />
+  <span>Show on TV</span>
+</label>
       </div>
   </div>
   
