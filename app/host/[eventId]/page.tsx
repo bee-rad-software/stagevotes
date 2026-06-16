@@ -1169,15 +1169,16 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </button>
   </div>
 
-  <label
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-      marginTop: 8
-    }}
-  >
+<label
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    width: 'fit-content',
+    alignSelf: 'center'
+  }}
+>
     <input
       type="checkbox"
       checked={!!event?.show_signup_qr}
@@ -1202,15 +1203,16 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
 
-        <label
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-      marginTop: 8
-    }}
-  >
+       <label
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    width: 'fit-content',
+    alignSelf: 'center'
+  }}
+>
     <input
       type="checkbox"
       checked={!!event?.show_voting_qr}
@@ -1235,15 +1237,16 @@ const singerGroups = activeQueue.reduce((groups, p) => {
       <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
       
-    <label
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 4,
-      marginTop: 8
-    }}
-  >
+  <label
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+    width: 'fit-content',
+    alignSelf: 'center'
+  }}
+>
     <input
       type="checkbox"
       checked={!!event?.show_peoples_choice_qr}
