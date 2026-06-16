@@ -1317,7 +1317,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 >
   📍 Check-In Settings {showCheckinSettings ? '▲' : '▼'}
 </h2>
-<>
+{showCheckinSettings && (
+  <>
   <label style={{ display: 'block', marginBottom: 12 }}>
     <input
       type="checkbox"
