@@ -30,6 +30,7 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [checkinCount, setCheckinCount] = useState(0);
   const [showSingerSignup, setShowSingerSignup] = useState(false);
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
+  const [showCheckinSettings, setShowCheckinSettings] = useState(false);
   
   const voteUrl =
     typeof window !== 'undefined'
@@ -1310,8 +1311,13 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 )}
 </div>
 <div className="card">
-  <h2>📍 Check-In Settings</h2>
-
+  <h2
+  style={{ cursor: 'pointer' }}
+  onClick={() => setShowCheckinSettings(!showCheckinSettings)}
+>
+  📍 Check-In Settings {showCheckinSettings ? '▲' : '▼'}
+</h2>
+<>
   <label style={{ display: 'block', marginBottom: 12 }}>
     <input
       type="checkbox"
@@ -1335,6 +1341,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <p className="small">
     Check-in radius: {event?.checkin_radius_meters || 150} meters
   </p>
+  </>
+  )}
 </div>
 
 <div className="card">
