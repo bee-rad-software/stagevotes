@@ -1341,6 +1341,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <p className="small">
     Check-in radius: {event?.checkin_radius_meters || 150} meters
   </p>
+    </div>
   </>
   )}
 
