@@ -1125,10 +1125,14 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
  </div>
 
- <div className="card">
-        <h2 style={{ color: '#38bdf8' }}>
-  🎤 Singer Signup
+ <h2
+  style={{ color: '#38bdf8', cursor: 'pointer' }}
+  onClick={() => setShowSingerSignup(!showSingerSignup)}
+>
+  🎤 Singer Signup {showSingerSignup ? '▲' : '▼'}
 </h2>
+      {showSingerSignup && (
+  <>
         <label>Singer name</label>
         <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
 
@@ -1139,6 +1143,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
         <input value={artist} onChange={(e) => setArtist(e.target.value)} />
 
         <button onClick={addPerformance}>Add to Queue</button>
+      </>
+)}
       </div>
 
 <div className="card">
