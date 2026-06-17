@@ -133,11 +133,15 @@ async function loadCheckins() {
   setCheckinCount(count || 0);
 }
   
-async function copyLink(label: string, url: string) {
-  await navigator.clipboard.writeText(url);
-  alert(`${label} link copied!`);
-}
+function copyLink(label: string, url: string) {
+  navigator.clipboard.writeText(url);
+  setCopiedLink(label);
 
+  setTimeout(() => {
+    setCopiedLink('');
+  }, 2000);
+}
+  
 function downloadQR(url: string, filename: string) {
   const canvas = document.createElement('canvas');
   const size = 1200;
@@ -594,15 +598,6 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
     await loadEvent();
   }
 
-function copyLink(label: string, url: string) {
-  navigator.clipboard.writeText(url);
-  setCopiedLink(label);
-
-  setTimeout(() => {
-    setCopiedLink('');
-  }, 2000);
-}
-  
 async function toggleQrSetting(
   field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr',
   value: boolean
