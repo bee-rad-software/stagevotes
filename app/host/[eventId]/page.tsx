@@ -35,6 +35,7 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showCompletedTonight, setShowCompletedTonight] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
 const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
+  const [copiedLink, setCopiedLink] = useState('');
   
   const voteUrl =
     typeof window !== 'undefined'
