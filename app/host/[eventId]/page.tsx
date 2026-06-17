@@ -1319,7 +1319,7 @@ style={{
     gap: 8
   }}
 >
-    <button onClick={() => copyLink('voting', votingUrl)}>
+    <button onClick={() => copyLink('voting', voteUrl)}>
   {copiedLink === 'voting' ? '✓ Copied!' : 'Copy Link'}
 </button>
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
