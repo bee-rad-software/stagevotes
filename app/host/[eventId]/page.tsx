@@ -921,7 +921,28 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     {singerView ? 'Normal View' : 'Singer View'}
   </button>
 </div>
-        
+
+<div
+  style={{
+    display: 'flex',
+    gap: 12,
+    flexWrap: 'wrap',
+    marginBottom: 16
+  }}
+>
+  <span className="badge">
+    🎤 Active: {rotatedQueue.filter((p) => p.status !== 'completed' && p.status !== 'skipped').length}
+  </span>
+
+  <span className="badge">
+    ⏭️ Up Next: {upNext?.singer_name || 'None'}
+  </span>
+
+  <span className="badge">
+    ✅ Completed: {performances.filter((p) => p.status === 'completed').length}
+  </span>
+</div>
+   
      {singerView ? (
   Object.entries(singerGroups).map(([singer, songs]) => (
     <div className="leaderboard-row" key={singer}>
