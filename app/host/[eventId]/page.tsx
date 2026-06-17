@@ -1255,6 +1255,9 @@ style={{
     </div>
   </div>
 </div>
+ </div>  
+</div>  
+    
  <h2
   style={{ color: '#38bdf8', cursor: 'pointer' }}
   onClick={() => setShowSingerSignup(!showSingerSignup)}
