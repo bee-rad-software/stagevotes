@@ -1285,8 +1285,8 @@ style={{
     gap: 8
   }}
 >
-  <button onClick={() => navigator.clipboard.writeText(signupUrl)}>
-  Copy Link
+<button onClick={() => copyLink('signup', signupUrl)}>
+  {copiedLink === 'signup' ? '✓ Copied!' : 'Copy Link'}
 </button>
 
 <button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>
@@ -1324,7 +1324,9 @@ style={{
     gap: 8
   }}
 >
-      <button onClick={() => navigator.clipboard.writeText(voteUrl)}>Copy Link</button>
+    <button onClick={() => copyLink('voting', votingUrl)}>
+  {copiedLink === 'voting' ? '✓ Copied!' : 'Copy Link'}
+</button>
       <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
     </div>
 
@@ -1358,7 +1360,9 @@ style={{
     gap: 8
   }}
 >
-      <button onClick={() => navigator.clipboard.writeText(peoplesChoiceUrl)}>Copy Link</button>
+     <button onClick={() => copyLink('peoplesChoice', peoplesChoiceUrl)}>
+  {copiedLink === 'peoplesChoice' ? '✓ Copied!' : 'Copy Link'}
+</button>
       <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
     </div>
       
@@ -1392,7 +1396,9 @@ style={{
     gap: 8
   }}
 >
-      <button onClick={() => navigator.clipboard.writeText(checkinUrl)}>Copy Link</button>
+      <button onClick={() => copyLink('checkin', checkinUrl)}>
+  {copiedLink === 'checkin' ? '✓ Copied!' : 'Copy Link'}
+</button>
       <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
     </div>
 
