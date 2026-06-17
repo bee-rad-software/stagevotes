@@ -1161,77 +1161,100 @@ style={{
       
    <div className="card">
   <h2 style={{ color: '#38bdf8' }}>⚡ Quick Actions</h2>
-  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-   <button
-  onClick={startShow}
+<div
   style={{
-    background: '#c2410c',
-    color: 'white',
-    fontWeight: 'bold'
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 20
   }}
 >
-  🎤 Start Show
-</button>
-    <button
-      className="secondary"
-      onClick={() => window.open(`/display/${eventId}`, '_blank')}
-    >
-      📺 Launch TV Display
-    </button>
+  <div>
+    <h3 style={{ marginBottom: 12 }}>🎬 Show</h3>
 
-    <button
-      onClick={() => toggleVoting(true)}
-      style={{
-        background: '#38bdf8',
-        color: '#0f172a',
-        fontWeight: 'bold'
-      }}
-    >
-      Open Voting
-    </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button
+        onClick={startShow}
+        style={{
+          background: '#c2410c',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
+      >
+        🎤 Start Show
+      </button>
 
-    <button
-      onClick={() => toggleVoting(false)}
-      style={{
-        background: '#c2410c',
-        color: 'white',
-        fontWeight: 'bold'
-      }}
-    >
-      Close Voting
-    </button>
+      <button
+        onClick={endShow}
+        style={{
+          background: '#c2410c',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
+      >
+        🏁 End Show
+      </button>
 
-    <button
-  className="secondary"
-  onClick={() => window.open(`/peopleschoice/${eventId}`, '_blank')}
->
-  🎉 People’s Choice
-</button>
+      <button
+        onClick={newShow}
+        style={{
+          background: '#c2410c',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
+      >
+        ➕ New Show
+      </button>
+    </div>
+  </div>
 
-    <button
-  onClick={endShow}
-  style={{
-    background: '#c2410c',
-    color: 'white',
-    fontWeight: 'bold'
-  }}
->
-  🏁 End Show
-</button>
+  <div>
+    <h3 style={{ marginBottom: 12 }}>🗳️ Voting</h3>
 
-<button
-  onClick={newShow}
-  style={{
-    background: '#c2410c',
-    color: 'white',
-    fontWeight: 'bold'
-  }}
->
-  ➕ New Show
- </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button
+        onClick={() => toggleVoting(true)}
+        style={{
+          background: '#38bdf8',
+          color: '#0f172a',
+          fontWeight: 'bold'
+        }}
+      >
+        Open Voting
+      </button>
+
+      <button
+        onClick={() => toggleVoting(false)}
+        style={{
+          background: '#c2410c',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
+      >
+        Close Voting
+      </button>
+
+      <button
+        className="secondary"
+        onClick={() => window.open(`/peopleschoice/${eventId}`, '_blank')}
+      >
+        🎉 People's Choice
+      </button>
+    </div>
+  </div>
+
+  <div>
+    <h3 style={{ marginBottom: 12 }}>📺 Display</h3>
+
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <button
+        className="secondary"
+        onClick={() => window.open(`/display/${eventId}`, '_blank')}
+      >
+        📺 Launch TV Display
+      </button>
+    </div>
+  </div>
 </div>
- </div>
-
  <h2
   style={{ color: '#38bdf8', cursor: 'pointer' }}
   onClick={() => setShowSingerSignup(!showSingerSignup)}
