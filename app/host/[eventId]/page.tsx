@@ -1008,24 +1008,63 @@ style={{
               />
             </div>
           ) : (
-         <div style={{ flex: 1 }}>
-          <strong
-  style={{
-    color: isCurrent
-      ? '#f97316'
-      : isOnDeck
-      ? '#38bdf8'
-      : 'white'
-  }}
->
-  {p.singer_name}
-</strong>
+     <div style={{ flex: 1 }}>
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 4
+    }}
+  >
+    <strong
+      style={{
+        color: isCurrent
+          ? '#f97316'
+          : isOnDeck
+          ? '#38bdf8'
+          : 'white'
+      }}
+    >
+      {p.singer_name}
+    </strong>
 
-              <div className="small">
-                {p.song_title}
-                {p.artist ? ` by ${p.artist}` : ''}
-              </div>
-            </div>
+    {isCurrent && (
+      <span
+        style={{
+          background: '#c2410c',
+          color: 'white',
+          fontSize: 10,
+          fontWeight: 'bold',
+          padding: '2px 8px',
+          borderRadius: 999
+        }}
+      >
+        CURRENT
+      </span>
+    )}
+
+    {isOnDeck && !isCurrent && (
+      <span
+        style={{
+          background: '#38bdf8',
+          color: '#000',
+          fontSize: 10,
+          fontWeight: 'bold',
+          padding: '2px 8px',
+          borderRadius: 999
+        }}
+      >
+        ON DECK
+      </span>
+    )}
+  </div>
+
+  <div className="small">
+    {p.song_title}
+    {p.artist ? ` by ${p.artist}` : ''}
+  </div>
+</div>
           )}
         </div>
 
