@@ -1258,8 +1258,9 @@ style={{
  </div>  
 </div>  
     
- <h2
-  style={{ color: '#38bdf8', cursor: 'pointer' }}
+<div className="card">
+  <h2
+    style={{ color: '#38bdf8', cursor: 'pointer' }}
   onClick={() => setShowSingerSignup(!showSingerSignup)}
 >
   🎤 Singer Signup {showSingerSignup ? '▲' : '▼'}
