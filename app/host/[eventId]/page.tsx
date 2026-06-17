@@ -594,6 +594,15 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
     await loadEvent();
   }
 
+function copyLink(label: string, url: string) {
+  navigator.clipboard.writeText(url);
+  setCopiedLink(label);
+
+  setTimeout(() => {
+    setCopiedLink('');
+  }, 2000);
+}
+  
 async function toggleQrSetting(
   field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr',
   value: boolean
