@@ -953,17 +953,38 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <>
     {rotatedQueue
   .filter((p) => p.status !== 'completed' && p.status !== 'skipped')
-  .map((p, index) => (
-  <div
+.map((p, index) => {
+  const isCurrent =
+    p.id === event?.current_performance_id;
+
+  const isOnDeck =
+    index === 1;
+
+  return (
+    <div
   className="queue-row"
   key={p.id}
-  style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '16px',
-    borderBottom: '1px solid rgba(255,255,255,0.08)'
-  }}
+style={{
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '16px',
+
+  background: isCurrent
+    ? 'rgba(194,65,12,0.25)'
+    : isOnDeck
+    ? 'rgba(56,189,248,0.15)'
+    : 'transparent',
+
+  border: isCurrent
+    ? '2px solid #c2410c'
+    : isOnDeck
+    ? '1px solid #38bdf8'
+    : 'none',
+
+  borderRadius: 12,
+  marginBottom: 6
+}}
 >
         <div>
           {editingId === p.id ? (
@@ -988,9 +1009,17 @@ const singerGroups = activeQueue.reduce((groups, p) => {
             </div>
           ) : (
          <div style={{ flex: 1 }}>
-              <strong style={{ fontSize: 18 }}>
-              #{index + 1} {p.singer_name} (Queue #{p.queue_order})
-              </strong>
+          <strong
+  style={{
+    color: isCurrent
+      ? '#f97316'
+      : isOnDeck
+      ? '#38bdf8'
+      : 'white'
+  }}
+>
+  {p.singer_name}
+</strong>
 
               <div className="small">
                 {p.song_title}
@@ -1059,7 +1088,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
           )}
         </div>
       </div>
-    ))}
+ );
+})
   </>
 )}
 </div>
