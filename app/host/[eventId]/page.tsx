@@ -904,8 +904,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     <p>No one waiting.</p>
   )}
 </div>
-              <div className="row">
-             <div
+           <div
   style={{
     display: 'grid',
     gridTemplateColumns: '1fr',
@@ -923,10 +922,11 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     ⏭️ Next Singer
   </button>
 </div>
-                
-          ) : (
-            <p>No current singer selected.</p>
-          )}
+
+</>
+) : (
+  <p>No current singer selected.</p>
+)}
         </div>
 
  <div className="card">
