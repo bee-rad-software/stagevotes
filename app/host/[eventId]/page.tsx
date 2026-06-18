@@ -930,20 +930,20 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 <div
   style={{
     display: 'flex',
-    gap: 12,
+    gap: 8,
     flexWrap: 'wrap',
     marginBottom: 16
   }}
 >
-  <span className="badge">
+  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
     🎤 Active: {rotatedQueue.filter((p) => p.status !== 'completed' && p.status !== 'skipped').length}
   </span>
 
-  <span className="badge">
+  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
     ⏭️ Up Next: {upNext?.singer_name || 'None'}
   </span>
 
-  <span className="badge">
+  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
     ✅ Completed: {performances.filter((p) => p.status === 'completed').length}
   </span>
 </div>
