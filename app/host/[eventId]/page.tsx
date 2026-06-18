@@ -905,9 +905,24 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   )}
 </div>
               <div className="row">
-              <button onClick={nextSinger}>Next Singer</button>
-                <button onClick={() => toggleVoting(true)}>Open Voting</button>
-                <button className="danger" onClick={() => toggleVoting(false)}>
+             <div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    marginTop: 12
+  }}
+>
+  <button
+    onClick={nextSinger}
+    style={{
+      background: '#38bdf8',
+      color: '#0f172a',
+      fontWeight: 'bold'
+    }}
+  >
+    ⏭️ Next Singer
+  </button>
+</div>
                   Close Voting
                 </button>
               </div>
