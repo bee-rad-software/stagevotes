@@ -1278,7 +1278,8 @@ style={{
         <button onClick={addPerformance}>Add to Queue</button>
       </>
 )}
-
+</div>
+  
 <div className="card">
  <h2
   style={{ cursor: 'pointer' }}
