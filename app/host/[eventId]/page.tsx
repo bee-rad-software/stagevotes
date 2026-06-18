@@ -941,7 +941,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     borderRadius: 999
   }}
 >
-  {singerView ? '👤 Singer View On' : '👤 Singer View'}
+  {singerView ? '👤 Singer View On' : '👤 Normal View'}
 </button>
        
   <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
