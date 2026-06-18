@@ -858,7 +858,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   </div>
 </div>
      </div>
-   
+
+    <div>
 <div
   className="card"
   style={{
