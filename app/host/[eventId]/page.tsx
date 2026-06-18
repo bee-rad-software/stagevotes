@@ -1255,6 +1255,7 @@ style={{
     </div>
   </div>
 </div>
+      </div>  
     
 <div className="card">
   <h2
