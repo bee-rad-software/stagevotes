@@ -930,9 +930,19 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     marginBottom: 16
   }}
 >
-  <button onClick={() => setSingerView(!singerView)}>
-    {singerView ? 'Normal View' : 'Singer View'}
-  </button>
+  <button
+  onClick={() => setSingerView(!singerView)}
+  style={{
+    background: singerView ? '#38bdf8' : 'rgba(255,255,255,0.08)',
+    color: singerView ? '#0f172a' : 'white',
+    border: '1px solid rgba(255,255,255,0.15)',
+    fontWeight: 'bold',
+    padding: '6px 10px',
+    borderRadius: 999
+  }}
+>
+  {singerView ? '👤 Singer View On' : '👤 Singer View'}
+</button>
        
   <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
     🎤 Active: {rotatedQueue.filter((p) => p.status !== 'completed' && p.status !== 'skipped').length}
