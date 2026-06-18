@@ -1107,13 +1107,14 @@ style={{
             </>
           ) : (
             <>
-           <button
-  className="btn-small primary"
-  onClick={() => setCurrent(p.id)}
->
-  ▶
-</button>
-
+          {isCurrent && (
+  <button
+    className="btn-small primary"
+    onClick={() => setCurrent(p.id)}
+  >
+    ▶
+  </button>
+)}
 <button
   className="btn-small"
   onClick={() => moveSinger(p.id, 'up')}
