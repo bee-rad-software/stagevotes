@@ -875,9 +875,18 @@ const singerGroups = activeQueue.reduce((groups, p) => {
               </p>
               <p>
                 Voting:{' '}
-                <span className="badge">
-                  {event?.is_voting_open ? 'Open' : 'Closed'}
-                </span>
+                <span
+  style={{
+    background: event?.is_voting_open ? '#16a34a' : '#7f1d1d',
+    color: 'white',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 'bold'
+  }}
+>
+  {event?.is_voting_open ? '🟢 OPEN' : '🔴 CLOSED'}
+</span>
               </p>
               <div
   style={{
