@@ -1169,7 +1169,9 @@ style={{
   }}
 >
   <div>
-    <h3 style={{ marginBottom: 12 }}>🎬 Show</h3>
+    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>
+  🎬 Show
+</h3>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <button
@@ -1208,7 +1210,7 @@ style={{
   </div>
 
   <div>
-    <h3 style={{ marginBottom: 12 }}>🗳️ Voting</h3>
+    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>🗳️ Voting</h3>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <button
@@ -1243,7 +1245,7 @@ style={{
   </div>
 
   <div>
-    <h3 style={{ marginBottom: 12 }}>📺 Display</h3>
+    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>📺 Display</h3>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <button
