@@ -933,7 +933,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   <button onClick={() => setSingerView(!singerView)}>
     {singerView ? 'Normal View' : 'Singer View'}
   </button>
->
+       
   <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
     🎤 Active: {rotatedQueue.filter((p) => p.status !== 'completed' && p.status !== 'skipped').length}
   </span>
