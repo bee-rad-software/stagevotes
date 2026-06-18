@@ -951,7 +951,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   </button>
 </div>
 
-</>
+</div>
 ) : (
   <p>No current singer selected.</p>
 )}
