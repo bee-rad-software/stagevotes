@@ -1177,7 +1177,7 @@ style={{
       <button
         onClick={startShow}
         style={{
-          background: '#c2410c',
+          background: '#38bdf8',
           color: 'white',
           fontWeight: 'bold'
         }}
@@ -1238,6 +1238,11 @@ style={{
       <button
         className="secondary"
         onClick={() => window.open(`/peopleschoice/${eventId}`, '_blank')}
+        style={{
+          background: '#38bdf8',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
       >
         🎉 People's Choice
       </button>
@@ -1251,6 +1256,11 @@ style={{
       <button
         className="secondary"
         onClick={() => window.open(`/display/${eventId}`, '_blank')}
+        style={{
+          background: '#38bdf8',
+          color: 'white',
+          fontWeight: 'bold'
+        }}
       >
         📺 Launch TV Display
       </button>
