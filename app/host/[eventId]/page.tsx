@@ -923,9 +923,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     ⏭️ Next Singer
   </button>
 </div>
-                  Close Voting
-                </button>
-              </div>
+                
             </>
           ) : (
             <p>No current singer selected.</p>
