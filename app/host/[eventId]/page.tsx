@@ -781,7 +781,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   }}
 >
   <img
-  src="/stagevoteslogo.png"
+  src="/stagevotes-logo.png"
   alt="StageVotes"
   style={{
     width: 200,
