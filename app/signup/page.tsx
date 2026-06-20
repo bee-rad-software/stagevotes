@@ -91,6 +91,18 @@ export default function SignupPage() {
         </button>
 
         {message && <p>{message}</p>}
+        <div style={{ marginTop: 24, textAlign: 'center' }}>
+  <span>Already have an account? </span>
+  <a
+    href="/login"
+    style={{
+      color: '#38bdf8',
+      fontWeight: 'bold'
+    }}
+  >
+    Log In
+  </a>
+</div>
       </div>
     </main>
   );
