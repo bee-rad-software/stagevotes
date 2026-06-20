@@ -1169,6 +1169,9 @@ style={{
 </div>
 
 <div
+  <h2 style={{ color: '#38bdf8', marginTop: 24 }}>
+  📊 Show Summary
+</h2>
   style={{
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
