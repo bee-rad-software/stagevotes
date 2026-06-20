@@ -772,7 +772,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
     color: 'white',
     padding: 32
     maxWidth: '1600px',
-margin: '0 auto',
+margin: '0 auto'
   }}
 >
    <div
