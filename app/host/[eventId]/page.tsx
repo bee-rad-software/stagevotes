@@ -817,14 +817,7 @@ margin: '0 auto'
   >
   </div>
 
-<div
-  className="card"
-  style={{
-    position: 'sticky',
-    top: 16,
-    zIndex: 20,
-    padding: 24
-  }}
+
 >
           <h2
   style={{
