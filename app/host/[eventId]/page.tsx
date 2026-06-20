@@ -814,7 +814,7 @@ margin: '0 auto'
     position: 'sticky',
     top: 16,
     zIndex: 20,
-    padding: 24
+    padding: 18
   }}
 >
   <h2
@@ -830,7 +830,7 @@ margin: '0 auto'
             <>
               <h3
   style={{
-    fontSize: 36,
+    fontSize: 32,
     color: '#38bdf8',
     marginBottom: 8
   }}
