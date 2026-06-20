@@ -815,7 +815,6 @@ margin: '0 auto'
   marginBottom: 16
 }}
   >
-    {event?.is_voting_open ? 'Voting Open' : 'Voting Closed'}
   </div>
 
 <div
