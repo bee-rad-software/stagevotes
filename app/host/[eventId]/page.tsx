@@ -906,6 +906,7 @@ margin: '0 auto'
 )}
         </div>
 
+    <>
  <div className="card">
         <h2 style={{ color: '#38bdf8' }}>
   📋 Queue
