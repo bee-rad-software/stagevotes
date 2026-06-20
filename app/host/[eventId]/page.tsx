@@ -805,12 +805,15 @@ margin: '0 auto'
 </div>
   <div
     style={{
-      padding: '8px 16px',
-      borderRadius: 999,
-     background: event?.is_voting_open ? '#38bdf8' : '#c2410c',
-      color: 'white',
-      fontWeight: 800
-    }}
+  display: 'inline-block',
+  width: 'fit-content',
+  padding: '8px 16px',
+  borderRadius: 999,
+  background: event?.is_voting_open ? '#38bdf8' : '#c2410c',
+  color: 'white',
+  fontWeight: 800,
+  marginBottom: 16
+}}
   >
     {event?.is_voting_open ? 'Voting Open' : 'Voting Closed'}
   </div>
