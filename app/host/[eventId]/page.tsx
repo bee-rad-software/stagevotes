@@ -859,7 +859,8 @@ margin: '0 auto'
   style={{
     position: 'sticky',
     top: 16,
-    zIndex: 20
+    zIndex: 20,
+    padding: 24
   }}
 >
           <h2
@@ -903,8 +904,8 @@ margin: '0 auto'
               </p>
               <div
   style={{
-    marginTop: 24,
-    padding: 18,
+    marginTop: 16,
+    padding: 14,
     borderRadius: 16,
     background: 'rgba(56,189,248,0.12)',
     border: '1px solid rgba(56,189,248,0.35)'
