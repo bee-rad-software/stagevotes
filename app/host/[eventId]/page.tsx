@@ -1182,28 +1182,28 @@ style={{
 >
   <div className="card">
     <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎤 Singers</h3>
-    <div style={{ fontSize: 36, fontWeight: 900 }}>
+    <div style={{ fontSize: 28, fontWeight: 900 }}>
       {new Set(performances.map((p) => p.singer_name.trim().toLowerCase())).size}
     </div>
   </div>
 
   <div className="card">
     <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎵 Songs</h3>
-    <div style={{ fontSize: 36, fontWeight: 900 }}>
+    <div style={{ fontSize: 28, fontWeight: 900 }}>
       {performances.length}
     </div>
   </div>
 
   <div className="card">
    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
-<div style={{ fontSize: 36, fontWeight: 900 }}>
+<div style={{ fontSize: 28, fontWeight: 900 }}>
   {judgeBallotCount}
 </div>
   </div>
 
   <div className="card">
     <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
-    <div style={{ fontSize: 24, fontWeight: 900, color: '#c2410c' }}>
+    <div style={{ fontSize: 28, fontWeight: 900, color: '#c2410c' }}>
       {leaderboard[0]?.singer_name || 'No votes yet'}
     </div>
   </div>
