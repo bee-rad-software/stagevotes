@@ -5,10 +5,12 @@ import { QRCodeSVG } from 'qrcode.react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function HostPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const router = useRouter();
 
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
@@ -58,7 +60,19 @@ const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
     : '';
 
   useEffect(() => {
-    loadAll();
+
+    async function checkAuth() {
+  const { data } = await supabase.auth.getUser();
+
+  if (!data.user) {
+    router.push('/login');
+    return;
+  }
+
+  loadAll();
+}
+
+checkAuth();
 
     const channel = supabase
       .channel(`host-${eventId}`)
@@ -106,7 +120,7 @@ const interval = setInterval(() => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId]);
+  }, [eventId, router])
 
   async function loadAll() {
    await Promise.all([
