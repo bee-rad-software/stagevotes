@@ -804,20 +804,19 @@ margin: '0 auto'
   </div>
 </div>
   <div
-    style={{
-  display: 'inline-block',
-  width: 'fit-content',
-  padding: '8px 16px',
-  borderRadius: 999,
-  background: event?.is_voting_open ? '#38bdf8' : '#c2410c',
-  color: 'white',
-  fontWeight: 800,
-  marginBottom: 16
-}}
+ 
   >
  </div>
 
-<div className="card">
+<div
+  className="card"
+  style={{
+    position: 'sticky',
+    top: 16,
+    zIndex: 20,
+    padding: 24
+  }}
+>
   <h2
   style={{
     color: '#c2410c',
