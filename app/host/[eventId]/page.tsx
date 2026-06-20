@@ -815,10 +815,10 @@ margin: '0 auto'
   marginBottom: 16
 }}
   >
-  </div>
+ </div>
 
-   <div
-      <h2
+<div className="card">
+  <h2
   style={{
     color: '#c2410c',
     fontSize: 26,
