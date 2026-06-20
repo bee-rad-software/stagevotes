@@ -784,7 +784,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   src="/stagevotes-logo.png"
   alt="StageVotes"
   style={{
-    width: 140,
+    width: 180,
     height: 'auto'
   }}
 />
@@ -803,7 +803,7 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 </div>
   <div
     style={{
-      padding: '10px 18px',
+      padding: '8px 16px',
       borderRadius: 999,
      background: event?.is_voting_open ? '#38bdf8' : '#c2410c',
       color: 'white',
