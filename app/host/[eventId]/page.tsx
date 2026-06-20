@@ -817,42 +817,6 @@ margin: '0 auto'
   >
     {event?.is_voting_open ? 'Voting Open' : 'Voting Closed'}
   </div>
-<div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: 16,
-    marginBottom: 24
-  }}
->
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎤 Singers</h3>
-    <div style={{ fontSize: 36, fontWeight: 900 }}>
-      {new Set(performances.map((p) => p.singer_name.trim().toLowerCase())).size}
-    </div>
-  </div>
-
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎵 Songs</h3>
-    <div style={{ fontSize: 36, fontWeight: 900 }}>
-      {performances.length}
-    </div>
-  </div>
-
-  <div className="card">
-   <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
-<div style={{ fontSize: 36, fontWeight: 900 }}>
-  {judgeBallotCount}
-</div>
-  </div>
-
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
-    <div style={{ fontSize: 24, fontWeight: 900, color: '#c2410c' }}>
-      {leaderboard[0]?.singer_name || 'No votes yet'}
-    </div>
-  </div>
-</div>
 
 <div
   className="card"
@@ -1202,6 +1166,43 @@ style={{
 })}
 </>
 )}
+</div>
+
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: 16,
+    marginBottom: 24
+  }}
+>
+  <div className="card">
+    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎤 Singers</h3>
+    <div style={{ fontSize: 36, fontWeight: 900 }}>
+      {new Set(performances.map((p) => p.singer_name.trim().toLowerCase())).size}
+    </div>
+  </div>
+
+  <div className="card">
+    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎵 Songs</h3>
+    <div style={{ fontSize: 36, fontWeight: 900 }}>
+      {performances.length}
+    </div>
+  </div>
+
+  <div className="card">
+   <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
+<div style={{ fontSize: 36, fontWeight: 900 }}>
+  {judgeBallotCount}
+</div>
+  </div>
+
+  <div className="card">
+    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
+    <div style={{ fontSize: 24, fontWeight: 900, color: '#c2410c' }}>
+      {leaderboard[0]?.singer_name || 'No votes yet'}
+    </div>
+  </div>
 </div>
       
    <div className="card">
