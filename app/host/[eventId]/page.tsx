@@ -866,7 +866,7 @@ margin: '0 auto'
           <h2
   style={{
     color: '#c2410c',
-    fontSize: 32,
+    fontSize: 26,
     marginBottom: 16
   }}
 >
@@ -876,7 +876,7 @@ margin: '0 auto'
             <>
               <h3
   style={{
-    fontSize: 48,
+    fontSize: 40,
     color: '#38bdf8',
     marginBottom: 8
   }}
