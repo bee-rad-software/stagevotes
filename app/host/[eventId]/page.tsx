@@ -1168,11 +1168,12 @@ style={{
 )}
 </div>
 
-<div
-  style={{
-      <h2 style={{ color: '#38bdf8', marginTop: 24 }}>
+<h2 style={{ color: '#38bdf8', marginTop: 24 }}>
   📊 Show Summary
 </h2>
+      
+<div
+  style={{
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
     gap: 16,
