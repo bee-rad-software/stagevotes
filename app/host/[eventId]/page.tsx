@@ -840,7 +840,7 @@ margin: '0 auto'
             <>
               <h3
   style={{
-    fontSize: 40,
+    fontSize: 36,
     color: '#38bdf8',
     marginBottom: 8
   }}
@@ -869,7 +869,7 @@ margin: '0 auto'
               <div
   style={{
     marginTop: 16,
-    padding: 14,
+    padding: 12,
     borderRadius: 16,
     background: 'rgba(56,189,248,0.12)',
     border: '1px solid rgba(56,189,248,0.35)'
