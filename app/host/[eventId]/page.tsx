@@ -817,7 +817,8 @@ margin: '0 auto'
   >
   </div>
 
-          <h2
+   <div
+      <h2
   style={{
     color: '#c2410c',
     fontSize: 26,
