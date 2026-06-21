@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
   const [name, setName] = useState('Saturday Night Karaoke Contest');
@@ -17,7 +18,30 @@ export default function HomePage() {
   const [showSignupQR, setShowSignupQR] = useState(true);
 const [showVotingQR, setShowVotingQR] = useState(true);
 const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
+  const router = useRouter();
 
+ async function getMyAccountId() {
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    router.push('/login');
+    return null;
+  }
+
+  const { data: accountUser, error } = await supabase
+    .from('account_users')
+    .select('account_id')
+    .eq('user_id', userData.user.id)
+    .single();
+
+  if (error || !accountUser) {
+    alert('No account found for this user.');
+    return null;
+  }
+
+  return accountUser.account_id;
+}
+  
   async function createEvent() {
     setError('');
     const accountId = await getMyAccountId();
