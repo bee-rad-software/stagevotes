@@ -20,11 +20,14 @@ const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
 
   async function createEvent() {
     setError('');
+    const accountId = await getMyAccountId();
+if (!accountId) return;
     const { data, error } = await supabase
       .from('events')
       .insert({
   name,
   venue,
+  account_id: accountId,      
   host_pin: pin,
   tiebreaker_category_name: tiebreakerCategory,
         show_signup_qr: showSignupQR,
