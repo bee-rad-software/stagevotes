@@ -279,7 +279,12 @@ async function loadPeoplesChoice() {
     setVotes(data || []);
   }
 
-async function loadCategories() {
+async function logout() {
+  await supabase.auth.signOut()
+  router.push('/login')
+}
+  
+  async function loadCategories() {
   const { data, error } = await supabase
     .from('vote_categories')
     .select('id, category_name')
@@ -817,10 +822,28 @@ margin: '0 auto'
     </div>
   </div>
 </div>
-  <div
- 
+<div
+  style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: 20
+  }}
+>
+  <button
+    onClick={logout}
+    style={{
+      background: '#c2410c',
+      color: 'white',
+      border: 'none',
+      borderRadius: 999,
+      padding: '10px 18px',
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    }}
   >
- </div>
+    Logout
+  </button>
+</div>
 
 <div
   className="card"
