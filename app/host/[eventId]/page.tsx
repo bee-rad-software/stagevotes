@@ -251,20 +251,24 @@ async function getMyAccountId() {
   await loadAll();
 }
   
-  async function loadPerformances() {
-    const { data, error } = await supabase
-      .from('performances')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('queue_order', { ascending: true });
+ async function loadPerformances() {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
 
-    if (error) {
-      console.error(error.message);
-      return;
-    }
+  const { data, error } = await supabase
+    .from('performances')
+    .select('*')
+    .eq('event_id', eventId)
+    .eq('account_id', accountId)
+    .order('queue_order', { ascending: true });
 
-    setPerformances(data || []);
+  if (error) {
+    console.error(error.message);
+    return;
   }
+
+  setPerformances(data || []);
+}
 
 async function loadPeoplesChoice() {
   const { data, error } = await supabase
