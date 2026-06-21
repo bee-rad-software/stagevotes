@@ -548,14 +548,18 @@ async function saveEdit(performanceId: string) {
     return;
   }
 
-  const { error } = await supabase
-    .from('performances')
-    .update({
-      singer_name: editSingerName.trim(),
-      song_title: editSongTitle.trim(),
-      artist: editArtist.trim()
-    })
-    .eq('id', performanceId);
+  const accountId = await getMyAccountId();
+if (!accountId) return;
+
+const { error } = await supabase
+  .from('performances')
+  .update({
+    singer_name: editSingerName.trim(),
+    song_title: editSongTitle.trim(),
+    artist: editArtist.trim()
+  })
+  .eq('id', performanceId)
+  .eq('account_id', accountId);
 
   if (error) {
     alert(error.message);
@@ -569,11 +573,14 @@ async function saveEdit(performanceId: string) {
   async function removeSinger(performanceId: string) {
   if (!confirm('Remove this singer from the queue?')) return;
 
-  const { error } = await supabase
-    .from('performances')
-    .update({ status: 'completed' })
-    .eq('id', performanceId);
+ const accountId = await getMyAccountId();
+if (!accountId) return;
 
+const { error } = await supabase
+  .from('performances')
+  .update({ status: 'completed' })
+  .eq('id', performanceId)
+  .eq('account_id', accountId);
   if (error) {
     alert(error.message);
     return;
@@ -583,10 +590,14 @@ async function saveEdit(performanceId: string) {
 }
 
 async function skipSinger(performanceId: string) {
-  const { error } = await supabase
-    .from('performances')
-    .update({ status: 'skipped' })
-    .eq('id', performanceId);
+ const accountId = await getMyAccountId();
+if (!accountId) return;
+
+const { error } = await supabase
+  .from('performances')
+  .update({ status: 'skipped' })
+  .eq('id', performanceId)
+  .eq('account_id', accountId);
 
   if (error) {
     alert(error.message);
