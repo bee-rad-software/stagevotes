@@ -326,10 +326,14 @@ async function logout() {
 }
   
   async function loadCategories() {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
   const { data, error } = await supabase
     .from('vote_categories')
     .select('id, category_name')
-    .eq('event_id', eventId);
+    .eq('event_id', eventId)
+    .eq('account_id', accountId);
 
   if (error) {
     console.error(error.message);
