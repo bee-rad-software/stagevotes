@@ -838,7 +838,9 @@ margin: '0 auto'
       borderRadius: 999,
       padding: '10px 18px',
       fontWeight: 'bold',
-      cursor: 'pointer'
+      cursor: 'pointer',
+      maxWidth: '1400px',
+margin: '0 auto 24px auto'
     }}
   >
     Logout
