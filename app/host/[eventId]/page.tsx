@@ -297,24 +297,28 @@ async function loadPeoplesChoice() {
   setPeoplesChoiceResults(results);
 }
   
-  async function loadVotes() {
-    const { data, error } = await supabase
-      .from('votes')
-     .select(`
-  *,
-  vote_categories!votes_category_id_fkey (
-    category_name
-  )
-`)
-      .eq('event_id', eventId);
+ async function loadVotes() {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
 
-    if (error) {
-      console.error(error.message);
-      return;
-    }
+  const { data, error } = await supabase
+    .from('votes')
+    .select(`
+      *,
+      vote_categories!votes_category_id_fkey (
+        category_name
+      )
+    `)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId);
 
-    setVotes(data || []);
+  if (error) {
+    console.error(error.message);
+    return;
   }
+
+  setVotes(data || []);
+}
 
 async function logout() {
   await supabase.auth.signOut()
