@@ -183,6 +183,29 @@ img.crossOrigin = 'anonymous';
 
  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&format=png&data=${encodeURIComponent(url)}`;
 }
+
+async function getMyAccountId() {
+  const { data: userData } = await supabase.auth.getUser();
+
+  if (!userData.user) {
+    router.push('/login');
+    return null;
+  }
+
+  const { data: accountUser, error } = await supabase
+    .from('account_users')
+    .select('account_id')
+    .eq('user_id', userData.user.id)
+    .single();
+
+  if (error || !accountUser) {
+    console.error(error);
+    alert('No account found for this user.');
+    return null;
+  }
+
+  return accountUser.account_id;
+}
   
   async function loadEvent() {
     const { data, error } = await supabase
