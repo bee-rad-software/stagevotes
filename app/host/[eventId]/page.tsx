@@ -369,8 +369,12 @@ const nextOrder =
     ? singerOriginalOrder
     : maxOrderInAssignedRound + 1;
 
+const accountId = await getMyAccountId();
+if (!accountId) return;
+
 const { error } = await supabase.from('performances').insert({
   event_id: eventId,
+  account_id: accountId,
   singer_name: singerName.trim(),
   song_title: songTitle.trim(),
   artist: artist.trim(),
