@@ -208,19 +208,25 @@ async function getMyAccountId() {
 }
   
   async function loadEvent() {
-    const { data, error } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
 
-    if (error) {
-      console.error(error.message);
-      return;
-    }
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .eq('account_id', accountId)
+    .single();
 
-    setEvent(data);
+  if (error) {
+    console.error(error.message);
+    alert('You do not have access to this event.');
+    router.push('/');
+    return;
   }
+
+  setEvent(data);
+}
   
   async function endShow() {
   if (!confirm('End the show and show awards?')) return;
