@@ -795,7 +795,7 @@ margin: '0 auto'
   }}
 >
    
-      <div
+    <div
   style={{
     display: 'flex',
     justifyContent: 'space-between',
@@ -803,17 +803,21 @@ margin: '0 auto'
     marginBottom: 24
   }}
 >
-        
-  <img
-  src="/stagevotes-logo.png"
-  alt="StageVotes"
-  style={{
-    width: 180,
-    height: 'auto'
-  }}
-/>
-
-  <div>
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 16
+    }}
+  >
+    <img
+      src="/stagevotes-logo.png"
+      alt="StageVotes"
+      style={{
+        width: 180,
+        height: 'auto'
+      }}
+    />
 
     <div
       style={{
@@ -824,14 +828,7 @@ margin: '0 auto'
       Host Dashboard
     </div>
   </div>
-</div>
-<div
-  style={{
-    display: 'flex',
-    justifyContent: 'flex-end',
-    marginBottom: 20
-  }}
->
+
   <button
     onClick={logout}
     style={{
