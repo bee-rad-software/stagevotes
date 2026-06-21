@@ -231,13 +231,17 @@ async function getMyAccountId() {
   async function endShow() {
   if (!confirm('End the show and show awards?')) return;
 
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
   const { error } = await supabase
     .from('events')
     .update({
       is_voting_open: false,
       is_show_ended: true
     })
-    .eq('id', eventId);
+    .eq('id', eventId)
+    .eq('account_id', accountId);
 
   if (error) {
     alert(error.message);
