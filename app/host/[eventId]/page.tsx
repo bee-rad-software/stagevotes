@@ -794,13 +794,16 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 margin: '0 auto'
   }}
 >
-   <div
+   
+      <div
   style={{
     display: 'flex',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16
+    marginBottom: 24
   }}
 >
+        
   <img
   src="/stagevotes-logo.png"
   alt="StageVotes"
