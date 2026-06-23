@@ -26,6 +26,7 @@ show_peoples_choice_qr?: boolean;
 
 export type PerformanceRow = {
   id: string;
+  account_id: string;
   event_id: string;
   singer_name: string;
   song_title: string;
