@@ -280,9 +280,8 @@ const maxQueueOrder =
 
 const startingOrder = maxQueueOrder + 1;
     
-   const rows = validSongs.map((song, index) => ({
+const rows = validSongs.map((song, index) => ({
   event_id: eventId,
-  account_id: event?.account_id,
   singer_name: singerName.trim(),
   song_title: song.songTitle.trim(),
   artist: song.artist.trim(),
@@ -290,7 +289,7 @@ const startingOrder = maxQueueOrder + 1;
   round: activeRound + index,
   device_id: deviceId
 }));
-
+    
     const { error } = await supabase.from('performances').insert(rows);
 
     if (error) {
