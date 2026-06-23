@@ -13,6 +13,7 @@ type SongEntry = {
 export default function SignupPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+  const [event, setEvent] = useState<any>(null);
 
   const [singerName, setSingerName] = useState('');
   const [songs, setSongs] = useState<SongEntry[]>([
