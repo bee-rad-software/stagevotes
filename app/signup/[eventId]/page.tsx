@@ -34,6 +34,21 @@ const [activeSongIndex, setActiveSongIndex] = useState<number | null>(null);
   const [notifiedOnDeck, setNotifiedOnDeck] = useState(false);
 const [notifiedCurrent, setNotifiedCurrent] = useState(false);
 
+async function loadEvent() {
+  const { data, error } = await supabase
+    .from('events')
+    .select('id, account_id')
+    .eq('id', eventId)
+    .single();
+
+  if (error) {
+    console.error(error.message);
+    return;
+  }
+
+  setEvent(data);
+}
+  
 useEffect(() => {
   const savedName = localStorage.getItem('karavote_singer_name');
 
@@ -41,6 +56,7 @@ useEffect(() => {
   setSingerName(savedName);
   setSavedSingerName(savedName);
 }
+  loadEvent();
   loadQueue();
 
 if ('Notification' in window) {
