@@ -22,7 +22,6 @@ export default function SignupPage() {
   const [message, setMessage] = useState('');
   const [queue, setQueue] = useState<any[]>([]);
   const [savedSingerName, setSavedSingerName] = useState('');
-  const [event, setEvent] = useState<any>(null);
   const [currentSinger, setCurrentSinger] = useState<any>(null);
 const [onDeckSinger, setOnDeckSinger] = useState<any>(null);
   const [songSuggestions, setSongSuggestions] = useState<any[]>([]);
