@@ -158,6 +158,7 @@ async function submitCategoryVotes() {
 
   const rows = categories.map((category) => ({
     event_id: eventId,
+    account_id: current.account_id,
     performance_id: current.id,
     voter_key: voterKey,
     device_id: deviceId,
