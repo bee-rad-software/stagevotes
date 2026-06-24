@@ -892,7 +892,8 @@ if (
       padding: 24
     }}
   >
-     {account && account.subscription_status !== 'active' && (
+     {account?.subscription_status &&
+ account.subscription_status !== 'active' && (
   <div
     style={{
       background: '#7f1d1d',
