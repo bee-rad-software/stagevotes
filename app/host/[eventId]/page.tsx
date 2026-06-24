@@ -30,6 +30,7 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   { id: string; category_name: string }[]
 >([]);
   const [checkinCount, setCheckinCount] = useState(0);
+  const [account, setAccount] = useState<any>(null);
   const [showSingerSignup, setShowSingerSignup] = useState(false);
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   const [showCheckinSettings, setShowCheckinSettings] = useState(false);
