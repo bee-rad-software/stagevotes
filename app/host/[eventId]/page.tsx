@@ -31,6 +31,9 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
 >([]);
   const [checkinCount, setCheckinCount] = useState(0);
   const [account, setAccount] = useState<any>(null);
+  const isSubscribed =
+  !account?.subscription_status ||
+  account.subscription_status === 'active';
   const [showSingerSignup, setShowSingerSignup] = useState(false);
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   const [showCheckinSettings, setShowCheckinSettings] = useState(false);
