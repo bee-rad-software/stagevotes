@@ -921,15 +921,14 @@ margin: '0 auto'
 <button
   onClick={manageBilling}
   style={{
-    background: '#38bdf8',
-    color: '#0f172a',
-    border: 'none',
-    borderRadius: 999,
-    padding: '10px 18px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    marginRight: 10
-  }}
+  background: '#38bdf8',
+  color: '#0f172a',
+  border: 'none',
+  borderRadius: 999,
+  padding: '10px 18px',
+  fontWeight: 'bold',
+  cursor: 'pointer'
+}}
 >
   Manage Billing
 </button>
