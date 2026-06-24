@@ -879,8 +879,20 @@ if (
   account.subscription_status !== 'active'
 ) {
   return (
-    <div
-      {account && account.subscription_status !== 'active' && (
+  <div
+    style={{
+      minHeight: '100vh',
+      background: '#020c2b',
+      color: 'white',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      textAlign: 'center',
+      padding: 24
+    }}
+  >
+     {account && account.subscription_status !== 'active' && (
   <div
     style={{
       background: '#7f1d1d',
