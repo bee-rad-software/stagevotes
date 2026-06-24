@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 
 if (event.type === 'customer.subscription.updated') {
-  const subscription = event.data.object as Stripe.Subscription;
+  const subscription = event.data.object as any;
 
   await supabase
     .from('accounts')
@@ -62,7 +62,7 @@ if (event.type === 'customer.subscription.updated') {
 }
 
 if (event.type === 'customer.subscription.deleted') {
-  const subscription = event.data.object as Stripe.Subscription;
+  const subscription = event.data.object as any;
 
   await supabase
     .from('accounts')
