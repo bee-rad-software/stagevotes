@@ -951,7 +951,8 @@ margin: '0 auto 24px auto'
     Logout
   </button>
 </div>
-
+</div>
+      
 <div
   className="card"
   style={{
