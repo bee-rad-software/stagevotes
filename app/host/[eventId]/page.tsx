@@ -320,6 +320,27 @@ async function loadPeoplesChoice() {
   setVotes(data || []);
 }
 
+async function manageBilling() {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
+  const response = await fetch('/api/stripe/portal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ accountId })
+  });
+
+  const data = await response.json();
+
+  if (data.url) {
+    window.location.href = data.url;
+  } else {
+    alert(data.error || 'Unable to open billing portal');
+  }
+}
+  
 async function logout() {
   await supabase.auth.signOut()
   router.push('/login')
