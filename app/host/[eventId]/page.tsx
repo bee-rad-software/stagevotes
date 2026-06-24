@@ -212,6 +212,16 @@ async function getMyAccountId() {
   const accountId = await getMyAccountId();
   if (!accountId) return;
 
+const { data: accountData } = await supabase
+  .from('accounts')
+  .select('*')
+  .eq('id', accountId)
+  .single();
+
+if (accountData) {
+  setAccount(accountData);
+}
+    
   const { data, error } = await supabase
     .from('events')
     .select('*')
