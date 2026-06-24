@@ -910,6 +910,22 @@ margin: '0 auto'
     </div>
   </div>
 
+<button
+  onClick={manageBilling}
+  style={{
+    background: '#38bdf8',
+    color: '#0f172a',
+    border: 'none',
+    borderRadius: 999,
+    padding: '10px 18px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    marginRight: 10
+  }}
+>
+  Manage Billing
+</button>
+      
   <button
     onClick={logout}
     style={{
