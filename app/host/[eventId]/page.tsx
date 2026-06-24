@@ -878,8 +878,8 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 }, {} as Record<string, typeof activeQueue>);
 
 if (
-  account &&
-  account.subscription_status !== 'active'
+account?.subscription_status &&
+!isSubscribed
 ) {
   return (
   <div
