@@ -37,12 +37,13 @@ export async function POST(req: NextRequest) {
 
     if (accountId) {
       await supabase
-        .from('accounts')
-        .update({
-          stripe_customer_id: customerId,
-          subscription_status: 'active'
-        })
-        .eq('id', accountId);
+  .from('accounts')
+  .update({
+    stripe_customer_id: customerId,
+    stripe_subscription_id: session.subscription as string,
+    subscription_status: 'active'
+  })
+  .eq('id', accountId);
     }
   }
 
