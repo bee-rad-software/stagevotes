@@ -47,5 +47,33 @@ export async function POST(req: NextRequest) {
     }
   }
 
+if (event.type === 'customer.subscription.updated') {
+  const subscription = event.data.object as Stripe.Subscription;
+
+  await supabase
+    .from('accounts')
+    .update({
+      subscription_status: subscription.status,
+      subscription_ends_at: subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null
+    })
+    .eq('stripe_subscription_id', subscription.id);
+}
+
+if (event.type === 'customer.subscription.deleted') {
+  const subscription = event.data.object as Stripe.Subscription;
+
+  await supabase
+    .from('accounts')
+    .update({
+      subscription_status: 'canceled',
+      subscription_ends_at: subscription.ended_at
+        ? new Date(subscription.ended_at * 1000).toISOString()
+        : null
+    })
+    .eq('stripe_subscription_id', subscription.id);
+}
+  
   return NextResponse.json({ received: true });
 }
