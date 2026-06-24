@@ -933,7 +933,7 @@ if (
         textAlign: 'center',
         padding: 24
       }}
-    >
+ 
       <h1>Subscription Required</h1>
 
       <p style={{ maxWidth: 500 }}>
