@@ -910,6 +910,14 @@ margin: '0 auto'
     </div>
   </div>
 
+<div
+  style={{
+    display: 'flex',
+    gap: 10,
+    marginLeft: 'auto'
+  }}
+>
+      
 <button
   onClick={manageBilling}
   style={{
