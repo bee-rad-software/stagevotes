@@ -5,11 +5,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
-    const { email } = await req.json();
+   const { email, accountId } = await req.json();
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer_email: email,
+      metadata: {
+  account_id: accountId
+},
+subscription_data: {
+  metadata: {
+    account_id: accountId
+  }
+},
       line_items: [
         {
           price: process.env.STRIPE_PRICE_ID!,
