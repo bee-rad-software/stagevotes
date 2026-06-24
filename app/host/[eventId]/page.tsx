@@ -863,6 +863,50 @@ const singerGroups = activeQueue.reduce((groups, p) => {
 
   return groups;
 }, {} as Record<string, typeof activeQueue>);
+
+if (
+  account &&
+  account.subscription_status !== 'active'
+) {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#020c2b',
+        color: 'white',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center',
+        padding: 24
+      }}
+    >
+      <h1>Subscription Required</h1>
+
+      <p style={{ maxWidth: 500 }}>
+        Your StageVotes subscription is inactive.
+        Please update your billing information to continue.
+      </p>
+
+      <button
+        onClick={manageBilling}
+        style={{
+          marginTop: 20,
+          background: '#38bdf8',
+          color: '#0f172a',
+          border: 'none',
+          borderRadius: 999,
+          padding: '12px 24px',
+          fontWeight: 'bold',
+          cursor: 'pointer'
+        }}
+      >
+        Manage Billing
+      </button>
+    </div>
+  );
+}
   
   return (
     <main
