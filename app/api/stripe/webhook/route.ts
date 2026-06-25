@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   .update({
     stripe_customer_id: customerId,
     stripe_subscription_id: session.subscription as string,
-    subscription_status: 'active'
+    subscription_status: session.status === 'complete' ? 'trialing' : 'active'
   })
   .eq('id', accountId);
     }
