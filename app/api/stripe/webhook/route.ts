@@ -33,18 +33,24 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     const accountId = session.metadata?.account_id;
-    const customerId = session.customer as string;
+const customerId = session.customer as string;
+const subscriptionId = session.subscription as string;
 
-    if (accountId) {
-      await supabase
-  .from('accounts')
-  .update({
-    stripe_customer_id: customerId,
-    stripe_subscription_id: session.subscription as string,
-    subscription_status: session.status === 'complete' ? 'trialing' : 'active'
-  })
-  .eq('id', accountId);
-    }
+if (accountId && subscriptionId) {
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+  await supabase
+    .from('accounts')
+    .update({
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId,
+      subscription_status: subscription.status,
+      subscription_ends_at: subscription.current_period_end
+        ? new Date(subscription.current_period_end * 1000).toISOString()
+        : null
+    })
+    .eq('id', accountId);
+}
   }
 
 if (event.type === 'customer.subscription.updated') {
