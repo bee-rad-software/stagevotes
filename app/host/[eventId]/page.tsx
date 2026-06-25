@@ -896,49 +896,7 @@ account?.subscription_status &&
       padding: 24
     }}
   >
-     {account?.subscription_status &&
- account.subscription_status !== 'active' && (
-  <div
-    style={{
-      background: '#7f1d1d',
-      color: 'white',
-      padding: 16,
-      borderRadius: 12,
-      marginBottom: 20,
-      textAlign: 'center'
-    }}
-  >
-    Your StageVotes subscription is inactive.
-
-    <button
-      onClick={manageBilling}
-      style={{
-        marginLeft: 12,
-        background: '#38bdf8',
-        color: '#0f172a',
-        border: 'none',
-        borderRadius: 999,
-        padding: '8px 14px',
-        cursor: 'pointer',
-        fontWeight: 'bold'
-      }}
-    >
-      Reactivate Subscription
-    </button>
-  </div>
-)}
-      style={{
-        minHeight: '100vh',
-        background: '#020c2b',
-        color: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        textAlign: 'center',
-        padding: 24
-      }}
- 
+    
       <h1>Subscription Required</h1>
 
       <p style={{ maxWidth: 500 }}>
