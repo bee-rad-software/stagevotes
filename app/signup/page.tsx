@@ -59,7 +59,24 @@ export default function SignupPage() {
       return;
     }
 
-    router.push('/');
+    const checkoutResponse = await fetch('/api/stripe/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    email,
+    accountId: account.id
+  })
+});
+
+const checkoutData = await checkoutResponse.json();
+
+if (checkoutData.url) {
+  window.location.href = checkoutData.url;
+} else {
+  setMessage(checkoutData.error || 'Unable to start checkout.');
+}
   }
 
   return (
