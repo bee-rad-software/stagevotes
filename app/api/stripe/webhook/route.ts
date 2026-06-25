@@ -40,16 +40,13 @@ if (accountId && subscriptionId) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
   await supabase
-    .from('accounts')
-    .update({
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId,
-      subscription_status: subscription.status,
-      subscription_ends_at: subscription.current_period_end
-        ? new Date(subscription.current_period_end * 1000).toISOString()
-        : null
-    })
-    .eq('id', accountId);
+  .from('accounts')
+  .update({
+    stripe_customer_id: customerId,
+    stripe_subscription_id: session.subscription as string,
+    subscription_status: 'trialing'
+  })
+  .eq('id', accountId);
 }
   }
 
