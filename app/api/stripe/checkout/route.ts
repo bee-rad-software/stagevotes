@@ -25,7 +25,7 @@ subscription_data: {
           quantity: 1
         }
       ],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/?success=true&checkout=complete`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`
     });
 
