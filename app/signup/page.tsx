@@ -67,7 +67,7 @@ const { error: accountError } = await supabase
   },
   body: JSON.stringify({
     email,
-    accountId: account.id
+    accountId: accountId
   })
 });
 
