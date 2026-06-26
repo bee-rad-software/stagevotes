@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +31,15 @@ export default function LoginPage() {
   return (
     <main className="container">
       <div className="card">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+  <Image
+    src="/stagevotes-logo.png"
+    alt="StageVotes Logo"
+    width={300}
+    height={120}
+    priority
+  />
+</div>
         <h1>Log in to StageVotes</h1>
 
         <label>Email</label>
