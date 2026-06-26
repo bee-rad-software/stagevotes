@@ -57,6 +57,10 @@ async function loadMyAccount() {
     setVenue(account.name);
   }
 }
+
+useEffect(() => {
+  loadMyAccount();
+}, []);
   
 async function loadMyAccount() {
   const { data: { user } } = await supabase.auth.getUser();
