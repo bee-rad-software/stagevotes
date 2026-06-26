@@ -41,6 +41,30 @@ const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
 
   return accountUser.account_id;
 }
+
+async function loadMyAccount() {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return;
+
+  const { data: accountUser } = await supabase
+    .from('account_users')
+    .select('account_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!accountUser) return;
+
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('name')
+    .eq('id', accountUser.account_id)
+    .single();
+
+  if (account?.name) {
+    setVenue(account.name);
+  }
+}
   
   async function createEvent() {
     setError('');
