@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
-  const [name, setName] = useState('Saturday Night Karaoke Contest');
-  const [venue, setVenue] = useState('Pub on the Bricks');
+  const [name, setName] = useState('');
+  const [venue, setVenue] = useState('');
   const [pin, setPin] = useState('1234');
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [error, setError] = useState('');
