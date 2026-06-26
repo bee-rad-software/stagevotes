@@ -50,7 +50,7 @@ const { error: accountError } = await supabase
     const { error: accountUserError } = await supabase
       .from('account_users')
       .insert({
-        account_id: account.id,
+        account_id: accountId,
         user_id: user.id,
         role: 'owner'
       });
