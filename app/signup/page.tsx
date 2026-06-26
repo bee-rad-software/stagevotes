@@ -33,13 +33,14 @@ export default function SignupPage() {
       return;
     }
 
-    const { data: account, error: accountError } = await supabase
-      .from('accounts')
-      .insert({
-        name: accountName || 'My StageVotes Account'
-      })
-      .select()
-      .single();
+   const accountId = crypto.randomUUID();
+
+const { error: accountError } = await supabase
+  .from('accounts')
+  .insert({
+    id: accountId,
+    name: accountName || 'My StageVotes Account'
+  });
 
     if (accountError) {
       setMessage(accountError.message);
