@@ -89,7 +89,7 @@ if (checkoutData.url) {
     src="/stagevotes-logo.png"
     alt="StageVotes Logo"
     width={300}
-    height={120}
+    height={200}
     priority
   />
 </div>
