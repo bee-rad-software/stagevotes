@@ -42,22 +42,6 @@ const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
   return accountUser.account_id;
 }
 
-async function loadMyAccount() {
-  const accountId = await getMyAccountId();
-
-  if (!accountId) return;
-
-  const { data: account } = await supabase
-    .from('accounts')
-    .select('name')
-    .eq('id', accountId)
-    .single();
-
-  if (account?.name) {
-    setVenue(account.name);
-  }
-}
-
 useEffect(() => {
   loadMyAccount();
 }, []);
