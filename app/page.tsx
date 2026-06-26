@@ -43,6 +43,22 @@ const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
 }
 
 async function loadMyAccount() {
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return;
+
+  const { data: account } = await supabase
+    .from('accounts')
+    .select('name')
+    .eq('id', accountId)
+    .single();
+
+  if (account?.name) {
+    setVenue(account.name);
+  }
+}
+  
+async function loadMyAccount() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return;
