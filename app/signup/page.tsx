@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -83,6 +84,15 @@ if (checkoutData.url) {
   return (
     <main className="container">
       <div className="card">
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+  <Image
+    src="/stagevotes-logo.png"
+    alt="StageVotes Logo"
+    width={300}
+    height={120}
+    priority
+  />
+</div>
         <h1>Create your StageVotes account</h1>
 
         <label>Account / Venue Name</label>
