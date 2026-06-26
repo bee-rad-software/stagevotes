@@ -59,6 +59,10 @@ export default function LoginPage() {
   Log In
 </button>
 
+<p style={{ marginTop: '12px', textAlign: 'center' }}>
+  <a href="/forgot-password">Forgot password?</a>
+</p>
+        
 {message && <p>{message}</p>}
 
 <div
