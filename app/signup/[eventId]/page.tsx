@@ -32,6 +32,10 @@ const [activeSongIndex, setActiveSongIndex] = useState<number | null>(null);
   useState<NotificationPermission | null>(null);
   const [notifiedOnDeck, setNotifiedOnDeck] = useState(false);
 const [notifiedCurrent, setNotifiedCurrent] = useState(false);
+  const [venmoUrl, setVenmoUrl] = useState('');
+const [cashappUrl, setCashappUrl] = useState('');
+const [applePayUrl, setApplePayUrl] = useState('');
+const [tipsEnabled, setTipsEnabled] = useState(false);
 
 async function loadEvent() {
   const { data, error } = await supabase
