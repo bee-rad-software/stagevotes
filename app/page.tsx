@@ -120,10 +120,24 @@ setCreatedId(data.id);
 
   return (
     <main className="container">
-      <h1>StageVotes</h1>
-      <p className="small">Karaoke contest queue + audience voting + live leaderboard.</p>
+     <h1>StageVotes</h1>
 
-      <div className="card">
+<p className="small">
+  Karaoke contest queue + audience voting + live leaderboard.
+</p>
+
+<nav
+  style={{
+    display: 'flex',
+    gap: '20px',
+    marginBottom: '24px'
+  }}
+>
+  <Link href="/">Dashboard</Link>
+  <Link href="/account">Account Settings</Link>
+</nav>
+
+<div className="card">
         <h2>Create a contest</h2>
         <label>Contest name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} />
