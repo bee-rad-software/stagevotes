@@ -42,7 +42,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-      .select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url')
+      .select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url')
       .eq('id', accountUser.account_id)
       .single();
 
@@ -58,6 +58,7 @@ export default function AccountPage() {
     setVenmoUrl(account.venmo_url || '');
     setCashappUrl(account.cashapp_url || '');
     setApplePayUrl(account.apple_pay_url || '');
+    setLogoUrl(account.logo_url || '');
   }
 
   async function saveSettings() {
@@ -101,6 +102,43 @@ export default function AccountPage() {
     }
   }
 
+async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
+  const file = event.target.files?.[0];
+
+  if (!file || !accountId) return;
+
+  setUploading(true);
+
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${accountId}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from('venue-logos')
+    .upload(fileName, file, {
+      upsert: true,
+    });
+
+  if (error) {
+    setMessage(error.message);
+    setUploading(false);
+    return;
+  }
+
+  const { data } = supabase.storage
+    .from('venue-logos')
+    .getPublicUrl(fileName);
+
+  setLogoUrl(data.publicUrl);
+
+  await supabase
+    .from('accounts')
+    .update({ logo_url: data.publicUrl })
+    .eq('id', accountId);
+
+  setUploading(false);
+  setMessage('Logo uploaded.');
+}
+  
   return (
     <main className="container">
       <div className="card">
