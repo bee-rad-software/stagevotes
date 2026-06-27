@@ -19,6 +19,8 @@ export default function HomePage() {
 const [showVotingQR, setShowVotingQR] = useState(true);
 const [showPeoplesChoiceQR, setShowPeoplesChoiceQR] = useState(true);
   const router = useRouter();
+  const [subscriptionStatus, setSubscriptionStatus] = useState('');
+const [billingMessage, setBillingMessage] = useState('');
 
  async function getMyAccountId() {
   const { data: userData } = await supabase.auth.getUser();
