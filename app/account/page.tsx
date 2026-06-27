@@ -14,6 +14,8 @@ export default function AccountPage() {
   const [tipsEnabled, setTipsEnabled] = useState(false);
   const [message, setMessage] = useState('');
   const router = useRouter();
+  const [logoUrl, setLogoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadAccount();
