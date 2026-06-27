@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
 export default function AccountPage() {
   const [accountId, setAccountId] = useState('');
@@ -12,6 +13,7 @@ export default function AccountPage() {
   const [applePayUrl, setApplePayUrl] = useState('');
   const [tipsEnabled, setTipsEnabled] = useState(false);
   const [message, setMessage] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     loadAccount();
@@ -102,6 +104,23 @@ export default function AccountPage() {
       <div className="card">
         <h1>Account Settings</h1>
 
+<div style={{ marginBottom: '20px' }}>
+  <button
+    onClick={() => router.push('/')}
+    style={{
+      background: '#38bdf8',
+      color: '#0f172a',
+      border: 'none',
+      borderRadius: 999,
+      padding: '10px 20px',
+      fontWeight: 'bold',
+      cursor: 'pointer'
+    }}
+  >
+    ← Back to Dashboard
+  </button>
+</div>
+        
         <label>Account / Venue Name</label>
         <input
           value={name}
