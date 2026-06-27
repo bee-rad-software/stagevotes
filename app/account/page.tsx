@@ -117,15 +117,27 @@ export default function AccountPage() {
 
         <h2>Tip Your Host</h2>
 
-        <label>
-          <input
-            type="checkbox"
-            checked={tipsEnabled}
-            onChange={(e) => setTipsEnabled(e.target.checked)}
-          />
-          Enable tipping
-        </label>
+    <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '20px'
+  }}
+>
+  <input
+    type="checkbox"
+    checked={tipsEnabled}
+    onChange={(e) => setTipsEnabled(e.target.checked)}
+  />
 
+  <label style={{ margin: 0 }}>
+    Enable tipping options on singer signup pages
+  </label>
+</div>
+        
+{tipsEnabled && (
+  <>
         <label>Venmo URL</label>
         <input
           value={venmoUrl}
@@ -150,7 +162,9 @@ export default function AccountPage() {
         <button type="button" onClick={saveSettings}>
           Save Settings
         </button>
-
+  </>
+)}
+    
         <button type="button" onClick={logout} style={{ marginLeft: '12px' }}>
           Log Out
         </button>
