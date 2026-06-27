@@ -63,17 +63,24 @@ async function loadMyAccount() {
 
   const { data: account } = await supabase
     .from('accounts')
-    .select('name')
+    .select('name, subscription_status')
     .eq('id', accountUser.account_id)
     .single();
 
   if (account?.name) {
     setVenue(account.name);
   }
+  setSubscriptionStatus(account?.subscription_status || '');
 }
   
   async function createEvent() {
     setError('');
+    setBillingMessage('');
+
+if (!['active', 'trialing'].includes(subscriptionStatus)) {
+  setBillingMessage('Your subscription is inactive. Please update billing to create contests.');
+  return;
+}
     const accountId = await getMyAccountId();
 if (!accountId) return;
     const { data, error } = await supabase
