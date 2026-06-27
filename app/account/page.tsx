@@ -119,17 +119,17 @@ export default function AccountPage() {
 
     <div
   style={{
-    display: 'flex',
+    display: 'inline-flex',
     alignItems: 'center',
-    justifyContent: 'flex-start',
     gap: '10px',
-    marginBottom: '20px'
+    width: 'auto'
   }}
 >
   <input
     type="checkbox"
     checked={tipsEnabled}
     onChange={(e) => setTipsEnabled(e.target.checked)}
+    style={{ width: 'auto', margin: 0 }}
   />
 
   <label style={{ margin: 0 }}>
