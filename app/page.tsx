@@ -146,6 +146,16 @@ setCreatedId(data.id);
   <Link href="/account">Account Settings</Link>
 </nav>
 
+{billingMessage && (
+  <div className="card">
+    <h2>Subscription Required</h2>
+    <p>{billingMessage}</p>
+    <Link href="/account">
+      <button>Manage Subscription</button>
+    </Link>
+  </div>
+)}
+      
 <div className="card">
         <h2>Create a contest</h2>
         <label>Contest name</label>
