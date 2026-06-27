@@ -106,7 +106,7 @@ export default function AccountPage() {
 
 <div style={{ marginBottom: '20px' }}>
   <button
-    onClick={() => router.push('/')}
+    onClick={() => router.back()}
     style={{
       background: '#38bdf8',
       color: '#0f172a',
