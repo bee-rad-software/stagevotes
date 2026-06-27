@@ -167,6 +167,28 @@ async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
           onChange={(e) => setName(e.target.value)}
         />
 
+<h2>Venue Branding</h2>
+
+{logoUrl && (
+  <img
+    src={logoUrl}
+    alt="Venue Logo"
+    style={{
+      maxHeight: 100,
+      marginBottom: 20,
+      display: 'block'
+    }}
+  />
+)}
+
+<input
+  type="file"
+  accept="image/*"
+  onChange={uploadLogo}
+/>
+
+{uploading && <p>Uploading logo...</p>}
+        
         <h2>Subscription</h2>
         <p>Status: {subscriptionStatus || 'Unknown'}</p>
 
