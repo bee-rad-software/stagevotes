@@ -121,6 +121,7 @@ export default function AccountPage() {
   style={{
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     gap: '10px',
     marginBottom: '20px'
   }}
