@@ -50,6 +50,24 @@ async function loadEvent() {
   }
 
   setEvent(data);
+
+  if (data?.account_id) {
+    const { data: accountData, error: accountError } = await supabase
+      .from('accounts')
+      .select('tips_enabled, venmo_url, cashapp_url, apple_pay_url')
+      .eq('id', data.account_id)
+      .single();
+
+    if (accountError) {
+      console.error(accountError.message);
+      return;
+    }
+
+    setTipsEnabled(accountData?.tips_enabled || false);
+    setVenmoUrl(accountData?.venmo_url || '');
+    setCashappUrl(accountData?.cashapp_url || '');
+    setApplePayUrl(accountData?.apple_pay_url || '');
+  }
 }
   
 useEffect(() => {
