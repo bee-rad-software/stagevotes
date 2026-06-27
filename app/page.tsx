@@ -133,7 +133,7 @@ setCreatedId(data.id);
     marginBottom: '24px'
   }}
 >
-  <Link href="/">Dashboard</Link>
+  <Link href="/">Create Contest</Link>
   <Link href="/account">Account Settings</Link>
 </nav>
 
