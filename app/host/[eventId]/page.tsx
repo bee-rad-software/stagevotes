@@ -979,7 +979,7 @@ margin: '0 auto'
 >
       
 <button
-  onClick={manageBilling}
+  onClick={() => router.push('/account')}
   style={{
   background: '#38bdf8',
   color: '#0f172a',
@@ -992,7 +992,7 @@ margin: '0 auto'
 margin: '0 auto 24px auto'
 }}
 >
-  Manage Billing
+  Account
 </button>
       
   <button
