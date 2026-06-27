@@ -451,6 +451,33 @@ const twoAway = queue[2];
     </h2>
   </div>
 )}
+
+{tipsEnabled && (venmoUrl || cashappUrl || applePayUrl) && (
+  <div className="card">
+    <h2>Tip Your Host</h2>
+    <p>Show your host some love.</p>
+
+    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      {venmoUrl && (
+        <a href={venmoUrl} target="_blank" rel="noopener noreferrer">
+          <button type="button">Venmo</button>
+        </a>
+      )}
+
+      {cashappUrl && (
+        <a href={cashappUrl} target="_blank" rel="noopener noreferrer">
+          <button type="button">Cash App</button>
+        </a>
+      )}
+
+      {applePayUrl && (
+        <a href={applePayUrl} target="_blank" rel="noopener noreferrer">
+          <button type="button">Apple Pay</button>
+        </a>
+      )}
+    </div>
+  </div>
+)}
       
       <div className="card">
         <label>Your name</label>
