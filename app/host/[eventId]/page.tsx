@@ -905,7 +905,7 @@ account?.subscription_status &&
       </p>
 
       <button
-        onClick={manageBilling}
+        onClick={() => router.push('/account')}
         style={{
           marginTop: 20,
           background: '#38bdf8',
@@ -917,7 +917,7 @@ account?.subscription_status &&
           cursor: 'pointer'
         }}
       >
-        Manage Billing
+        Account
       </button>
     </div>
   );
