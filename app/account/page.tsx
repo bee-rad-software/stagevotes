@@ -223,6 +223,8 @@ if (updateError) {
     Enable tipping options on singer signup pages
   </label>
 </div>
+
+<br />
         
 {tipsEnabled && (
   <>
