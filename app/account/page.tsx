@@ -115,8 +115,9 @@ async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
   const { error } = await supabase.storage
     .from('venue-logos')
     .upload(fileName, file, {
-      upsert: true,
-    });
+  upsert: true,
+  cacheControl: '3600',
+});
 
   if (error) {
     setMessage(error.message);
