@@ -188,6 +188,9 @@ async function removeLogo() {
 <Link href="/history">
   <button type="button">Show History</button>
 </Link>
+
+<br />
+        <br />
         
         <label>Account / Venue Name</label>
         <input
