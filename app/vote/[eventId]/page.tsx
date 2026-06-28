@@ -41,6 +41,7 @@ export default function VotePage() {
   const [message, setMessage] = useState('');
   const [categories, setCategories] = useState<VoteCategory[]>([]);
 const [scores, setScores] = useState<Record<string, number>>({});
+  const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
   load();
@@ -63,6 +64,16 @@ useEffect(() => {
     const { data: ev } = await supabase.from('events').select('*').eq('id', eventId).single();
     setEvent(ev);
 
+if (ev?.account_id) {
+  const { data: accountData } = await supabase
+    .from('accounts')
+    .select('logo_url')
+    .eq('id', ev.account_id)
+    .single();
+
+  setLogoUrl(accountData?.logo_url || '');
+}
+    
     const { data: cats } = await supabase
   .from('vote_categories')
   .select('*')
