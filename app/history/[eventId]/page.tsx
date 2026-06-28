@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
-export default function EventReportPage({ params }: { params: { eventId: string } }) {
-  const eventId = params.eventId;
+import { useParams } from 'next/navigation';
+
+export default function EventReportPage() {
+  const params = useParams();
+  const eventId = params.eventId as string;
 
   const [event, setEvent] = useState<any>(null);
   const [performances, setPerformances] = useState<any[]>([]);
