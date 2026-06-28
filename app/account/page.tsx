@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function AccountPage() {
   const [accountId, setAccountId] = useState('');
@@ -183,6 +184,10 @@ async function removeLogo() {
     ← Back to Dashboard
   </button>
 </div>
+
+<Link href="/history">
+  <button type="button">Show History</button>
+</Link>
         
         <label>Account / Venue Name</label>
         <input
