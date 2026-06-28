@@ -94,6 +94,11 @@ export default function HistoryPage() {
                   <Link href={`/display/${event.id}`}>
                     <button type="button">Open TV Display</button>
                   </Link>
+
+                  <Link href={`/history/${event.id}`}>
+                    <button>View Report</button>
+                  </Link>
+                  
                 </div>
               </div>
             ))}
