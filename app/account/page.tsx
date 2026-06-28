@@ -110,7 +110,7 @@ async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
   setUploading(true);
 
   const fileExt = file.name.split('.').pop();
-  const fileName = `${accountId}.${fileExt}`;
+  const fileName = `${accountId}-${Date.now()}.${fileExt}`;
 
   const { error } = await supabase.storage
     .from('venue-logos')
