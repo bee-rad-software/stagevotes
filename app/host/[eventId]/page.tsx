@@ -1715,24 +1715,29 @@ style={{
 </h2>
 {showCheckinSettings && (
   <>
- <div
+ <label
   style={{
     display: 'inline-flex',
     alignItems: 'center',
     gap: '10px',
-    marginBottom: '20px'
+    marginBottom: '20px',
+    width: 'auto'
   }}
 >
   <input
     type="checkbox"
     checked={event?.checkin_required ?? false}
     onChange={(e) => toggleCheckinRequired(e.target.checked)}
+    style={{
+      width: 'auto',
+      margin: 0
+    }}
   />
 
-  <label style={{ margin: 0 }}>
+  <span>
     Require check-in before People's Choice voting
-  </label>
-</div>
+  </span>
+</label>
 
   <button className="secondary" onClick={useCurrentLocationForCheckin}>
     Use My Current Location
