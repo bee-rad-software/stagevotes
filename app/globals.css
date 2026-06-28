@@ -132,3 +132,28 @@ button.danger {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+@media print {
+  button,
+  nav,
+  a button {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .card {
+    background: white !important;
+    color: black !important;
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+  }
+
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+}
