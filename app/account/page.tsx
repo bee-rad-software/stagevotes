@@ -130,11 +130,16 @@ async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
 
   setLogoUrl(data.publicUrl);
 
-  await supabase
-    .from('accounts')
-    .update({ logo_url: data.publicUrl })
-    .eq('id', accountId);
+ const { error: updateError } = await supabase
+  .from('accounts')
+  .update({ logo_url: data.publicUrl })
+  .eq('id', accountId);
 
+if (updateError) {
+  setMessage(updateError.message);
+  setUploading(false);
+  return;
+}
   setUploading(false);
   setMessage('Logo uploaded.');
 }
