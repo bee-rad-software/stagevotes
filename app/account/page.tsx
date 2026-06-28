@@ -225,6 +225,7 @@ if (updateError) {
 </div>
 
 <br />
+      <br />  
         
 {tipsEnabled && (
   <>
