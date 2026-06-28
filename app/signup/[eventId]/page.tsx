@@ -55,7 +55,7 @@ async function loadEvent() {
   if (data?.account_id) {
     const { data: accountData, error: accountError } = await supabase
       .from('accounts')
-      .select('tips_enabled, venmo_url, cashapp_url, apple_pay_url')
+      .select('tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url')
       .eq('id', data.account_id)
       .single();
 
