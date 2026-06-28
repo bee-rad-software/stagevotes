@@ -144,6 +144,23 @@ if (updateError) {
   setUploading(false);
   setMessage('Logo uploaded.');
 }
+
+async function removeLogo() {
+  setMessage('');
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({ logo_url: null })
+    .eq('id', accountId);
+
+  if (error) {
+    setMessage(error.message);
+    return;
+  }
+
+  setLogoUrl('');
+  setMessage('Logo removed.');
+}
   
   return (
     <main className="container">
@@ -176,15 +193,21 @@ if (updateError) {
 <h2>Venue Branding</h2>
 
 {logoUrl && (
-  <img
-    src={logoUrl}
-    alt="Venue Logo"
-    style={{
-      maxHeight: 100,
-      marginBottom: 20,
-      display: 'block'
-    }}
-  />
+  <div style={{ marginBottom: 20 }}>
+    <img
+      src={logoUrl}
+      alt="Venue Logo"
+      style={{
+        maxHeight: 100,
+        display: 'block',
+        marginBottom: 12
+      }}
+    />
+
+    <button type="button" onClick={removeLogo}>
+      Remove Logo
+    </button>
+  </div>
 )}
 
 <input
