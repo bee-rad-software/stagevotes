@@ -214,7 +214,7 @@ const allCategoriesScored = completed === categories.length;
   />
 )}   
         
-        <h1>StageVotes</h1>
+        <h1>Judge Voting</h1>
 </div>
       <p className="small">{event?.name}</p>
 
