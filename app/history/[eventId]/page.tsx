@@ -71,6 +71,13 @@ export default function EventReportPage() {
   const peopleChoiceWinner =
     Object.entries(peopleChoiceCounts).sort((a, b) => b[1] - a[1])[0];
 
+  const peopleChoiceResults = Object.entries(peopleChoiceCounts)
+  .map(([singer, count]) => ({
+    singer,
+    count,
+  }))
+  .sort((a, b) => b.count - a.count);
+
   const scoreTotals: Record<string, { singer: string; total: number; count: number }> = {};
 
   votes.forEach((vote) => {
@@ -166,6 +173,20 @@ export default function EventReportPage() {
               </p>
             </div>
 
+          <h2>People's Choice Results</h2>
+
+{peopleChoiceResults.length === 0 ? (
+  <p>No People's Choice votes yet.</p>
+) : (
+  <div className="card">
+    {peopleChoiceResults.map((entry, index) => (
+      <p key={entry.singer}>
+        #{index + 1} {entry.singer} — {entry.count} vote{entry.count === 1 ? '' : 's'}
+      </p>
+    ))}
+  </div>
+)}
+            
             <h2>Leaderboard</h2>
 
             {leaderboard.length === 0 ? (
