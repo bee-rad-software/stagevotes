@@ -35,6 +35,8 @@ const signupUrl =
     ? `${window.location.origin}/signup/${eventId}`
     : '';
   
+  const [logoUrl, setLogoUrl] = useState('');
+  
   useEffect(() => {
     loadAll();
 
@@ -71,9 +73,24 @@ const signupUrl =
   }
 
   async function loadEvent() {
-    const { data } = await supabase.from('events').select('*').eq('id', eventId).single();
-    setEvent(data);
+  const { data } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  setEvent(data);
+
+  if (data?.account_id) {
+    const { data: accountData } = await supabase
+      .from('accounts')
+      .select('logo_url')
+      .eq('id', data.account_id)
+      .single();
+
+    setLogoUrl(accountData?.logo_url || '');
   }
+}
 
   async function loadPerformances() {
     const { data } = await supabase
