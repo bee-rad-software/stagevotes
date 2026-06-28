@@ -1739,6 +1739,8 @@ style={{
   </span>
 </label>
 
+<br />
+    
   <button className="secondary" onClick={useCurrentLocationForCheckin}>
     Use My Current Location
   </button>
