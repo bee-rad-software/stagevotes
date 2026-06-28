@@ -118,6 +118,10 @@ export default function EventReportPage() {
             <button type="button">← Back to History</button>
           </Link>
 
+<button type="button" onClick={() => window.print()}>
+  Download PDF
+</button>
+          
           {event && (
             <Link href={`/host/${event.id}`}>
               <button type="button">Open Dashboard</button>
