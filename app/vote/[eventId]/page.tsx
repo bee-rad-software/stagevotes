@@ -199,7 +199,22 @@ const allCategoriesScored = completed === categories.length;
     width={250}
     height={125}
   />
-  <h1>StageVotes</h1>
+  
+     {logoUrl && (
+  <img
+    src={logoUrl}
+    alt="Venue Logo"
+    style={{
+      maxHeight: '120px',
+      maxWidth: '300px',
+      display: 'block',
+      margin: '0 auto 24px',
+      objectFit: 'contain'
+    }}
+  />
+)}   
+        
+        <h1>StageVotes</h1>
 </div>
       <p className="small">{event?.name}</p>
 
