@@ -382,7 +382,7 @@ const twoAway = queue[2];
   />
 )}
        
-       <h1>StageVotes Signup</h1>
+       <h1>Signup</h1>
 </div>
 
 {isCurrentSinger && (
