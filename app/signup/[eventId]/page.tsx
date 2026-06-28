@@ -36,6 +36,7 @@ const [notifiedCurrent, setNotifiedCurrent] = useState(false);
 const [cashappUrl, setCashappUrl] = useState('');
 const [applePayUrl, setApplePayUrl] = useState('');
 const [tipsEnabled, setTipsEnabled] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
 
 async function loadEvent() {
   const { data, error } = await supabase
