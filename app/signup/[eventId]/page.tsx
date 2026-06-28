@@ -68,6 +68,7 @@ async function loadEvent() {
     setVenmoUrl(accountData?.venmo_url || '');
     setCashappUrl(accountData?.cashapp_url || '');
     setApplePayUrl(accountData?.apple_pay_url || '');
+    setLogoUrl(accountData?.logo_url || '');
   }
 }
   
