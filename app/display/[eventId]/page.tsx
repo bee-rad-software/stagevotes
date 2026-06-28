@@ -424,10 +424,23 @@ if (tiebreakerVotes.length > 0) {
           boxShadow: '0 0 60px rgba(250,204,21,0.15)'
         }}
       >
-        <div style={{ fontSize: 40, color: '#facc15', fontWeight: 900, letterSpacing: 4 }}>
-          🎤 NOW SINGING
-        </div>
+       {logoUrl && (
+  <img
+    src={logoUrl}
+    alt="Venue Logo"
+    style={{
+      maxHeight: '150px',
+      maxWidth: '400px',
+      display: 'block',
+      margin: '0 auto 30px',
+      objectFit: 'contain'
+    }}
+  />
+)}
 
+<div style={{ fontSize: 40, color: '#facc15', fontWeight: 900, letterSpacing: 4 }}>
+  🎤 NOW SINGING
+</div>
         {current ? (
           <>
             <h1 style={{ fontSize: 92, margin: '28px 0 10px', textTransform: 'uppercase' }}>
