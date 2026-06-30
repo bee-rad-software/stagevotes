@@ -79,6 +79,9 @@ export default function AccountPage() {
         venmo_url: venmoUrl,
         cashapp_url: cashappUrl,
         apple_pay_url: applePayUrl,
+        static_signup_qr: staticSignupQr,
+        static_judge_qr: staticJudgeQr,
+        static_people_qr: staticPeopleQr,
       })
       .eq('id', accountId);
 
