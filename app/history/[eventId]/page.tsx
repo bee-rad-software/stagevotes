@@ -182,6 +182,31 @@ const mostActiveSinger = Object.entries(
                 <h3>People's Choice Votes</h3>
                 <p>{peopleVotes.length}</p>
               </div>
+
+              <div className="card">
+  <h3>Completed Songs</h3>
+  <p>{completedSongs}</p>
+</div>
+
+<div className="card">
+  <h3>Judge Ballots</h3>
+  <p>{uniqueJudgeBallots}</p>
+</div>
+
+<div className="card">
+  <h3>Average Score</h3>
+  <p>{averageScore.toFixed(2)}</p>
+</div>
+
+<div className="card">
+  <h3>Most Active Singer</h3>
+  <p>
+    {mostActiveSinger
+      ? `${mostActiveSinger[0]} (${mostActiveSinger[1]} song${mostActiveSinger[1] === 1 ? '' : 's'})`
+      : 'N/A'}
+  </p>
+</div>
+              
             </div>
 
             <h2>Winners</h2>
