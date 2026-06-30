@@ -1652,7 +1652,31 @@ style={{
 </div>
       
     <div>
-      <h3>Voting</h3>
+      
+      <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8
+  }}
+>
+  <h3 style={{ margin: 0 }}>Voting</h3>
+
+  <span
+    style={{
+      background: staticJudgeQr ? '#16a34a' : '#475569',
+      color: 'white',
+      padding: '2px 8px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 'bold'
+    }}
+  >
+    {staticJudgeQr ? 'Static QR' : 'Event QR'}
+  </span>
+</div>
+      
      <div
   style={{
     display: 'flex',
@@ -1688,7 +1712,31 @@ style={{
 </div>
       
     <div>
-      <h3>People's Choice</h3>
+      
+      <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8
+  }}
+>
+  <h3 style={{ margin: 0 }}>People's Choice</h3>
+
+  <span
+    style={{
+      background: staticPeopleQr ? '#16a34a' : '#475569',
+      color: 'white',
+      padding: '2px 8px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 'bold'
+    }}
+  >
+    {staticPeopleQr ? 'Static QR' : 'Event QR'}
+  </span>
+</div>
+      
       <div
   style={{
     display: 'flex',
