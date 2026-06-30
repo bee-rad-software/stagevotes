@@ -61,6 +61,29 @@ export default function EventReportPage() {
     performances.map((p) => p.singer_name).filter(Boolean)
   );
 
+const completedSongs = performances.filter(
+  (p) => p.status === 'completed'
+).length;
+
+const uniqueJudgeBallots = new Set(
+  votes.map((v) => v.voter_key || v.judge_id || v.device_id).filter(Boolean)
+).size;
+
+const totalScore = votes.reduce((sum, vote) => {
+  return sum + Number(vote.score || 0);
+}, 0);
+
+const averageScore =
+  votes.length > 0 ? totalScore / votes.length : 0;
+
+const mostActiveSinger = Object.entries(
+  performances.reduce((acc: Record<string, number>, performance) => {
+    const singer = performance.singer_name || 'Unknown';
+    acc[singer] = (acc[singer] || 0) + 1;
+    return acc;
+  }, {})
+).sort((a, b) => b[1] - a[1])[0];
+  
   const peopleChoiceCounts: Record<string, number> = {};
 
   peopleVotes.forEach((vote) => {
