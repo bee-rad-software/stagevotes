@@ -17,6 +17,9 @@ export default function AccountPage() {
   const router = useRouter();
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [staticSignupQr, setStaticSignupQr] = useState(false);
+  const [staticJudgeQr, setStaticJudgeQr] = useState(false);
+  const [staticPeopleQr, setStaticPeopleQr] = useState(false);
 
   useEffect(() => {
     loadAccount();
@@ -43,7 +46,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-      .select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url')
+      .select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr')
       .eq('id', accountUser.account_id)
       .single();
 
@@ -60,6 +63,9 @@ export default function AccountPage() {
     setCashappUrl(account.cashapp_url || '');
     setApplePayUrl(account.apple_pay_url || '');
     setLogoUrl(account.logo_url || '');
+    setStaticSignupQr(account.static_signup_qr || false);
+    setStaticJudgeQr(account.static_judge_qr || false);
+    setStaticPeopleQr(account.static_people_qr || false);
   }
 
   async function saveSettings() {
