@@ -43,23 +43,33 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showLeaderboard, setShowLeaderboard] = useState(true);
 const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
   const [copiedLink, setCopiedLink] = useState('');
+  const [accountId, setAccountId] = useState('');
+const [staticSignupQr, setStaticSignupQr] = useState(false);
+const [staticJudgeQr, setStaticJudgeQr] = useState(false);
+const [staticPeopleQr, setStaticPeopleQr] = useState(false);
   
-  const voteUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/vote/${eventId}`
-      : '';
-
-  const signupUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}/signup/${eventId}`
-      : '';
-
-  const peoplesChoiceUrl =
+ const voteUrl =
   typeof window !== 'undefined'
-    ? `${window.location.origin}/peopleschoice/${eventId}`
+    ? staticJudgeQr
+      ? `${window.location.origin}/go/${accountId}/vote`
+      : `${window.location.origin}/vote/${eventId}`
     : '';
 
-  const checkinUrl =
+const signupUrl =
+  typeof window !== 'undefined'
+    ? staticSignupQr
+      ? `${window.location.origin}/go/${accountId}/signup`
+      : `${window.location.origin}/signup/${eventId}`
+    : '';
+
+const peoplesChoiceUrl =
+  typeof window !== 'undefined'
+    ? staticPeopleQr
+      ? `${window.location.origin}/go/${accountId}/people`
+      : `${window.location.origin}/peopleschoice/${eventId}`
+    : '';
+
+const checkinUrl =
   typeof window !== 'undefined'
     ? `${window.location.origin}/checkin/${eventId}`
     : '';
@@ -74,6 +84,19 @@ const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
     return;
   }
 
+const { data: account } = await supabase
+  .from('accounts')
+  .select('id, static_signup_qr, static_judge_qr, static_people_qr')
+  .eq('id', accountUser.account_id)
+  .single();
+
+if (account) {
+  setAccountId(account.id);
+  setStaticSignupQr(account.static_signup_qr || false);
+  setStaticJudgeQr(account.static_judge_qr || false);
+  setStaticPeopleQr(account.static_people_qr || false);
+}
+      
   loadAll();
 }
 
