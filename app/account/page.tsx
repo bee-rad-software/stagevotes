@@ -170,7 +170,7 @@ async function removeLogo() {
 
 <div style={{ marginBottom: '20px' }}>
   <button
-    onClick={() => router.back()}
+    onClick={() => router.push('/')}
     style={{
       background: '#38bdf8',
       color: '#0f172a',
@@ -181,7 +181,7 @@ async function removeLogo() {
       cursor: 'pointer'
     }}
   >
-    ← Back to Dashboard
+    ← Back to Create Contest
   </button>
 </div>
 
