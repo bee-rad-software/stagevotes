@@ -84,6 +84,17 @@ const checkinUrl =
     return;
   }
 
+const { data: accountUser } = await supabase
+  .from('account_users')
+  .select('account_id')
+  .eq('user_id', data.user.id)
+  .single();
+
+if (!accountUser) {
+  loadAll();
+  return;
+}
+      
 const { data: account } = await supabase
   .from('accounts')
   .select('id, static_signup_qr, static_judge_qr, static_people_qr')
