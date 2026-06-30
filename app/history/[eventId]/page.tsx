@@ -141,6 +141,12 @@ const mostActiveSinger = Object.entries(
             <button type="button">← Back to History</button>
           </Link>
 
+          <Link href={`/history/${eventId}/winner`}>
+  <button type="button">
+    Winner Graphic
+  </button>
+</Link>
+
 <button type="button" onClick={() => window.print()}>
   Download PDF
 </button>
