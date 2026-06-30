@@ -235,6 +235,44 @@ async function removeLogo() {
 
 {uploading && <p>Uploading logo...</p>}
         
+     <h2>Static QR Codes</h2>
+
+<p className="small">
+  Use the same QR codes for every event. StageVotes will automatically send guests to your current active event.
+</p>
+
+<div style={{ display: 'grid', gap: '12px', marginBottom: '24px' }}>
+  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', width: 'auto' }}>
+    <input
+      type="checkbox"
+      checked={staticSignupQr}
+      onChange={(e) => setStaticSignupQr(e.target.checked)}
+      style={{ width: 'auto', margin: 0 }}
+    />
+    <span>Use static Signup QR</span>
+  </label>
+
+  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', width: 'auto' }}>
+    <input
+      type="checkbox"
+      checked={staticJudgeQr}
+      onChange={(e) => setStaticJudgeQr(e.target.checked)}
+      style={{ width: 'auto', margin: 0 }}
+    />
+    <span>Use static Judge Voting QR</span>
+  </label>
+
+  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', width: 'auto' }}>
+    <input
+      type="checkbox"
+      checked={staticPeopleQr}
+      onChange={(e) => setStaticPeopleQr(e.target.checked)}
+      style={{ width: 'auto', margin: 0 }}
+    />
+    <span>Use static People's Choice QR</span>
+  </label>
+</div> 
+        
         <h2>Subscription</h2>
         <p>Status: {subscriptionStatus || 'Unknown'}</p>
 
