@@ -62,6 +62,11 @@ export default function HistoryPage() {
         <h1>Show History</h1>
 
         <div style={{ marginBottom: '20px' }}>
+         
+          <Link href="/history/season">
+  <button type="button">Season Leaderboard</button>
+</Link>
+          
           <Link href="/account">
             <button type="button">← Back to Account</button>
           </Link>
