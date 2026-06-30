@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import html2canvas from 'html2canvas';
 
 export default function WinnerGraphicPage() {
   const params = useParams();
@@ -89,6 +90,22 @@ export default function WinnerGraphicPage() {
     setPeopleChoiceWinner(winner?.[0] || '');
   }
 
+async function downloadGraphic() {
+  const card = document.getElementById('winner-card');
+
+  if (!card) return;
+
+  const canvas = await html2canvas(card, {
+    backgroundColor: null,
+    scale: 2,
+  });
+
+  const link = document.createElement('a');
+  link.download = `${event?.name || 'stagevotes'}-winners.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+  
   return (
     <main className="container">
       <div style={{ marginBottom: 20 }}>
@@ -159,9 +176,9 @@ export default function WinnerGraphicPage() {
           marginTop: 30
         }}
       >
-        <button onClick={() => window.print()}>
-          Download Graphic
-        </button>
+       <button onClick={downloadGraphic}>
+  Download Graphic
+</button>
       </div>
     </main>
   );
