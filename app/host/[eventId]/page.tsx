@@ -1772,7 +1772,30 @@ style={{
 </div>
 
     <div>
-      <h3>Check-In</h3>
+      <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8
+  }}
+>
+  <h3 style={{ margin: 0 }}>Check-In</h3>
+
+  <span
+    style={{
+      background: '#475569',
+      color: 'white',
+      padding: '2px 8px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 'bold'
+    }}
+  >
+    Event QR
+  </span>
+</div>
+      
       <div
   style={{
     display: 'flex',
