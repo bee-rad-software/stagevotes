@@ -1590,7 +1590,29 @@ style={{
   }}
 >
   <div>
-  <h3>Signup</h3>
+  <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8
+  }}
+>
+  <h3 style={{ margin: 0 }}>Signup</h3>
+
+  <span
+    style={{
+      background: staticSignupQr ? '#16a34a' : '#475569',
+      color: 'white',
+      padding: '2px 8px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 'bold'
+    }}
+  >
+    {staticSignupQr ? 'Static QR' : 'Event QR'}
+  </span>
+</div>
 
 <div
   style={{
