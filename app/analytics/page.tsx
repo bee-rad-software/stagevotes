@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
+const [performances, setPerformances] = useState<any[]>([]);
+const [votes, setVotes] = useState<any[]>([]);
+const [peopleVotes, setPeopleVotes] = useState<any[]>([]);
+
 type EventRow = {
   id: string;
   name: string;
