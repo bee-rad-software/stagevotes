@@ -22,7 +22,7 @@ export default function AnalyticsPage() {
 
   
   useEffect(() => {
-    loadHistory();
+    loadAnalytics();
   }, []);
 
   async function loadAnalytics() {
