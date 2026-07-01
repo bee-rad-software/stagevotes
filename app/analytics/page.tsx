@@ -42,18 +42,48 @@ export default function HistoryPage() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('events')
-      .select('id, name, venue, created_at, is_show_ended, is_archived')
-      .eq('account_id', accountUser.account_id)
-      .order('created_at', { ascending: false });
+   const { data: events, error } = await supabase
+  .from('events')
+  .select('*')
+  .eq('account_id', accountUser.account_id)
+  .eq('is_show_ended', true)
+  .order('created_at', { ascending: false });
 
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
+if (error) {
+  setMessage(error.message);
+  return;
+}
 
-    setEvents(data || []);
+setEvents(events || []);
+    const eventIds = (events || []).map((event) => event.id);
+
+if (eventIds.length === 0) {
+  setPerformances([]);
+  setVotes([]);
+  setPeopleVotes([]);
+  return;
+}
+
+const { data: performanceData } = await supabase
+  .from('performances')
+  .select('*')
+  .in('event_id', eventIds);
+
+setPerformances(performanceData || []);
+
+const { data: voteData } = await supabase
+  .from('votes')
+  .select('*')
+  .in('event_id', eventIds);
+
+setVotes(voteData || []);
+
+const { data: peopleVoteData } = await supabase
+  .from('peoples_choice_votes')
+  .select('*')
+  .in('event_id', eventIds);
+
+setPeopleVotes(peopleVoteData || []);
   }
 
   return (
