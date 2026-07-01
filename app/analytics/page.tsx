@@ -13,7 +13,7 @@ type EventRow = {
   is_archived: boolean;
 };
 
-export default function HistoryPage() {
+export default function AnalyticsPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [message, setMessage] = useState('');
   const [performances, setPerformances] = useState<any[]>([]);
@@ -25,7 +25,7 @@ export default function HistoryPage() {
     loadHistory();
   }, []);
 
-  async function loadHistory() {
+  async function loadAnalytics() {
     setMessage('');
 
     const { data: userData } = await supabase.auth.getUser();
