@@ -4,10 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
-const [performances, setPerformances] = useState<any[]>([]);
-const [votes, setVotes] = useState<any[]>([]);
-const [peopleVotes, setPeopleVotes] = useState<any[]>([]);
-
 type EventRow = {
   id: string;
   name: string;
@@ -20,7 +16,11 @@ type EventRow = {
 export default function HistoryPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [message, setMessage] = useState('');
+  const [performances, setPerformances] = useState<any[]>([]);
+  const [votes, setVotes] = useState<any[]>([]);
+  const [peopleVotes, setPeopleVotes] = useState<any[]>([]);
 
+  
   useEffect(() => {
     loadHistory();
   }, []);
