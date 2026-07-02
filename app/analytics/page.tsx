@@ -90,6 +90,33 @@ const { data: peopleVoteData } = await supabase
 setPeopleVotes(peopleVoteData || []);
   }
 
+const totalShows = events.length;
+
+const totalPerformances = performances.length;
+
+const totalJudgeVotes = votes.length;
+
+const totalPeopleVotes = peopleVotes.length;
+
+const uniqueSingers = new Set(
+  performances.map((p) => p.singer_name?.trim()).filter(Boolean)
+).size;
+
+const averageSingers =
+  totalShows > 0
+    ? (uniqueSingers / totalShows).toFixed(1)
+    : "0";
+
+const averagePerformances =
+  totalShows > 0
+    ? (totalPerformances / totalShows).toFixed(1)
+    : "0";
+
+const averageAudienceVotes =
+  totalShows > 0
+    ? (totalPeopleVotes / totalShows).toFixed(1)
+    : "0";
+  
   return (
     <main className="container">
       <div className="card">
