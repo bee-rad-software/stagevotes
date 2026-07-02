@@ -16,6 +16,7 @@ type EventRow = {
 export default function HistoryPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [message, setMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     loadHistory();
@@ -56,6 +57,16 @@ export default function HistoryPage() {
     setEvents(data || []);
   }
 
+const filteredEvents = events.filter((event) => {
+  const search = searchTerm.toLowerCase();
+
+  return (
+    event.name?.toLowerCase().includes(search) ||
+    event.venue?.toLowerCase().includes(search) ||
+    new Date(event.created_at).toLocaleDateString().includes(search)
+  );
+});
+  
   return (
     <main className="container">
       <div className="card">
@@ -72,13 +83,29 @@ export default function HistoryPage() {
           </Link>
         </div>
 
+<input
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)}
+  placeholder="🔍 Search by show name, venue, or date..."
+  style={{
+    width: '100%',
+    padding: '12px',
+    marginBottom: '20px',
+    borderRadius: '8px',
+    border: '1px solid #555',
+    background: '#1f1f2e',
+    color: 'white',
+    fontSize: '16px'
+  }}
+/>
+
         {message && <p>{message}</p>}
 
-        {events.length === 0 ? (
+        {filteredevents.length === 0 ? (
           <p>No shows yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
-            {events.map((event) => (
+            {filteredevents.map((event) => (
               <div
                 key={event.id}
                 className="card"
