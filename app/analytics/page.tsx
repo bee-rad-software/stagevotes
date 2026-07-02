@@ -167,7 +167,7 @@ const averageAudienceVotes =
 
   <div className="card">
     <h2>{totalJudgeVotes}</h2>
-    <p>Judge Votes</p>
+    <p>Judge Ballots</p>
   </div>
 
   <div className="card">
