@@ -93,8 +93,9 @@ setPeopleVotes(peopleVoteData || []);
 const totalShows = events.length;
 
 const totalPerformances = performances.length;
-
-const totalJudgeVotes = votes.length;
+const totalJudgeVotes = new Set(
+  votes.map(v => `${v.performance_id}-${v.voter_key}`)
+).size;
 
 const totalPeopleVotes = peopleVotes.length;
 
