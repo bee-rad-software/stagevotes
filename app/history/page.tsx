@@ -101,11 +101,11 @@ const filteredEvents = events.filter((event) => {
 
         {message && <p>{message}</p>}
 
-        {filteredevents.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <p>No shows yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
-            {filteredevents.map((event) => (
+            {filteredEvents.map((event) => (
               <div
                 key={event.id}
                 className="card"
