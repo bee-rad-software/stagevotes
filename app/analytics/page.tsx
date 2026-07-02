@@ -117,6 +117,39 @@ const averageAudienceVotes =
   totalShows > 0
     ? (totalPeopleVotes / totalShows).toFixed(1)
     : "0";
+
+  const uniqueAudienceVoters = new Set(
+  peopleVotes
+    .map((v) => v.voter_key || v.device_id || v.ip_hash)
+    .filter(Boolean)
+).size;
+
+const averageAudiencePerShow =
+  totalShows > 0
+    ? (uniqueAudienceVoters / totalShows).toFixed(1)
+    : '0';
+
+const peopleVotesByEvent = peopleVotes.reduce(
+  (acc: Record<string, Set<string>>, vote) => {
+    if (!vote.event_id) return acc;
+
+    const voter = vote.voter_key || vote.device_id || vote.ip_hash;
+    if (!voter) return acc;
+
+    if (!acc[vote.event_id]) {
+      acc[vote.event_id] = new Set();
+    }
+
+    acc[vote.event_id].add(voter);
+    return acc;
+  },
+  {}
+);
+
+const biggestAudience = Object.values(peopleVotesByEvent).reduce(
+  (max, voters) => Math.max(max, voters.size),
+  0
+);
   
   return (
     <main className="container">
@@ -179,6 +212,21 @@ const averageAudienceVotes =
     <h2>{averageAudienceVotes}</h2>
     <p>Avg Audience Votes</p>
   </div>
+
+  <div className="card">
+  <h2>{uniqueAudienceVoters}</h2>
+  <p>Total Unique Audience Voters</p>
+</div>
+
+<div className="card">
+  <h2>{averageAudiencePerShow}</h2>
+  <p>Avg Audience / Show</p>
+</div>
+
+<div className="card">
+  <h2>{biggestAudience}</h2>
+  <p>Biggest Audience</p>
+</div>
 
 </div>
       </div>
