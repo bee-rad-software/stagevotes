@@ -133,43 +133,53 @@ const averageAudienceVotes =
           </Link>
         </div>
 
-        {message && <p>{message}</p>}
+       <h1>Venue Analytics</h1>
 
-        {events.length === 0 ? (
-          <p>No shows yet.</p>
-        ) : (
-          <div style={{ display: 'grid', gap: '16px' }}>
-            {events.map((event) => (
-              <div
-                key={event.id}
-                className="card"
-                style={{ margin: 0 }}
-              >
-                <h2>{event.name}</h2>
-                <p>{event.venue}</p>
-                <p>
-                  {new Date(event.created_at).toLocaleDateString()} ·{' '}
-                  {event.is_show_ended ? 'Ended' : 'Active'}
-                </p>
+<div
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 16,
+    marginTop: 24
+  }}
+>
 
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <Link href={`/host/${event.id}`}>
-                    <button type="button">Open Dashboard</button>
-                  </Link>
+  <div className="card">
+    <h2>{totalShows}</h2>
+    <p>Shows Hosted</p>
+  </div>
 
-                  <Link href={`/display/${event.id}`}>
-                    <button type="button">Open TV Display</button>
-                  </Link>
+  <div className="card">
+    <h2>{totalPerformances}</h2>
+    <p>Total Songs</p>
+  </div>
 
-                  <Link href={`/history/${event.id}`}>
-                    <button>View Report</button>
-                  </Link>
-                  
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+  <div className="card">
+    <h2>{uniqueSingers}</h2>
+    <p>Unique Singers</p>
+  </div>
+
+  <div className="card">
+    <h2>{averagePerformances}</h2>
+    <p>Avg Songs / Show</p>
+  </div>
+
+  <div className="card">
+    <h2>{totalJudgeVotes}</h2>
+    <p>Judge Votes</p>
+  </div>
+
+  <div className="card">
+    <h2>{totalPeopleVotes}</h2>
+    <p>People's Choice Votes</p>
+  </div>
+
+  <div className="card">
+    <h2>{averageAudienceVotes}</h2>
+    <p>Avg Audience Votes</p>
+  </div>
+
+</div>
       </div>
     </main>
   );
