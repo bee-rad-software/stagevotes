@@ -177,6 +177,44 @@ async function removeLogo() {
       <div className="card">
         <h1>Account Settings</h1>
 
+<h2 style={{ marginTop: '24px' }}>Management</h2>
+
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gap: '12px',
+    marginBottom: '24px'
+  }}
+>
+  <Link href="/history">
+    <button
+      type="button"
+      style={{ width: '100%' }}
+    >
+      📜 Show History
+    </button>
+  </Link>
+
+  <Link href="/analytics">
+    <button
+      type="button"
+      style={{ width: '100%' }}
+    >
+      📊 Analytics
+    </button>
+  </Link>
+
+  <Link href="/history/season">
+    <button
+      type="button"
+      style={{ width: '100%' }}
+    >
+      🏆 Season Leaderboard
+    </button>
+  </Link>
+</div>
+        
 <div style={{ marginBottom: '20px' }}>
   <button
     onClick={() => router.push('/')}
@@ -194,9 +232,7 @@ async function removeLogo() {
   </button>
 </div>
 
-<Link href="/history">
-  <button type="button">Show History</button>
-</Link>
+
 
 <br />
         <br />
