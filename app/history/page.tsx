@@ -204,6 +204,13 @@ const sortedEvents = [...filteredEvents].sort((a, b) => {
                   <Link href={`/history/${event.id}`}>
                     <button>View Report</button>
                   </Link>
+
+                  <button
+  type="button"
+  onClick={() => duplicateShow(event.id)}
+>
+  📋 Duplicate Show
+</button>
                   
                 </div>
               </div>
