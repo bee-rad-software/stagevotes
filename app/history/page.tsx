@@ -19,6 +19,9 @@ export default function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+const [duplicateEventId, setDuplicateEventId] = useState('');
+const [duplicateName, setDuplicateName] = useState('');
 
   useEffect(() => {
     loadHistory();
@@ -110,12 +113,8 @@ async function duplicateShow(eventId: string) {
     return;
   }
 
-const newName = window.prompt(
-  'Enter a name for the new show:',
-  `${oldEvent.name} (Copy)`
-);
-
-if (!newName?.trim()) {
+if (!duplicateName.trim()) {
+  setMessage('Please enter a show name.');
   return;
 }
   
@@ -123,7 +122,7 @@ if (!newName?.trim()) {
     .from('events')
     .insert({
       account_id: oldEvent.account_id,
-      name: newName.trim(),
+      name: duplicateName.trim(),
       venue: oldEvent.venue,
       pin: oldEvent.pin,
       is_voting_open: false,
@@ -280,7 +279,11 @@ setTimeout(() => {
 
                   <button
   type="button"
-  onClick={() => duplicateShow(event.id)}
+  onClick={() => {
+    setDuplicateEventId(event.id);
+    setDuplicateName(`${event.name} (Copy)`);
+    setShowDuplicateModal(true);
+  }}
 >
   📋 Duplicate Show
 </button>
@@ -291,6 +294,68 @@ setTimeout(() => {
           </div>
         )}
       </div>
+
+{showDuplicateModal && (
+  <div
+    style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: 20
+    }}
+  >
+    <div
+      className="card"
+      style={{
+        maxWidth: 500,
+        width: '100%',
+        margin: 0
+      }}
+    >
+      <h2>Duplicate Show</h2>
+
+      <label>New show name</label>
+      <input
+        value={duplicateName}
+        onChange={(e) => setDuplicateName(e.target.value)}
+        autoFocus
+      />
+
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          justifyContent: 'flex-end',
+          marginTop: 24
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            setShowDuplicateModal(false);
+            setDuplicateEventId('');
+            setDuplicateName('');
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          onClick={() => duplicateShow(duplicateEventId)}
+          disabled={!duplicateName.trim()}
+        >
+          Duplicate
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+      
     </main>
   );
 }
