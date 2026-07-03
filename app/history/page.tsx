@@ -95,6 +95,10 @@ const sortedEvents = [...filteredEvents].sort((a, b) => {
 
   return 0;
 });
+
+async function duplicateShow(eventId: string) {
+
+}
   
   return (
     <main className="container">
