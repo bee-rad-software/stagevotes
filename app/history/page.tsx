@@ -17,6 +17,7 @@ export default function HistoryPage() {
   const [events, setEvents] = useState<EventRow[]>([]);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   useEffect(() => {
     loadHistory();
@@ -60,11 +61,18 @@ export default function HistoryPage() {
 const filteredEvents = events.filter((event) => {
   const search = searchTerm.toLowerCase();
 
-  return (
+  const matchesSearch =
     event.name?.toLowerCase().includes(search) ||
     event.venue?.toLowerCase().includes(search) ||
-    new Date(event.created_at).toLocaleDateString().includes(search)
-  );
+    new Date(event.created_at).toLocaleDateString().includes(search);
+
+  const matchesStatus =
+    statusFilter === 'all' ||
+    (statusFilter === 'active' && !event.is_show_ended) ||
+    (statusFilter === 'ended' && event.is_show_ended) ||
+    (statusFilter === 'archived' && event.is_archived);
+
+  return matchesSearch && matchesStatus;
 });
   
   return (
@@ -99,6 +107,31 @@ const filteredEvents = events.filter((event) => {
   }}
 />
 
+      <div
+  style={{
+    display: 'flex',
+    gap: '10px',
+    flexWrap: 'wrap',
+    marginBottom: '20px'
+  }}
+>
+  {['all', 'active', 'ended', 'archived'].map((filter) => (
+    <button
+      key={filter}
+      type="button"
+      onClick={() => setStatusFilter(filter)}
+      style={{
+        background: statusFilter === filter ? '#38bdf8' : '#334155',
+        color: statusFilter === filter ? '#0f172a' : 'white'
+      }}
+    >
+      {filter === 'all'
+        ? 'All Shows'
+        : filter.charAt(0).toUpperCase() + filter.slice(1)}
+    </button>
+  ))}
+</div>
+        
         {message && <p>{message}</p>}
 
         {filteredEvents.length === 0 ? (
