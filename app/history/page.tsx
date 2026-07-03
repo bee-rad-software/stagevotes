@@ -146,11 +146,9 @@ async function duplicateShow(eventId: string) {
 
   if (categories && categories.length > 0) {
     const newCategories = categories.map((category) => ({
-      event_id: newEvent.id,
-      name: category.name,
-      weight: category.weight,
-      sort_order: category.sort_order,
-    }));
+  event_id: newEvent.id,
+  category_name: category.category_name,
+}));
 
     await supabase.from('vote_categories').insert(newCategories);
   }
