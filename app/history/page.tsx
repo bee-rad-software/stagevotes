@@ -110,11 +110,20 @@ async function duplicateShow(eventId: string) {
     return;
   }
 
+const newName = window.prompt(
+  'Enter a name for the new show:',
+  `${oldEvent.name} (Copy)`
+);
+
+if (!newName?.trim()) {
+  return;
+}
+  
   const { data: newEvent, error: newEventError } = await supabase
     .from('events')
     .insert({
       account_id: oldEvent.account_id,
-      name: `${oldEvent.name} (Copy)`,
+      name: newName.trim(),
       venue: oldEvent.venue,
       pin: oldEvent.pin,
       is_voting_open: false,
