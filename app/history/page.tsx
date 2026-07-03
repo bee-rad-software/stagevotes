@@ -162,7 +162,11 @@ if (!newName?.trim()) {
     await supabase.from('vote_categories').insert(newCategories);
   }
 
+  setMessage('✅ Show duplicated successfully. Opening dashboard...');
+
+setTimeout(() => {
   window.location.href = `/host/${newEvent.id}`;
+}, 800);
 }
   
   return (
