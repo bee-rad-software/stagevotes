@@ -97,7 +97,65 @@ const sortedEvents = [...filteredEvents].sort((a, b) => {
 });
 
 async function duplicateShow(eventId: string) {
+  setMessage('');
 
+  const { data: oldEvent, error: eventError } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', eventId)
+    .single();
+
+  if (eventError || !oldEvent) {
+    setMessage(eventError?.message || 'Could not find show to duplicate.');
+    return;
+  }
+
+  const { data: newEvent, error: newEventError } = await supabase
+    .from('events')
+    .insert({
+      account_id: oldEvent.account_id,
+      name: `${oldEvent.name} (Copy)`,
+      venue: oldEvent.venue,
+      pin: oldEvent.pin,
+      is_voting_open: false,
+      current_performance_id: null,
+      is_show_ended: false,
+      is_archived: false,
+      show_signup_qr: oldEvent.show_signup_qr,
+      show_voting_qr: oldEvent.show_voting_qr,
+      show_peoples_choice_qr: oldEvent.show_peoples_choice_qr,
+      show_checkin_qr: oldEvent.show_checkin_qr,
+      checkin_required: oldEvent.checkin_required,
+      venue_lat: oldEvent.venue_lat,
+      venue_lng: oldEvent.venue_lng,
+      checkin_radius_meters: oldEvent.checkin_radius_meters,
+      tiebreaker_category: oldEvent.tiebreaker_category,
+    })
+    .select()
+    .single();
+
+  if (newEventError || !newEvent) {
+    setMessage(newEventError?.message || 'Could not create duplicated show.');
+    return;
+  }
+
+  const { data: categories } = await supabase
+    .from('vote_categories')
+    .select('*')
+    .eq('event_id', eventId);
+
+  if (categories && categories.length > 0) {
+    const newCategories = categories.map((category) => ({
+      event_id: newEvent.id,
+      name: category.name,
+      weight: category.weight,
+      sort_order: category.sort_order,
+    }));
+
+    await supabase.from('vote_categories').insert(newCategories);
+  }
+
+  window.location.href = `/host/${newEvent.id}`;
 }
   
   return (
