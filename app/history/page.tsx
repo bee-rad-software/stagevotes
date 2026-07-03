@@ -18,6 +18,7 @@ export default function HistoryPage() {
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
     loadHistory();
@@ -73,6 +74,26 @@ const filteredEvents = events.filter((event) => {
     (statusFilter === 'archived' && event.is_archived);
 
   return matchesSearch && matchesStatus;
+});
+
+const sortedEvents = [...filteredEvents].sort((a, b) => {
+  if (sortBy === 'newest') {
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  }
+
+  if (sortBy === 'oldest') {
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  }
+
+  if (sortBy === 'name') {
+    return (a.name || '').localeCompare(b.name || '');
+  }
+
+  if (sortBy === 'venue') {
+    return (a.venue || '').localeCompare(b.venue || '');
+  }
+
+  return 0;
 });
   
   return (
@@ -131,14 +152,34 @@ const filteredEvents = events.filter((event) => {
     </button>
   ))}
 </div>
+
+<select
+  value={sortBy}
+  onChange={(e) => setSortBy(e.target.value)}
+  style={{
+    width: '100%',
+    padding: '12px',
+    marginBottom: '20px',
+    borderRadius: '8px',
+    border: '1px solid #555',
+    background: '#1f1f2e',
+    color: 'white',
+    fontSize: '16px'
+  }}
+>
+  <option value="newest">Newest First</option>
+  <option value="oldest">Oldest First</option>
+  <option value="name">Show Name A-Z</option>
+  <option value="venue">Venue A-Z</option>
+</select>
         
         {message && <p>{message}</p>}
 
-        {filteredEvents.length === 0 ? (
+        {sortedEvents.length.length === 0 ? (
           <p>No shows yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
-            {filteredEvents.map((event) => (
+            {sortedEvents.map((event) => (
               <div
                 key={event.id}
                 className="card"
