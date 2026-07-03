@@ -175,7 +175,7 @@ const sortedEvents = [...filteredEvents].sort((a, b) => {
         
         {message && <p>{message}</p>}
 
-        {sortedEvents.length.length === 0 ? (
+        {sortedEvents.length === 0 ? (
           <p>No shows yet.</p>
         ) : (
           <div style={{ display: 'grid', gap: '16px' }}>
