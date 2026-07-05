@@ -9,14 +9,16 @@ export default function KaraFunDisplay() {
   return (
     <div
   style={{
-    width: "100vw",
-    minHeight: "100vh",
-    background: "linear-gradient(180deg, #07111f, #111827)",
-    color: "white",
-    padding: "18px 16px",
-    boxSizing: "border-box",
-    fontFamily: "Arial, sans-serif",
-  }}
+  width: "100vw",
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at top left, rgba(56,189,248,0.25), transparent 32%), linear-gradient(180deg, #020617, #0f172a)",
+  color: "white",
+  padding: 20,
+  boxSizing: "border-box",
+  fontFamily: "Arial, sans-serif",
+  overflow: "hidden",
+}}
 >
      <div style={{ textAlign: "center", marginBottom: 16 }}>
   <div style={{ fontSize: 34, fontWeight: 900, color: "#38bdf8" }}>
@@ -25,6 +27,9 @@ export default function KaraFunDisplay() {
   <div style={{ fontSize: 13, color: "#cbd5e1" }}>
     KaraFun Sidecar
   </div>
+  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 6 }}>
+  Press F11 for full screen
+</div>     
 </div>
 
 <div
