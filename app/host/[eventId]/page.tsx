@@ -1544,6 +1544,19 @@ style={{
       >
         📺 Launch TV Display
       </button>
+
+<button
+  className="secondary"
+  onClick={() => window.open(`/karafun-display/${eventId}`, '_blank')}
+  style={{
+    background: '#f97316',
+    color: 'white',
+    fontWeight: 'bold'
+  }}
+>
+  🎶 Launch KaraFun Layout
+</button>
+      
     </div>
   </div>
 </div>
