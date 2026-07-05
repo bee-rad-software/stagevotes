@@ -1,14 +1,20 @@
 {
   "name": "StageVotes",
   "short_name": "StageVotes",
-  "description": "Live karaoke voting and queue management",
+  "description": "Karaoke queue, voting, and event display software",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "theme_color": "#38bdf8",
   "icons": [
     {
-      "src": "/stagevotes-logo.png",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
