@@ -5,6 +5,7 @@ export const metadata = {
   title: 'StageVotes',
   description: 'Live karaoke voting and queue management',
   manifest: '/manifest.json',
+  themeColor: '#38bdf8',
   icons: {
     icon: '/icon.jpg',
     apple: '/icon.jpg'
