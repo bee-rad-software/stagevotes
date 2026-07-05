@@ -1547,7 +1547,13 @@ style={{
 
 <button
   className="secondary"
-  onClick={() => window.open(`/karafun-display/${eventId}`, '_blank')}
+  onClick={() =>
+  window.open(
+    `/karafun-display/${eventId}`,
+    "karafunDisplay",
+    "width=520,height=900,left=100,top=100,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes"
+  )
+}
   style={{
     background: '#f97316',
     color: 'white',
