@@ -105,14 +105,14 @@ export default function KaraFunDisplay() {
     .slice(0, 5);
 
   return (
-    <main
-      style={{
-        width: '100vw',
-        minHeight: '100vh',
+   <main
+  style={{
+    width: 320,
+    minHeight: '100vh',
         background:
           'radial-gradient(circle at top left, rgba(56,189,248,0.25), transparent 32%), linear-gradient(180deg, #020617, #0f172a)',
         color: 'white',
-        padding: 20,
+        padding: 14,
         boxSizing: 'border-box',
         fontFamily: 'Arial, sans-serif',
         overflow: 'hidden',
