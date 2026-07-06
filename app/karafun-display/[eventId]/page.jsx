@@ -177,11 +177,18 @@ export default function KaraFunDisplay() {
 
 <div
   style={{
-    marginTop: 20,
+    marginTop: 22,
     fontSize: 22,
     fontWeight: 700,
     textAlign: 'center',
-    lineHeight: 1.25,
+    lineHeight: 1.2,
+    display: '-webkit-box',
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: 'vertical',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    minHeight: 52,
+    padding: '0 8px',
   }}
 >
   {current?.song_title || ''}
@@ -189,10 +196,12 @@ export default function KaraFunDisplay() {
 
 <div
   style={{
-    marginTop: 6,
-    fontSize: 18,
-    opacity: 0.85,
+    marginTop: 8,
+    fontSize: 17,
+    fontWeight: 500,
+    opacity: 0.65,
     textAlign: 'center',
+    letterSpacing: 0.3,
   }}
 >
   {current?.artist || ''}
