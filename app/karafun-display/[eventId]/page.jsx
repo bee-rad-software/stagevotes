@@ -122,52 +122,77 @@ export default function KaraFunDisplay() {
     >
       
       <div
-        style={{
-          background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
-          borderRadius: 22,
-          padding: 18,
-          marginBottom: 14,
+       style={{
+  background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
+  borderRadius: 26,
+  padding: 24,
+  minHeight: 235,
+  marginBottom: 18,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  boxShadow: '0 15px 35px rgba(0,0,0,.35)',
+}}
           boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
         }}
       >
-    <div
+   <div
   style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+    fontSize: 13,
+    fontWeight: 900,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    marginBottom: 18,
   }}
 >
-  <div
-    style={{
-      fontSize: 13,
-      fontWeight: 900,
-      letterSpacing: 1.5,
-      color: "white",
-    }}
-  >
-    NOW SINGING
-  </div>
-
-  <img
-    src="/stagevotes-logo.png"
-    alt="StageVotes"
-    style={{
-      height: 28,
-      width: "auto",
-      opacity: 0.95,
-    }}
-  />
+  NOW SINGING
 </div>
 
-        <div style={{ fontSize: 38, fontWeight: 900, marginTop: 8 }}>
-          🎤 {current?.singer_name || 'Waiting...'}
-        </div>
+<div
+  style={{
+    fontSize: 46,
+    textAlign: 'center',
+    marginBottom: 8,
+  }}
+>
+  🎤
+</div>
 
-        <div style={{ fontSize: 16, opacity: 0.9, marginTop: 6 }}>
-          {current?.song_title || 'Song will appear here'}
-          {current?.artist ? ` — ${current.artist}` : ''}
-        </div>
+<div
+  style={{
+    fontSize: 58,
+    fontWeight: 900,
+    textAlign: 'center',
+    lineHeight: 1,
+    textTransform: 'uppercase',
+  }}
+>
+  {current?.singer_name || 'Waiting'}
+</div>
+
+<div
+  style={{
+    marginTop: 20,
+    fontSize: 22,
+    fontWeight: 700,
+    textAlign: 'center',
+    lineHeight: 1.25,
+  }}
+>
+  {current?.song_title || ''}
+</div>
+
+<div
+  style={{
+    marginTop: 6,
+    fontSize: 18,
+    opacity: 0.85,
+    textAlign: 'center',
+  }}
+>
+  {current?.artist || ''}
+</div>
       </div>
 
       <div
