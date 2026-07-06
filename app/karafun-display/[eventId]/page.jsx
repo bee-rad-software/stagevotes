@@ -121,9 +121,10 @@ export default function KaraFunDisplay() {
       }}
     >
       
-      <div
-       style={{
-  background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
+     <div
+  key={current?.id || 'waiting'}
+  style={{
+    background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
   borderRadius: 26,
   padding: 24,
   minHeight: 235,
@@ -132,6 +133,7 @@ export default function KaraFunDisplay() {
   flexDirection: 'column',
   justifyContent: 'center',
   boxShadow: '0 15px 35px rgba(0,0,0,.35)',
+  animation: 'popIn 0.45s ease-out',       
 }}
       >
    <div
@@ -292,6 +294,22 @@ export default function KaraFunDisplay() {
           Add your song from your phone
         </div>
       </div>
-    </main>
+
+<style jsx global>{`
+  @keyframes popIn {
+    0% {
+      opacity: 0;
+      transform: translateY(18px) scale(0.96);
+      filter: brightness(1.25);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: brightness(1);
+    }
+  }
+`}</style>
+    
+  </main>
   );
 }
