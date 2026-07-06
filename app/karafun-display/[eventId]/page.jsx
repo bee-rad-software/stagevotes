@@ -118,18 +118,36 @@ export default function KaraFunDisplay() {
         overflow: 'hidden',
       }}
     >
-      <div style={{ textAlign: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 34, fontWeight: 900, color: '#38bdf8' }}>
-          StageVotes
-        </div>
-        <div style={{ fontSize: 13, color: '#cbd5e1' }}>
-          KaraFun Sidecar
-        </div>
-        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 6 }}>
-          Press Control + Command + F for full screen
-        </div>
-      </div>
+     <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  }}
+>
+  <img
+    src="/stagevotes-logo.png"
+    alt="StageVotes"
+    style={{
+      height: 42,
+      width: "auto",
+    }}
+  />
 
+  <div
+    style={{
+      fontSize: 11,
+      color: "#94a3b8",
+      fontWeight: 700,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+    }}
+  >
+    LIVE DISPLAY
+  </div>
+</div>
+      
       <div
         style={{
           background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
