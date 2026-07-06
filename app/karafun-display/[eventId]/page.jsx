@@ -159,11 +159,17 @@ export default function KaraFunDisplay() {
 
 <div
   style={{
-    fontSize: 58,
+    fontSize:
+      (current?.singer_name || 'Waiting').length > 16
+        ? 40
+        : (current?.singer_name || 'Waiting').length > 11
+        ? 48
+        : 64,
     fontWeight: 900,
     textAlign: 'center',
-    lineHeight: 1,
+    lineHeight: 1.02,
     textTransform: 'uppercase',
+    wordBreak: 'break-word',
   }}
 >
   {current?.singer_name || 'Waiting'}
