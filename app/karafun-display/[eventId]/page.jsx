@@ -105,10 +105,12 @@ export default function KaraFunDisplay() {
     .slice(0, 5);
 
   return (
-   <main
+  <main
   style={{
     width: 320,
+    maxWidth: 320,
     minHeight: '100vh',
+    margin: "0 auto",
         background:
           'radial-gradient(circle at top left, rgba(56,189,248,0.25), transparent 32%), linear-gradient(180deg, #020617, #0f172a)',
         color: 'white',
