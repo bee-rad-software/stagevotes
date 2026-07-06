@@ -133,8 +133,6 @@ export default function KaraFunDisplay() {
   justifyContent: 'center',
   boxShadow: '0 15px 35px rgba(0,0,0,.35)',
 }}
-          boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
-        }}
       >
    <div
   style={{
