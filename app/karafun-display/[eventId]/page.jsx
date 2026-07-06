@@ -118,35 +118,6 @@ export default function KaraFunDisplay() {
         overflow: 'hidden',
       }}
     >
-     <div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  }}
->
-  <img
-    src="/stagevotes-logo.png"
-    alt="StageVotes"
-    style={{
-      height: 42,
-      width: "auto",
-    }}
-  />
-
-  <div
-    style={{
-      fontSize: 11,
-      color: "#94a3b8",
-      fontWeight: 700,
-      letterSpacing: 1,
-      textTransform: "uppercase",
-    }}
-  >
-    LIVE DISPLAY
-  </div>
-</div>
       
       <div
         style={{
@@ -157,9 +128,35 @@ export default function KaraFunDisplay() {
           boxShadow: '0 12px 30px rgba(0,0,0,0.35)',
         }}
       >
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.4 }}>
-          NOW SINGING
-        </div>
+    <div
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  }}
+>
+  <div
+    style={{
+      fontSize: 13,
+      fontWeight: 900,
+      letterSpacing: 1.5,
+      color: "white",
+    }}
+  >
+    NOW SINGING
+  </div>
+
+  <img
+    src="/stagevotes-logo.png"
+    alt="StageVotes"
+    style={{
+      height: 28,
+      width: "auto",
+      opacity: 0.95,
+    }}
+  />
+</div>
 
         <div style={{ fontSize: 38, fontWeight: 900, marginTop: 8 }}>
           🎤 {current?.singer_name || 'Waiting...'}
