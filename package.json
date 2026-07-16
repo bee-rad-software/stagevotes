@@ -6,13 +6,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@supabase/supabase-js": "latest",
+    "framer-motion": "^12.42.2",
+    "html2canvas": "^1.4.1",
+    "lucide-react": "^1.23.0",
     "next": "latest",
     "qrcode.react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "stripe": "^18.0.0",
-    "html2canvas": "^1.4.1"
+    "stripe": "^18.0.0"
   },
   "devDependencies": {
     "@types/node": "latest",

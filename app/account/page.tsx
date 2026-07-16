@@ -172,8 +172,8 @@ async function removeLogo() {
   setMessage('Logo removed.');
 }
   
-  return (
-    <main className="container">
+return (
+  <main className="container">
       <div className="card">
         <h1>Account Settings</h1>
 
@@ -375,7 +375,7 @@ async function removeLogo() {
         </button>
 
         {message && <p>{message}</p>}
-      </div>
+           </div>
     </main>
-  );
+);
 }

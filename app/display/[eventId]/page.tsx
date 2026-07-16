@@ -19,6 +19,7 @@ export default function DisplayPage() {
   const [categories, setCategories] = useState<
   { id: string; category_name: string }[]
 >([]);
+const [awardStep, setAwardStep] = useState(0);
 
   const voteUrl =
   typeof window !== 'undefined'
@@ -36,6 +37,22 @@ const signupUrl =
     : '';
   
   const [logoUrl, setLogoUrl] = useState('');
+  
+  useEffect(() => {
+  if (!event?.is_show_ended) return;
+
+  setAwardStep(0);
+
+  const timers = [
+    setTimeout(() => setAwardStep(1), 600),
+    setTimeout(() => setAwardStep(2), 2200),
+    setTimeout(() => setAwardStep(3), 3800),
+    setTimeout(() => setAwardStep(4), 5600),
+    setTimeout(() => setAwardStep(5), 7400),
+  ];
+
+  return () => timers.forEach(clearTimeout);
+}, [event?.is_show_ended]);
   
   useEffect(() => {
     loadAll();
@@ -256,71 +273,119 @@ if (tiebreakerVotes.length > 0) {
   
   if (event?.is_show_ended) {
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f172a 0%, #312e81 100%)',
-        color: 'white',
-        padding: 40,
-        textAlign: 'center',
-        fontFamily: 'Arial, sans-serif'
-      }}
-    >
-      <h1 style={{ fontSize: 72, color: '#facc15' }}>🏆 Awards Night</h1>
-
-      {leaderboard[0] && (
-        <div style={{ fontSize: 80, fontWeight: 900, marginTop: 40 }}>
-          🥇 {leaderboard[0].singer_name}
-        </div>
-      )}
-
-      {leaderboard[1] && (
-        <div style={{ fontSize: 52, marginTop: 30 }}>
-          🥈 {leaderboard[1].singer_name}
-        </div>
-      )}
-
-      {leaderboard[2] && (
-        <div style={{ fontSize: 44, marginTop: 20 }}>
-          🥉 {leaderboard[2].singer_name}
-        </div>
-      )}
-
-<div
+   <main
   style={{
-    marginTop: 40,
-    padding: 32,
-    borderRadius: 24,
-    background: 'rgba(250,204,21,0.12)',
-    border: '1px solid rgba(250,204,21,0.35)'
+    minHeight: '100vh',
+    background:
+      'radial-gradient(circle at top, rgba(250,204,21,0.25), transparent 35%), linear-gradient(135deg, #020617 0%, #312e81 100%)',
+    color: 'white',
+    padding: 40,
+    textAlign: 'center',
+    fontFamily: 'Arial, sans-serif',
+    overflow: 'hidden'
   }}
 >
-  <div style={{ fontSize: 34, color: '#facc15', fontWeight: 900 }}>
-    🎉 People&apos;s Choice
+  <div style={{ fontSize: 34, opacity: 0.8, letterSpacing: 4 }}>
+    STAGEVOTES PRESENTS
   </div>
 
-  {peoplesChoiceResults.length > 0 ? (
-    <>
-      <div style={{ fontSize: 72, fontWeight: 900, marginTop: 16 }}>
-        {peoplesChoiceResults[0].singer_name}
-      </div>
+  <h1
+    style={{
+      fontSize: 86,
+      color: '#facc15',
+      marginTop: 20,
+      marginBottom: 50,
+      textShadow: '0 0 35px rgba(250,204,21,.45)'
+    }}
+  >
+    🏆 Awards Night
+  </h1>
 
-      <div style={{ fontSize: 28, opacity: 0.8 }}>
-        {peoplesChoiceResults[0].votes} vote
-        {peoplesChoiceResults[0].votes !== 1 ? 's' : ''}
+  {leaderboard[2] && (
+    <div className="award-card" style={{ animationDelay: '0.5s' }}>
+      <div style={{ fontSize: 56 }}>🥉 Third Place</div>
+      <div style={{ fontSize: 76, fontWeight: 900 }}>
+        {leaderboard[2].singer_name}
       </div>
-    </>
-  ) : (
-    <div style={{ fontSize: 28, marginTop: 16 }}>
-      No People&apos;s Choice votes yet.
     </div>
   )}
-</div>
-      
-      <p style={{ fontSize: 32, marginTop: 40 }}>
-        Thanks for singing!
-      </p>
-    </main>
+
+  {leaderboard[1] && (
+    <div className="award-card" style={{ animationDelay: '1.5s' }}>
+      <div style={{ fontSize: 60 }}>🥈 Second Place</div>
+      <div style={{ fontSize: 82, fontWeight: 900 }}>
+        {leaderboard[1].singer_name}
+      </div>
+    </div>
+  )}
+
+  {leaderboard[0] && (
+    <div className="award-card champion" style={{ animationDelay: '2.7s' }}>
+      <div style={{ fontSize: 68 }}>🥇 Grand Champion</div>
+      <div style={{ fontSize: 104, fontWeight: 900 }}>
+        {leaderboard[0].singer_name}
+      </div>
+    </div>
+  )}
+
+  <div className="award-card people-choice" style={{ animationDelay: '4s' }}>
+    <div style={{ fontSize: 48, color: '#facc15', fontWeight: 900 }}>
+      🎉 People&apos;s Choice
+    </div>
+
+    {peoplesChoiceResults.length > 0 ? (
+      <>
+        <div style={{ fontSize: 78, fontWeight: 900, marginTop: 10 }}>
+          {peoplesChoiceResults[0].singer_name}
+        </div>
+        <div style={{ fontSize: 28, opacity: 0.8 }}>
+          {peoplesChoiceResults[0].votes} vote
+          {peoplesChoiceResults[0].votes !== 1 ? 's' : ''}
+        </div>
+      </>
+    ) : (
+      <div style={{ fontSize: 28, marginTop: 16 }}>
+        No People&apos;s Choice votes yet.
+      </div>
+    )}
+  </div>
+
+  <p style={{ fontSize: 32, marginTop: 45, opacity: 0.85 }}>
+    Thanks for singing!
+  </p>
+
+  <style jsx global>{`
+    .award-card {
+      opacity: 0;
+      transform: translateY(40px) scale(0.95);
+      animation: awardReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      margin: 22px auto;
+      padding: 28px;
+      max-width: 900px;
+      border-radius: 30px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 20px 50px rgba(0,0,0,.35);
+    }
+
+    .champion {
+      background: linear-gradient(135deg, rgba(250,204,21,.28), rgba(249,115,22,.2));
+      border: 1px solid rgba(250,204,21,.45);
+    }
+
+    .people-choice {
+      background: rgba(250,204,21,0.12);
+      border: 1px solid rgba(250,204,21,0.35);
+    }
+
+    @keyframes awardReveal {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  `}</style>
+</main>
   );
 }
   

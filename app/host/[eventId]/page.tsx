@@ -6,6 +6,8 @@ import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
+import AppQRCode from '@/components/AppQRCode';
+import AppShell from '@/components/AppShell';
 
 export default function HostPage() {
   const params = useParams();
@@ -47,6 +49,7 @@ const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
 const [staticSignupQr, setStaticSignupQr] = useState(false);
 const [staticJudgeQr, setStaticJudgeQr] = useState(false);
 const [staticPeopleQr, setStaticPeopleQr] = useState(false);
+
   
  const voteUrl =
   typeof window !== 'undefined'
@@ -2040,21 +2043,21 @@ style={{
   }}
 >
   <div style={{ textAlign: 'center' }}>
-    {signupUrl && <QRCodeSVG value={signupUrl} size={60} />}
+   <AppQRCode value={signupUrl} size={60} />
     <div style={{ color: '#38bdf8', fontSize: 12 }}>
       Signup
     </div>
   </div>
 
 <div style={{ textAlign: 'center' }}>
-  {peoplesChoiceUrl && <QRCodeSVG value={peoplesChoiceUrl} size={60} />}
+ <AppQRCode value={peoplesChoiceUrl} size={60} />
   <div style={{ color: '#facc15', fontSize: 12 }}>
     People's Choice
   </div>
 </div>
     
   <div style={{ textAlign: 'center' }}>
-    {voteUrl && <QRCodeSVG value={voteUrl} size={60} />}
+   <AppQRCode value={voteUrl} size={60} />
     <div style={{ color: '#c2410c', fontSize: 12 }}>
       Vote
     </div>

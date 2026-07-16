@@ -4,6 +4,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
+import SVQueueStatusCard from '@/components/singer/SVQueueStatusCard';
+import SVTipCard from '@/components/singer/SVTipCard';
+import SVLogoHeader from '@/components/singer/SVLogoHeader';
+import SVSongEditor from '@/components/singer/SVSongEditor';
+import SVSingerHero from '@/components/singer/SVSingerHero';
 
 type SongEntry = {
   songTitle: string;
@@ -358,267 +363,121 @@ const estimatedWaitMinutes =
     : 0;
 const twoAway = queue[2];
 
-  return (
-    <main className="container">
-     <div style={{ textAlign: 'center', marginBottom: 20 }}>
-  <Image
-    src="/stagevotes-logo.png"
-    alt="StageVotes"
-    width={250}
-    height={125}
-  />
-  
-{logoUrl && (
-  <img
-    src={logoUrl}
-    alt="Venue Logo"
-    style={{
-      maxHeight: '120px',
-      maxWidth: '300px',
-      display: 'block',
-      margin: '0 auto 24px',
-      objectFit: 'contain'
-    }}
-  />
-)}
-       
-       <h1>Signup</h1>
-</div>
+const queueState =
+  isCurrentSinger
+    ? 'performing'
+    : isOnDeckSinger
+    ? 'next'
+    : myPosition === 3
+    ? 'soon'
+    : 'waiting';
 
-{isCurrentSinger && (
-  <div
-    className="card"
-    style={{
-      background: 'rgba(194,65,12,0.25)',
-      border: '3px solid #c2410c',
-      textAlign: 'center'
-    }}
-  >
-    <h1>🎤 You're Up Now!</h1>
-    <p>Head to the stage.</p>
-  </div>
-)}
+    const hasJoined = Boolean(savedSingerName && myPosition);
 
-{isOnDeckSinger && !isCurrentSinger && (
-  <div
-    className="card"
-    style={{
-      background: 'rgba(250,204,21,0.2)',
-      border: '3px solid #facc15',
-      textAlign: 'center'
-    }}
-  >
-    <h1>⏭ You're On Deck!</h1>
-    <p>Get ready to sing.</p>
-  </div>
-)}
-      
-{currentSinger && !isCurrentSinger && (
-  <div className="card">
-    {isCurrentSinger ? (
-      <>
-        <h2>🎤 You're Up Now!</h2>
-        <p>Head to the stage.</p>
-      </>
-    ) : (
-      <>
-        <h3>🎤 Currently Singing</h3>
-        <p>{currentSinger.singer_name}</p>
-      </>
+    return (
+  <main className="sv-mobile-page">
+   <SVSingerHero
+  singerName={singerName}
+  venueName={event?.venue_name || event?.name || "Tonight's Karaoke"}
+  editable={!hasJoined}
+  status={queueState}
+  onNameChange={setSingerName}
+  onPhotoClick={() => {
+    // We'll hook this up to uploads next.
+  }}
+/>
+
+    {myPosition && (
+      <SVQueueStatusCard
+        queueState={queueState}
+        singerName={savedSingerName || singerName || 'Singer'}
+        currentSingerName={currentSinger?.singer_name || 'Current singer'}
+        nextSingerName={onDeckSinger?.singer_name || 'Next singer'}
+        estimatedWaitMinutes={estimatedWaitMinutes}
+      />
     )}
-  </div>
-)}
-{onDeckSinger && !isOnDeckSinger && (
-  <div className="card">
-    {isOnDeckSinger ? (
-      <>
-        <h2>⏭ You're On Deck!</h2>
-        <p>Get ready to sing.</p>
-      </>
-    ) : (
-      <>
-        <h3>⏭ On Deck</h3>
-        <p>{onDeckSinger.singer_name}</p>
-      </>
-    )}
-  </div>
-)}
-      
-{myPosition && !isCurrentSinger && !isOnDeckSinger && (
-  <div className="card">
-    <h2>
-      {myPosition === 1
-        ? "🎤 You're up now!"
-        : myPosition === 2
-        ? "⏭️ You're on deck!"
-        : myPosition === 3
-        ? "🔔 You're 2 songs away!"
-        : `🎶 You're #${myPosition} in line`}
-      {myPosition > 1 && (
-  <p className="small">
-    ⏱ Estimated wait: about {estimatedWaitMinutes} minutes
-  </p>
-)}
 
-{myPosition === 1 && (
-  <p className="small">
-    🎤 Head to the stage.
-  </p>
-)}
-    </h2>
-  </div>
-)}
+    <SVTipCard
+      tipsEnabled={tipsEnabled}
+      venmoUrl={venmoUrl}
+      cashappUrl={cashappUrl}
+      applePayUrl={applePayUrl}
+    />
 
-{tipsEnabled && (venmoUrl || cashappUrl || applePayUrl) && (
-  <div className="card">
-    <h2>Tip Your Host</h2>
-    <p>Show your host some love.</p>
+    <section className="sv-mobile-card">
 
-    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-      {venmoUrl && (
-        <a href={venmoUrl} target="_blank" rel="noopener noreferrer">
-          <button type="button">Venmo</button>
-        </a>
-      )}
-
-      {cashappUrl && (
-        <a href={cashappUrl} target="_blank" rel="noopener noreferrer">
-          <button type="button">Cash App</button>
-        </a>
-      )}
-
-      {applePayUrl && (
-        <a href={applePayUrl} target="_blank" rel="noopener noreferrer">
-          <button type="button">Apple Pay</button>
-        </a>
-      )}
+  <div className="sv-singer-name-field">
+    <div className="sv-mobile-kicker">
+      Singer Info
     </div>
+
+    <label htmlFor="singer-name">
+      Your Name
+    </label>
+
+    <input
+      id="singer-name"
+      value={singerName}
+      onChange={(e) => setSingerName(e.target.value)}
+      placeholder="Enter your name"
+    />
   </div>
-)}
-      
-      <div className="card">
-        <label>Your name</label>
-        <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
 
-        {songs.map((song, index) => (
-          <div key={index} className="card">
-            <h3>Song {index + 1}</h3>
+  <div className="sv-mobile-card-header">
 
-            <label>Song title</label>
-          <input
-  value={song.songTitle}
-  onChange={(e) => {
-    updateSong(index, 'songTitle', e.target.value);
-searchSongs(e.target.value, index);
-checkDuplicateSong(e.target.value);
-  }}
-/>
-
-{activeSongIndex === index && songSuggestions.length > 0 && (
-  <div
-    style={{
-      background: '#222',
-      border: '1px solid #444',
-      borderRadius: 8,
-      maxHeight: 250,
-      overflowY: 'auto',
-      marginTop: 4
-    }}
-  >
-    {songSuggestions.map((suggestion) => (
-      <div
-        key={suggestion.id}
-        style={{
-          padding: 10,
-          cursor: 'pointer',
-          borderBottom: '1px solid #333'
-        }}
-        onClick={() => {
-  updateSong(index, 'songTitle', suggestion.title);
-  updateSong(index, 'artist', suggestion.artist || '');
-
-  checkDuplicateSong(suggestion.title);
-
-  setSongSuggestions([]);
-  setActiveSongIndex(null);
-}}
-      >
-        <strong>{suggestion.title}</strong>
-        <br />
-        <small>{suggestion.artist}</small>
+           <div>
+          <div className="sv-mobile-kicker">My songs tonight</div>
+          <h2>{songs.length} songs queued</h2>
+        </div>
       </div>
-    ))}
-  </div>
-)}
 
-{duplicateWarning && (
-  <p
-    style={{
-      color: '#fbbf24',
-      fontWeight: 'bold'
-    }}
-  >
-    {duplicateWarning}
-  </p>
-)}
-            
-            <label>Artist</label>
-  <input
-  value={song.artist}
-  onChange={(e) => {
-    updateSong(index, 'artist', e.target.value);
-    searchArtists(e.target.value);
-  }}
-/>
+  {songs.map((song, index) => {
+    const isCurrent = isCurrentSinger && index === 0;
 
-{artistSuggestions.length > 0 && (
-  <div
-    style={{
-      background: '#222',
-      border: '1px solid #444',
-      borderRadius: 8,
-      maxHeight: 250,
-      overflowY: 'auto',
-      marginTop: 4
-    }}
-  >
-    {artistSuggestions.map((artist) => (
+   return (
       <div
-        key={artist.artist}
-        style={{
-          padding: 10,
-          cursor: 'pointer',
-          borderBottom: '1px solid #333'
-        }}
-        onClick={() => {
-          updateSong(index, 'artist', artist.artist);
-          setArtistSuggestions([]);
-        }}
+        key={index}
+        className={isCurrent ? 'sv-song-card active' : 'sv-song-card'}
       >
-        {artist.artist}
-      </div>
-    ))}
-  </div>
-)}
-
-{songs.length > 1 && (
-              <button className="danger" onClick={() => removeSongField(index)}>
-                Remove Song
-              </button>
-            )}
+        <div>
+          <div className="sv-song-number">
+            {isCurrent ? 'NOW' : `#${index + 1}`}
           </div>
-        ))}
 
-        <button className="secondary" onClick={addSongField}>
-          Add Another Song
-        </button>
+          <div className="sv-song-title">
+            {song.songTitle || 'Choose a song'}
+          </div>
 
-        <button onClick={submitSignup}>
-          Sign Up
-        </button>
+          <div className="sv-song-status">
+            {isCurrent ? 'Currently Performing' : 'Queued'}
+          </div>
+        </div>
 
-        {message && <p>{message}</p>}
+        {!isCurrent && (
+          <button
+            className="sv-change-song"
+            type="button"
+            onClick={() => {
+              // next step opens bottom sheet picker
+            }}
+          >
+            Change
+          </button>
+        )}
       </div>
-    </main>
-  );
+    );
+  })}
+
+  <button className="sv-full-button" type="button" onClick={addSongField}>
+    + Add another song
+  </button>
+
+  <button type="button" onClick={submitSignup}>
+    Sign Up
+  </button>
+
+  {message && <p>{message}</p>}
+    </section>
+  </main>
+);
 }

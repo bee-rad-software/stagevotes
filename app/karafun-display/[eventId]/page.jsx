@@ -1,9 +1,10 @@
 'use client';
 
-import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
+import { motion, AnimatePresence } from "framer-motion";
+import AppQRCode from '@/components/AppQRCode';
 
 export default function KaraFunDisplay() {
   const params = useParams();
@@ -67,42 +68,21 @@ export default function KaraFunDisplay() {
     (p) => p.id === event?.current_performance_id
   );
 
-  const rotatedQueue = useMemo(() => {
-    const singerFirstOrder = new Map();
-    const singerSongCounts = new Map();
+ const activeQueue = performances
+  .filter(
+    (p) => p.status !== "completed" && p.status !== "skipped"
+  )
+  .sort((a, b) => {
+    const roundDiff = (a.round || 1) - (b.round || 1);
+    if (roundDiff !== 0) return roundDiff;
 
-    const withRotation = performances
-      .slice()
-      .sort((a, b) => a.queue_order - b.queue_order)
-      .map((p) => {
-        const singerKey = p.singer_name.trim().toLowerCase();
+    return (a.queue_order || 0) - (b.queue_order || 0);
+  });
 
-        if (!singerFirstOrder.has(singerKey)) {
-          singerFirstOrder.set(singerKey, p.queue_order);
-        }
+const upcoming = activeQueue
+  .filter((p) => p.id !== event?.current_performance_id)
+  .slice(0, 5);
 
-        const songNumber = (singerSongCounts.get(singerKey) || 0) + 1;
-        singerSongCounts.set(singerKey, songNumber);
-
-        return {
-          ...p,
-          singerFirstOrder: singerFirstOrder.get(singerKey) || p.queue_order,
-          songNumber,
-        };
-      });
-
-    return withRotation.sort((a, b) => {
-      if (a.songNumber !== b.songNumber) {
-        return a.songNumber - b.songNumber;
-      }
-
-      return a.singerFirstOrder - b.singerFirstOrder;
-    });
-  }, [performances]);
-
-  const upcoming = rotatedQueue
-    .filter((p) => p.id !== event?.current_performance_id && p.status !== 'completed')
-    .slice(0, 5);
 
   return (
   <main
@@ -121,21 +101,97 @@ export default function KaraFunDisplay() {
       }}
     >
       
-     <div
-  key={current?.id || 'waiting'}
+<div
   style={{
-    background: 'linear-gradient(135deg, #0ea5e9, #f97316)',
-  borderRadius: 26,
-  padding: 24,
-  minHeight: 235,
-  marginBottom: 18,
-  display: 'flex',
-  flexDirection: 'column',
-  justifyContent: 'center',
-  boxShadow: '0 15px 35px rgba(0,0,0,.35)',
-  animation: 'popIn 0.45s ease-out',       
-}}
-      >
+    position: 'relative',
+    marginBottom: 18,
+  }}
+>
+  <div
+    style={{
+      position: 'absolute',
+      inset: -18,
+      borderRadius: 42,
+      background:
+        'radial-gradient(circle at 70% 75%, rgba(249,115,22,.45), transparent 60%), radial-gradient(circle at 25% 20%, rgba(56,189,248,.35), transparent 55%)',
+      opacity: 1,
+filter: 'blur(50px)',
+      animation: 'glowPulse 8s ease-in-out infinite',
+      pointerEvents: 'none',
+      zIndex: 0,
+    }}
+  />
+
+{/* Spotlights */}
+<div
+  style={{
+    position: 'absolute',
+    top: -160,
+    left: 30,
+    width: 140,
+    height: 500,
+    background:
+      'linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0))',
+    clipPath: 'polygon(45% 0%,55% 0%,100% 100%,0% 100%)',
+    filter: 'blur(10px)',
+    transformOrigin: 'top center',
+    animation: 'beamLeft 8s ease-in-out infinite',
+    pointerEvents: 'none',
+    zIndex: 2,
+  }}
+/>
+
+<div
+  style={{
+    position: 'absolute',
+    top: -160,
+    right: 30,
+    width: 140,
+    height: 500,
+    background:
+      'linear-gradient(to bottom, rgba(255,255,255,.22), rgba(255,255,255,0))',
+    clipPath: 'polygon(45% 0%,55% 0%,100% 100%,0% 100%)',
+    filter: 'blur(10px)',
+    transformOrigin: 'top center',
+    animation: 'beamRight 10s ease-in-out infinite',
+    pointerEvents: 'none',
+    zIndex: 2,
+  }}
+/>
+
+<div
+  style={{
+    position: 'absolute',
+    top: -120,
+    left: -180,
+    width: 140,
+    height: 520,
+    background:
+      'linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent)',
+    transform: 'rotate(28deg)',
+    animation: 'shineSweep 8s ease-in-out infinite',
+    pointerEvents: 'none',
+    zIndex: 2,
+  }}
+/>
+
+  <div
+    key={current?.id || 'waiting'}
+    style={{
+      background: 'linear-gradient(135deg, #38bdf8 0%, #60c5ff 22%, #fb923c 62%, #f97316 82%, #ea580c 100%)',
+      backgroundSize: '180% 180%',
+      animation: 'gradientShift 18s ease-in-out infinite, popIn 0.8s cubic-bezier(0.22,1,0.36,1)',
+      position: 'relative',
+      zIndex: 1,
+      borderRadius: 26,
+      padding: 24,
+      minHeight: 235,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      boxShadow: '0 15px 35px rgba(0,0,0,.35)',
+    }}
+  >
    <div
   style={{
     fontSize: 13,
@@ -149,7 +205,13 @@ export default function KaraFunDisplay() {
   NOW SINGING
 </div>
 
-<div
+<motion.div
+  animate={{ y: [0, -6, 0] }}
+  transition={{
+    duration: 2.2,
+    repeat: Infinity,
+    ease: "easeInOut",
+  }}
   style={{
     fontSize: 46,
     textAlign: 'center',
@@ -157,9 +219,17 @@ export default function KaraFunDisplay() {
   }}
 >
   🎤
-</div>
+</motion.div>
 
-<div
+<motion.div
+  key={current?.id || 'waiting-singer'}
+  initial={{ opacity: 0, x: 35, scale: 0.96 }}
+  animate={{ opacity: 1, x: 0, scale: 1 }}
+  exit={{ opacity: 0, x: -35, scale: 0.96 }}
+  transition={{
+  duration: 0.75,
+  ease: [0.22, 1, 0.36, 1],
+}}
   style={{
     fontSize:
       (current?.singer_name || 'Waiting').length > 16
@@ -175,7 +245,7 @@ export default function KaraFunDisplay() {
   }}
 >
   {current?.singer_name || 'Waiting'}
-</div>
+</motion.div>
 
 <div
   style={{
@@ -209,6 +279,7 @@ export default function KaraFunDisplay() {
   {current?.artist || ''}
 </div>
       </div>
+      </div>
 
       <div
         style={{
@@ -237,9 +308,17 @@ export default function KaraFunDisplay() {
           </div>
         ) : (
           upcoming.map((p, index) => (
-            <div
-              key={p.id}
-              style={{
+           <motion.div
+  key={p.id}
+  layout
+  initial={{ opacity: 0, y: 16 }}
+  animate={{ opacity: 1, y: 0 }}
+  exit={{ opacity: 0, y: -16 }}
+  transition={{
+    duration: 0.35,
+    ease: "easeOut",
+  }}
+  style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
@@ -256,7 +335,7 @@ export default function KaraFunDisplay() {
                 {index + 1}.
               </span>
               <span>{p.singer_name}</span>
-            </div>
+            </motion.div>
           ))
         )}
       </div>
@@ -283,7 +362,7 @@ export default function KaraFunDisplay() {
             justifyContent: 'center',
           }}
         >
-          {signupUrl && <QRCodeSVG value={signupUrl} size={96} />}
+          <AppQRCode value={signupUrl} size={96} />
         </div>
 
         <div style={{ fontSize: 20, fontWeight: 900 }}>
@@ -296,7 +375,20 @@ export default function KaraFunDisplay() {
       </div>
 
 <style jsx global>{`
-  @keyframes popIn {
+ 
+ @keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+ 
+ @keyframes popIn {
     0% {
       opacity: 0;
       transform: translateY(18px) scale(0.96);
@@ -308,6 +400,44 @@ export default function KaraFunDisplay() {
       filter: brightness(1);
     }
   }
+
+@keyframes shineSweep {
+  0% {
+    transform: translateX(-220px) rotate(28deg);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 0.9;
+  }
+
+  45% {
+    transform: translateX(520px) rotate(28deg);
+    opacity: 0.9;
+  }
+
+  60% {
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(520px) rotate(28deg);
+    opacity: 0;
+  }
+}
+
+@keyframes beamLeft {
+  0%   { transform: rotate(-12deg); opacity:.18; }
+  50%  { transform: rotate(8deg); opacity:.38; }
+  100% { transform: rotate(-12deg); opacity:.18; }
+}
+
+@keyframes beamRight {
+  0%   { transform: rotate(12deg); opacity:.14; }
+  50%  { transform: rotate(-8deg); opacity:.32; }
+  100% { transform: rotate(12deg); opacity:.14; }
+}
+
 `}</style>
     
   </main>
