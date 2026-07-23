@@ -49,6 +49,18 @@ type LiveEvent = {
   is_show_ended: boolean;
 };
 
+type CurrentPerformance = {
+  id: string;
+  singer_name: string;
+  song_title: string;
+};
+
+type QueueSinger = {
+  id: string;
+  singer_name: string;
+  song_title: string;
+};
+
 export default function VenueProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -56,9 +68,12 @@ const [liveEvent, setLiveEvent] =
   useState<LiveEvent | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [shows, setShows] = useState<RecurringShow[]>([]);
-  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [currentPerformance, setCurrentPerformance] =
+  useState<CurrentPerformance | null>(null);
+  const [upNext, setUpNext] =
+  useState<QueueSinger[]>([]);
   
 
   useEffect(() => {
@@ -168,6 +183,49 @@ setLiveEvent(
     ? (activeEventData as LiveEvent)
     : null
 );
+
+if (activeEventData?.current_performance_id) {
+  const { data: performanceData } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      song_title
+    `)
+    .eq('id', activeEventData.current_performance_id)
+    .maybeSingle();
+
+  setCurrentPerformance(
+    performanceData
+      ? (performanceData as CurrentPerformance)
+      : null
+  );
+} else {
+  setCurrentPerformance(null);
+}
+
+if (activeEventData) {
+  const { data: queueData } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      song_title
+    `)
+.eq('event_id', activeEventData.id)
+.neq(
+  'id',
+  activeEventData.current_performance_id ||
+    '00000000-0000-0000-0000-000000000000'
+)
+.eq('is_completed', false)
+.eq('is_skipped', false)
+.order('queue_order', { ascending: true })
+.limit(3);
+
+  setUpNext((queueData || []) as QueueSinger[]);
+}
+
       setLoading(false);
     }
 
@@ -281,9 +339,79 @@ setLiveEvent(
 
         <h2>{liveEvent.name}</h2>
 
-        <p>
-          Karaoke is happening now at {venue.name}.
-        </p>
+       {currentPerformance ? (
+  <>
+    <p
+      style={{
+        fontWeight: 700,
+        marginBottom: 8
+      }}
+    >
+      🎤 Currently Singing
+    </p>
+
+    <h3
+      style={{
+        fontSize: '2rem',
+        margin: 0
+      }}
+    >
+      {currentPerformance.singer_name}
+    </h3>
+
+    <p
+      style={{
+        marginTop: 6
+      }}
+    >
+      "{currentPerformance.song_title}"
+    </p>
+
+{upNext.length > 0 && (
+  <div style={{ marginTop: 28 }}>
+    <p
+      style={{
+        fontWeight: 700,
+        marginBottom: 12
+      }}
+    >
+      ⏭ Up Next
+    </p>
+
+    {upNext.map((singer, index) => (
+      <div
+        key={singer.id}
+      style={{
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)',
+  gap: 16,
+  marginBottom: 10,
+  opacity: 0.92
+}}
+      >
+        <span>
+          {index + 1}. {singer.singer_name}
+        </span>
+
+        <span
+         style={{
+  color: '#94a3b8',
+  textAlign: 'right'
+}}
+        >
+          {singer.song_title}
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+
+  </>
+) : (
+  <p>
+    Karaoke is happening now at {venue.name}.
+  </p>
+)}
       </div>
 
       <div className={styles.liveTonightIcon}>
