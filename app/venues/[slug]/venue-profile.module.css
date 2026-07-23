@@ -513,3 +513,39 @@
     width: 100%;
   }
 }
+
+.liveLeaderboard {
+  margin-top: 28px;
+  background: rgba(17, 24, 39, .9);
+  border: 1px solid rgba(56, 189, 248, .15);
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.liveLeaderboardHeader {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 18px;
+}
+
+.liveLeaderboardRow {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.liveLeaderboardRow:last-child {
+  border-bottom: none;
+}
+
+.liveLeaderboardName {
+  flex: 1;
+  margin-left: 14px;
+  font-weight: 700;
+}
+
+.liveLeaderboardScore {
+  color: #38bdf8;
+  font-weight: 800;
+}

@@ -61,6 +61,12 @@ type QueueSinger = {
   song_title: string;
 };
 
+type LeaderboardEntry = {
+  id: string;
+  singer_name: string;
+  total_score: number;
+};
+
 export default function VenueProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -74,6 +80,8 @@ const [liveEvent, setLiveEvent] =
   useState<CurrentPerformance | null>(null);
   const [upNext, setUpNext] =
   useState<QueueSinger[]>([]);
+  const [leaderboard, setLeaderboard] =
+  useState<LeaderboardEntry[]>([]);
   
 
   useEffect(() => {
@@ -218,12 +226,97 @@ if (activeEventData) {
   activeEventData.current_performance_id ||
     '00000000-0000-0000-0000-000000000000'
 )
-.eq('is_completed', false)
-.eq('is_skipped', false)
+
 .order('queue_order', { ascending: true })
 .limit(3);
 
   setUpNext((queueData || []) as QueueSinger[]);
+}
+
+if (activeEventData) {
+  const { data: voteData, error: voteError } = await supabase
+    .from('votes')
+    .select(`
+      performance_id,
+      score
+    `)
+    .eq('event_id', activeEventData.id);
+
+  if (voteError) {
+    console.error('Unable to load leaderboard votes:', voteError);
+    setLeaderboard([]);
+  } else {
+    const performanceIds = Array.from(
+      new Set(
+        (voteData || [])
+          .map((vote) => vote.performance_id)
+          .filter(Boolean)
+      )
+    );
+
+    if (performanceIds.length === 0) {
+      setLeaderboard([]);
+    } else {
+      const { data: performanceData, error: performanceError } =
+        await supabase
+          .from('performances')
+          .select(`
+            id,
+            singer_name
+          `)
+          .in('id', performanceIds);
+
+      if (performanceError) {
+        console.error(
+          'Unable to load leaderboard performers:',
+          performanceError
+        );
+        setLeaderboard([]);
+      } else {
+        const scoreMap = new Map<
+          string,
+          { total: number; count: number }
+        >();
+
+        (voteData || []).forEach((vote) => {
+          if (!vote.performance_id || vote.score == null) {
+            return;
+          }
+
+          const current = scoreMap.get(vote.performance_id) || {
+            total: 0,
+            count: 0,
+          };
+
+          current.total += Number(vote.score);
+          current.count += 1;
+
+          scoreMap.set(vote.performance_id, current);
+        });
+
+        const leaderboardRows = (performanceData || [])
+          .map((performance) => {
+            const scoreInfo = scoreMap.get(performance.id);
+
+            return {
+              id: performance.id,
+              singer_name: performance.singer_name,
+              total_score:
+                scoreInfo && scoreInfo.count > 0
+                  ? scoreInfo.total / scoreInfo.count
+                  : 0,
+            };
+          })
+          .filter((entry) => entry.total_score > 0)
+          .sort((a, b) => b.total_score - a.total_score)
+          .slice(0, 5);
+
+        setLeaderboard(leaderboardRows);
+      }
+    }
+  }
+} else {
+  setLeaderboard([]);
 }
 
       setLoading(false);
@@ -433,6 +526,42 @@ if (activeEventData) {
     </div>
   </section>
 )}
+
+{leaderboard.length > 0 && (
+  <div className={styles.liveLeaderboard}>
+
+    <div className={styles.liveLeaderboardHeader}>
+      🏆 Tonight's Leaderboard
+    </div>
+
+    {leaderboard.map((entry, index) => (
+      <div
+        key={entry.id}
+        className={styles.liveLeaderboardRow}
+      >
+        <span>
+          {index === 0
+            ? '🥇'
+            : index === 1
+            ? '🥈'
+            : index === 2
+            ? '🥉'
+            : `${index + 1}.`}
+        </span>
+
+        <span className={styles.liveLeaderboardName}>
+          {entry.singer_name}
+        </span>
+
+        <span className={styles.liveLeaderboardScore}>
+          {entry.total_score?.toFixed(1) ?? '--'}
+        </span>
+      </div>
+    ))}
+
+  </div>
+)}
+
         <section className={styles.primaryCard}>
           <div className={styles.sectionHeading}>
             <div>
