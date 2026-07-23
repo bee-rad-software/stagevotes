@@ -388,3 +388,128 @@
     width: 100%;
   }
 }
+
+.liveTonightCard {
+  margin-bottom: 1rem;
+  padding: clamp(1.4rem, 4vw, 2rem);
+  overflow: hidden;
+  position: relative;
+  border-radius: 28px;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(34, 197, 94, 0.17),
+      transparent 20rem
+    ),
+    rgba(15, 28, 47, 0.95);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.25),
+    0 0 40px rgba(34, 197, 94, 0.06);
+}
+
+.liveTonightTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+}
+
+.liveStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #86efac;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.liveStatusDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.95);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+
+.liveTonightCard h2 {
+  margin: 0.7rem 0 0;
+  font-size: clamp(1.7rem, 4vw, 2.45rem);
+  letter-spacing: -0.04em;
+}
+
+.liveTonightCard p {
+  margin: 0.55rem 0 0;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.liveTonightIcon {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  display: grid;
+  place-items: center;
+  border-radius: 22px;
+  font-size: 2rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.liveTonightActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.4rem;
+}
+
+.joinShowButton {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.25rem;
+  border-radius: 15px;
+  color: #052e16;
+  background: linear-gradient(135deg, #86efac, #22c55e);
+  box-shadow: 0 14px 30px rgba(34, 197, 94, 0.2);
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.liveTonightNote {
+  color: #94a3b8;
+  font-size: 0.88rem;
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(0.78);
+  }
+}
+
+@media (max-width: 620px) {
+  .liveTonightTop {
+    flex-direction: column-reverse;
+  }
+
+  .liveTonightActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .joinShowButton {
+    width: 100%;
+  }
+}

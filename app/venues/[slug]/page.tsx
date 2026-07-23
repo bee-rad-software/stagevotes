@@ -41,14 +41,25 @@ type RecurringShow = {
   show_type: string;
 };
 
+type LiveEvent = {
+  id: string;
+  name: string;
+  created_at: string;
+  current_performance_id: string | null;
+  is_show_ended: boolean;
+};
+
 export default function VenueProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
-
+const [liveEvent, setLiveEvent] =
+  useState<LiveEvent | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [shows, setShows] = useState<RecurringShow[]>([]);
+  const [liveEvents, setLiveEvents] = useState<LiveEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  
 
   useEffect(() => {
     async function loadVenue() {
@@ -119,6 +130,44 @@ export default function VenueProfilePage() {
       }
 
       setShows(recurringShows || []);
+      const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+const tomorrow = new Date(today);
+tomorrow.setDate(tomorrow.getDate() + 1);
+
+const {
+  data: activeEventData,
+  error: activeEventError,
+} = await supabase
+  .from('events')
+  .select(`
+    id,
+    name,
+    created_at,
+    current_performance_id,
+    is_show_ended
+  `)
+  .eq('venue_id', data.id)
+  .eq('is_show_ended', false)
+  .gte('created_at', today.toISOString())
+  .lt('created_at', tomorrow.toISOString())
+  .order('created_at', { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+if (activeEventError) {
+  console.error(
+    'Unable to load today’s live event:',
+    activeEventError
+  );
+}
+
+setLiveEvent(
+  activeEventData
+    ? (activeEventData as LiveEvent)
+    : null
+);
       setLoading(false);
     }
 
@@ -221,6 +270,41 @@ export default function VenueProfilePage() {
       </section>
 
       <div className={styles.content}>
+      {liveEvent && (
+  <section className={styles.liveTonightCard}>
+    <div className={styles.liveTonightTop}>
+      <div>
+        <div className={styles.liveStatus}>
+          <span className={styles.liveStatusDot} />
+          Live Tonight
+        </div>
+
+        <h2>{liveEvent.name}</h2>
+
+        <p>
+          Karaoke is happening now at {venue.name}.
+        </p>
+      </div>
+
+      <div className={styles.liveTonightIcon}>
+        🎤
+      </div>
+    </div>
+
+    <div className={styles.liveTonightActions}>
+      <a
+        href={`/signup/${liveEvent.id}`}
+        className={styles.joinShowButton}
+      >
+        Join This Show
+      </a>
+
+      <span className={styles.liveTonightNote}>
+        View the queue and submit your song
+      </span>
+    </div>
+  </section>
+)}
         <section className={styles.primaryCard}>
           <div className={styles.sectionHeading}>
             <div>
