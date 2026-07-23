@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, EventRow, PerformanceRow } from '@/lib/supabase';
 import Image from 'next/image';
-
+import styles from './vote.module.css';
 import { useParams } from 'next/navigation';
 
 type VoteCategory = {
@@ -191,120 +191,243 @@ const completed = Object.keys(scores).length;
 const allCategoriesScored = completed === categories.length;
   
   return (
-    <main className="container">
-      <div style={{ textAlign: 'center', marginBottom: 20 }}>
-  <Image
-    src="/stagevotes-logo.png"
-    alt="StageVotes"
-    width={250}
-    height={125}
-  />
-  
-     {logoUrl && (
-  <img
-    src={logoUrl}
-    alt="Venue Logo"
-    style={{
-      maxHeight: '120px',
-      maxWidth: '300px',
-      display: 'block',
-      margin: '0 auto 24px',
-      objectFit: 'contain'
-    }}
-  />
-)}   
-        
+  <main className={styles.page}>
+    <div className={styles.backgroundGlowOne} />
+    <div className={styles.backgroundGlowTwo} />
+
+    <div className={styles.shell}>
+      <header className={styles.header}>
+        <div className={styles.brandRow}>
+          <Image
+            src="/stagevotes-logo.png"
+            alt="StageVotes"
+            width={190}
+            height={95}
+            priority
+            className={styles.stageVotesLogo}
+          />
+
+          {logoUrl && (
+            <div className={styles.venueLogoWrap}>
+              <img
+                src={logoUrl}
+                alt="Venue logo"
+                className={styles.venueLogo}
+              />
+            </div>
+          )}
+        </div>
+
+        <span className={styles.eyebrow}>Official Judge Ballot</span>
         <h1>Judge Voting</h1>
-</div>
-      <p className="small">{event?.name}</p>
 
-      <div className="card">
-        {current ? (
-          <>
-            <h2>{current.singer_name}</h2>
-            <p>{current.song_title}{current.artist ? ` by ${current.artist}` : ''}</p>
-            <p>Voting is <span className="badge">{event?.is_voting_open ? 'Open' : 'Closed'}</span></p>
+        <p className={styles.eventName}>
+          {event?.name || 'StageVotes Event'}
+        </p>
+      </header>
 
-<p
-  style={{
-    fontWeight: 'bold',
-    color: '#38bdf8'
-  }}
->
-  {completed} / {categories.length} Categories Scored
-</p>
-            
-            {categories.map((category) => (
-<div
-  key={category.id}
-  className="card"
-  style={{
-    background: scores[category.id]
-      ? 'rgba(250,204,21,0.15)'
-      : undefined,
-    border: scores[category.id]
-      ? '2px solid #facc15'
-      : undefined
-  }}
->
-    <h3>{category.category_name}</h3>
+      {!current ? (
+        <section className={styles.waitingCard}>
+          <div className={styles.waitingIcon}>🎤</div>
+          <h2>Waiting for the next singer</h2>
+          <p>
+            The ballot will appear automatically when the host
+            starts the next performance.
+          </p>
+        </section>
+      ) : (
+        <>
+          <section className={styles.performerCard}>
+            <div>
+              <span className={styles.sectionLabel}>
+                Now Performing
+              </span>
 
-    <div className="row">
-      {[1, 2, 3, 4, 5].map((score) => (
-        <button
-          className="vote-button"
-          key={score}
-          style={{
-  background: scores[category.id] >= score ? '#facc15' : 'white',
-  color: scores[category.id] >= score ? '#111827' : '#111827',
-  border: scores[category.id] === score ? '3px solid #f97316' : '1px solid #ccc'
-}}
-          onClick={() =>
-            setScores({
-              ...scores,
-              [category.id]: score
-            })
-          }
-        >
-          {score}
-        </button>
-      ))}
+              <h2>{current.singer_name}</h2>
+
+              <p className={styles.song}>
+                {current.song_title}
+                {current.artist ? (
+                  <span> by {current.artist}</span>
+                ) : null}
+              </p>
+            </div>
+
+            <div
+              className={`${styles.votingStatus} ${
+                event?.is_voting_open
+                  ? styles.votingOpen
+                  : styles.votingClosed
+              }`}
+            >
+              <span className={styles.statusDot} />
+              Voting {event?.is_voting_open ? 'Open' : 'Closed'}
+            </div>
+          </section>
+
+          <section className={styles.progressCard}>
+            <div className={styles.progressTop}>
+              <div>
+                <span className={styles.sectionLabel}>
+                  Ballot Progress
+                </span>
+
+                <strong>
+                  {completed} of {categories.length} categories
+                </strong>
+              </div>
+
+              <span className={styles.progressPercent}>
+                {categories.length > 0
+                  ? Math.round(
+                      (completed / categories.length) * 100
+                    )
+                  : 0}
+                %
+              </span>
+            </div>
+
+            <div className={styles.progressTrack}>
+              <div
+                className={styles.progressFill}
+                style={{
+                  width: `${
+                    categories.length > 0
+                      ? (completed / categories.length) * 100
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
+          </section>
+
+          <section className={styles.categoryList}>
+            {categories.map((category, categoryIndex) => {
+              const selectedScore = scores[category.id];
+
+              return (
+                <article
+                  key={category.id}
+                  className={`${styles.categoryCard} ${
+                    selectedScore
+                      ? styles.categoryCompleted
+                      : ''
+                  }`}
+                >
+                  <div className={styles.categoryHeading}>
+                    <div className={styles.categoryNumber}>
+                      {categoryIndex + 1}
+                    </div>
+
+                    <div>
+                      <span className={styles.sectionLabel}>
+                        Judging Category
+                      </span>
+
+                      <h3>{category.category_name}</h3>
+                    </div>
+
+                    {selectedScore && (
+                      <span className={styles.completedBadge}>
+                        ✓ Scored
+                      </span>
+                    )}
+                  </div>
+
+                  <div className={styles.scoreButtons}>
+                    {[1, 2, 3, 4, 5].map((score) => {
+                      const isSelected =
+                        selectedScore === score;
+
+                      const isFilled =
+                        selectedScore &&
+                        selectedScore >= score;
+
+                      return (
+                        <button
+                          type="button"
+                          key={score}
+                          className={`${styles.scoreButton} ${
+                            isFilled
+                              ? styles.scoreButtonFilled
+                              : ''
+                          } ${
+                            isSelected
+                              ? styles.scoreButtonSelected
+                              : ''
+                          }`}
+                          disabled={!event?.is_voting_open}
+                          onClick={() =>
+                            setScores((currentScores) => ({
+                              ...currentScores,
+                              [category.id]: score,
+                            }))
+                          }
+                          aria-label={`${score} stars for ${category.category_name}`}
+                        >
+                          <span className={styles.star}>★</span>
+                          <span>{score}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className={styles.scoreGuide}>
+                    <span>1 — Needs work</span>
+                    <span>3 — Solid performance</span>
+                    <span>5 — Karaoke legend</span>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+
+          <section className={styles.submitCard}>
+            {!allCategoriesScored && (
+              <div className={styles.incompleteMessage}>
+                <span>⚠️</span>
+                Score every category to unlock your ballot.
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={submitCategoryVotes}
+              disabled={
+                !allCategoriesScored ||
+                !event?.is_voting_open
+              }
+              className={styles.submitButton}
+            >
+              {allCategoriesScored
+                ? 'Submit Official Ballot'
+                : `${categories.length - completed} ${
+                    categories.length - completed === 1
+                      ? 'Category'
+                      : 'Categories'
+                  } Remaining`}
+            </button>
+
+            <p className={styles.ballotNote}>
+              Your completed ballot counts as one judge vote for
+              this performance.
+            </p>
+
+            {message && (
+              <div
+                className={`${styles.message} ${
+                  message.toLowerCase().includes('thanks')
+                    ? styles.successMessage
+                    : styles.errorMessage
+                }`}
+              >
+                {message}
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
-
-    {scores[category.id] && (
-      <p className="small">Selected: {scores[category.id]} stars</p>
-    )}
-  </div>
-))}
-
-{!allCategoriesScored && (
-  <p
-    style={{
-      color: '#fbbf24',
-      fontWeight: 'bold'
-    }}
-  >
-    Please score all categories before submitting.
-  </p>
-)}
-            
-<button
-  onClick={submitCategoryVotes}
-  disabled={!allCategoriesScored}
-  style={{
-    opacity: allCategoriesScored ? 1 : 0.5,
-    cursor: allCategoriesScored ? 'pointer' : 'not-allowed'
-  }}
->
-  Submit Votes
-</button>
-            <p className="small">1 = rough night, 5 = karaoke legend</p>
-            {message && <p>{message}</p>}
-          </>
-        ) : (
-          <p>No singer is active yet.</p>
-        )}
-      </div>
-    </main>
-  );
+  </main>
+);
 }
