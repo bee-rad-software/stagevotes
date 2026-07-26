@@ -20,3 +20,20 @@ export type SingerFavorites = {
   artist: string;
   song: string;
 };
+
+export type PersonalBests = {
+  highestScore: number;
+  highestScoreSong: string;
+  bestFinish: string;
+  mostPerformedArtist: string;
+  signatureSong: string;
+};
+
+export type TimelineEntry = {
+  id: string;
+  songTitle: string;
+  artist: string;
+  venue: string;
+  performedAt: string;
+  averageScore: number | null;
+};

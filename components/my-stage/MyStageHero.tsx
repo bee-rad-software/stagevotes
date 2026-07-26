@@ -1,18 +1,30 @@
-import type { SingerProfile } from './types';
+import type {
+  SingerProfile,
+  SingerStats,
+} from './types';
+import ProfilePhotoUploader from './ProfilePhotoUploader';
+import HeroStats from './HeroStats';
+import HeroIdentity from './HeroIdentity';
 
 type MyStageHeroProps = {
   profile: SingerProfile;
+  stats: SingerStats;
   level: string;
+  onPhotoUpload: (file: File) => void;
 };
 
 export default function MyStageHero({
   profile,
+  stats,
   level,
+  onPhotoUpload,
 }: MyStageHeroProps) {
-  const name =
-    profile.stage_name ||
-    profile.display_name ||
-    'StageVotes Singer';
+const rawName =
+  profile.stage_name ||
+  profile.display_name ||
+  'Singer';
+
+const name = toTitleCase(rawName);
 
   const initials = name
     .split(' ')
@@ -21,128 +33,142 @@ export default function MyStageHero({
     .slice(0, 2)
     .toUpperCase();
 
+    const badge = getPerformerBadge(level);
+
+    function getPerformerBadge(level: string) {
+  switch (level) {
+    case 'Rookie':
+      return {
+        icon: '🌱',
+        color: '#22c55e',
+        background: 'rgba(34,197,94,.15)',
+        border: 'rgba(34,197,94,.35)',
+        label: 'Rookie Performer',
+      };
+
+    case 'Regular':
+      return {
+        icon: '⭐',
+        color: '#facc15',
+        background: 'rgba(250,204,21,.15)',
+        border: 'rgba(250,204,21,.35)',
+        label: 'Regular Performer',
+      };
+
+    case 'Gold':
+      return {
+        icon: '🥇',
+        color: '#f59e0b',
+        background: 'rgba(245,158,11,.15)',
+        border: 'rgba(245,158,11,.35)',
+        label: 'Gold Performer',
+      };
+
+    case 'Legend':
+      return {
+        icon: '👑',
+        color: '#a855f7',
+        background: 'rgba(168,85,247,.15)',
+        border: 'rgba(168,85,247,.35)',
+        label: 'Legend',
+      };
+
+    default:
+      return {
+        icon: '🎤',
+        color: '#38bdf8',
+        background: 'rgba(56,189,248,.15)',
+        border: 'rgba(56,189,248,.35)',
+        label: level,
+      };
+  }
+}
+
+function toTitleCase(value: string) {
+  return value
+    .trim()
+    .split(/\s+/)
+    .map((word) =>
+      word.charAt(0).toUpperCase() +
+      word.slice(1).toLowerCase()
+    )
+    .join(' ');
+}
+
   return (
-    <section
-      style={{
-        padding: 26,
-        borderRadius: 28,
-        background:
-          'linear-gradient(135deg,rgba(23,37,84,.96),rgba(15,23,42,.96))',
-        border: '1px solid rgba(56,189,248,.18)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 20,
-        }}
-      >
-        <div
-          style={{
-            width: 92,
-            height: 92,
-            display: 'grid',
-            placeItems: 'center',
-            flexShrink: 0,
-            overflow: 'hidden',
-            borderRadius: '50%',
-            background:
-              'linear-gradient(135deg,#38bdf8,#f97316)',
-            fontSize: 30,
-            fontWeight: 900,
-          }}
-        >
-          {profile.photo_url ? (
-            <img
-              src={profile.photo_url}
-              alt={name}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-          ) : (
-            initials
-          )}
-        </div>
+<section
+  style={{
+    position: 'relative',
+    overflow: 'hidden',
+    padding: 32,
+    borderRadius: 28,
+    background:
+      'radial-gradient(circle at 18% 45%, rgba(56,189,248,.18), transparent 32%), radial-gradient(circle at 78% 18%, rgba(249,115,22,.10), transparent 28%), linear-gradient(135deg, rgba(23,37,84,.98), rgba(15,23,42,.98))',
+    border: '1px solid rgba(56,189,248,.22)',
+    boxShadow: '0 24px 60px rgba(0,0,0,.22)',
+  }}
+>
 
-        <div style={{ flex: 1, minWidth: 220 }}>
-          <p
-            style={{
-              margin: 0,
-              color: '#38bdf8',
-              fontSize: 12,
-              fontWeight: 900,
-              letterSpacing: '.14em',
-              textTransform: 'uppercase',
-            }}
-          >
-            My Stage
-          </p>
+<div
+  aria-hidden="true"
+  style={{
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    opacity: 0.03,
+    backgroundImage:
+      'radial-gradient(circle, white 1px, transparent 1px)',
+    backgroundSize: '28px 28px',
+  }}
+/>
 
-          <h1
-            style={{
-              margin: '6px 0 0',
-              fontSize: 'clamp(30px,6vw,48px)',
-              letterSpacing: '-.04em',
-            }}
-          >
-            {name}
-          </h1>
+<div
+  aria-hidden="true"
+  style={{
+    position: 'absolute',
+    width: 340,
+    height: 340,
+    left: 5,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    borderRadius: '50%',
+    background:
+      'radial-gradient(circle, rgba(56,189,248,.16), transparent 68%)',
+    filter: 'blur(10px)',
+    pointerEvents: 'none',
+  }}
+/>
 
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 10,
-              marginTop: 14,
-            }}
-          >
-            <span
-              style={{
-                padding: '7px 12px',
-                borderRadius: 999,
-                background: 'rgba(249,115,22,.14)',
-                color: '#fdba74',
-                fontSize: 13,
-                fontWeight: 800,
-              }}
-            >
-              ⭐ {level}
-            </span>
+ <div
+  style={{
+    position: 'relative',
+    zIndex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 24,
+  }}
+>
+<ProfilePhotoUploader
+  imageUrl={profile?.photo_url}
+  initials={initials}
+  onSelect={onPhotoUpload}
+/>
 
-            {profile.home_venue && (
-              <span
-                style={{
-                  padding: '7px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(56,189,248,.12)',
-                  color: '#7dd3fc',
-                  fontSize: 13,
-                  fontWeight: 800,
-                }}
-              >
-                📍 {profile.home_venue}
-              </span>
-            )}
-          </div>
+    <HeroIdentity
+  profile={profile}
+  name={name}
+  badge={badge}
+  current={stats.performances}
+  target={50}
+  nextTitle="Veteran Performer"
+  averageScore={stats.averageScore}
+wins={stats.wins}
+venues={stats.venues}
+/>
 
-          {profile.bio && (
-            <p
-              style={{
-                maxWidth: 650,
-                margin: '16px 0 0',
-                color: '#cbd5e1',
-                lineHeight: 1.6,
-              }}
-            >
-              {profile.bio}
-            </p>
-          )}
-        </div>
+<HeroStats stats={stats} />
+
       </div>
     </section>
   );
