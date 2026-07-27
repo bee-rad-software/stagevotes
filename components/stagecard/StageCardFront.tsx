@@ -2,17 +2,25 @@
 
 import { themes } from './StageCardTheme';
 import { StageCardData, StageCardTheme } from './types';
+import { forwardRef } from 'react';
 
 type StageCardFrontProps = {
   data: StageCardData;
   theme?: StageCardTheme;
 };
 
-export default function StageCardFront({
-  data,
-  theme = 'regular',
-}: StageCardFrontProps) {
-  const cardTheme = themes[theme];
+const StageCardFront = forwardRef<
+  HTMLDivElement,
+  StageCardFrontProps
+>(function StageCardFront(
+  {
+    data,
+    theme = 'regular',
+  },
+  ref
+) {
+  
+    const cardTheme = themes[theme];
 
   const initials =
     data.name
@@ -45,6 +53,7 @@ export default function StageCardFront({
 
   return (
    <div
+   ref={ref}
   style={{
     position: 'relative',
     overflow: 'hidden',
@@ -282,4 +291,6 @@ boxShadow: `0 0 20px ${cardTheme.glow}`,
       </div>
     </div>
   );
-}
+});
+
+export default StageCardFront;

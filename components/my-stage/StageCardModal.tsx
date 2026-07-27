@@ -3,6 +3,9 @@
 import StageCardFront from '../stagecard/StageCardFront';
 import type { StageCardData } from '../stagecard/types';
 import { getStageCardTheme } from '../stagecard/StageCardTheme';
+import { useRef } from 'react';
+import { toBlob } from 'html-to-image';
+import StageCard from '../stagecard/StageCard';
 
 type StageCardModalProps = {
   open: boolean;
@@ -54,6 +57,8 @@ const theme = getStageCardTheme(badgeLabel);
 
   const cardNumber = String(performances).padStart(6, '0');
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
   const stats = [
     {
       label: 'Performances',
@@ -72,6 +77,104 @@ const theme = getStageCardTheme(badgeLabel);
       value: venues,
     },
   ];
+
+  const handleShare = async () => {
+  if (!cardRef.current) return;
+
+  try {
+    const blob = await toBlob(cardRef.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+    });
+
+    if (!blob) {
+      throw new Error('Unable to create StageCard image.');
+    }
+
+    const safeName = stageCardData.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const file = new File(
+      [blob],
+      `${safeName || 'stagevotes'}-stagecard.png`,
+      {
+        type: 'image/png',
+      }
+    );
+
+    if (
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files: [file] })
+    ) {
+      await navigator.share({
+        files: [file],
+        title: `${stageCardData.name}'s StageCard`,
+        text: 'Check out my StageVotes StageCard!',
+      });
+
+      return;
+    }
+
+    const imageUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(imageUrl);
+  } catch (error) {
+    console.error('StageCard share failed:', error);
+    alert('We could not share your StageCard. Please try again.');
+  }
+};
+
+const handleSave = async () => {
+  if (!cardRef.current) return;
+
+  try {
+    const blob = await toBlob(cardRef.current, {
+      cacheBust: true,
+      pixelRatio: 2,
+    });
+
+    if (!blob) {
+      throw new Error('Unable to create StageCard image.');
+    }
+
+    const safeName = stageCardData.name
+      .trim()
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .trim();
+
+    const fileName = `${
+      safeName || 'StageVotes'
+    } - StageVotes StageCard.png`;
+
+    const imageUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = imageUrl;
+    link.download = fileName;
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(imageUrl);
+    }, 1000);
+  } catch (error) {
+    console.error('StageCard save failed:', error);
+    alert('We could not save your StageCard. Please try again.');
+  }
+};
 
   return (
     <div
@@ -100,7 +203,7 @@ const theme = getStageCardTheme(badgeLabel);
     maxWidth: 420,
   }}
 >
-<StageCardFront
+<StageCard
   data={stageCardData}
   theme={theme}
 />
@@ -113,23 +216,25 @@ const theme = getStageCardTheme(badgeLabel);
       marginTop: 16,
     }}
   >
-    <button
-      type="button"
-      style={{
-        minHeight: 48,
-        borderRadius: 14,
-        border: '1px solid rgba(56,189,248,.35)',
-        background: 'rgba(56,189,248,.12)',
-        color: '#7dd3fc',
-        fontWeight: 900,
-        cursor: 'pointer',
-      }}
-    >
-      📤 Share
-    </button>
+<button
+  type="button"
+  onClick={handleShare}
+  style={{
+    minHeight: 48,
+    borderRadius: 14,
+    border: '1px solid rgba(56,189,248,.35)',
+    background: 'rgba(56,189,248,.12)',
+    color: '#7dd3fc',
+    fontWeight: 900,
+    cursor: 'pointer',
+  }}
+>
+  📤 Share
+</button>
 
     <button
       type="button"
+      onClick={handleSave}
       style={{
         minHeight: 48,
         borderRadius: 14,
