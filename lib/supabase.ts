@@ -13,6 +13,7 @@ export type EventRow = {
   is_voting_open: boolean;
   is_show_ended: boolean;
   current_performance_id: string | null;
+  current_performance_started_at: string | null;
   created_at: string;
   venue_lat: number | null;
 venue_lng: number | null;

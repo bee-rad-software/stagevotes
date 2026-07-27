@@ -8,6 +8,8 @@ import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import AppQRCode from '@/components/AppQRCode';
 import AppShell from '@/components/AppShell';
+import SVShell from '@/components/ui/SVShell';
+import SVHostHero from '@/components/dashboard/SVHostHero';
 
 export default function HostPage() {
   const params = useParams();
@@ -491,10 +493,12 @@ const { error } = await supabase.from('performances').insert({
   async function setCurrent(performanceId: string) {
     const { error } = await supabase
       .from('events')
-      .update({
-        current_performance_id: performanceId,
-        is_voting_open: false
-      })
+    .update({
+  current_performance_id: performanceId,
+  current_performance_started_at:
+    new Date().toISOString(),
+  is_voting_open: false,
+})
       .eq('id', eventId);
 
     if (error) {
@@ -533,10 +537,12 @@ async function newShow() {
 
   const { error } = await supabase
     .from('events')
-    .update({
-      current_performance_id: firstSinger.id,
-      is_voting_open: true
-    })
+.update({
+  current_performance_id: firstSinger.id,
+  current_performance_started_at:
+    new Date().toISOString(),
+  is_voting_open: true,
+})
     .eq('id', eventId);
 
   if (error) {
@@ -723,10 +729,12 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
 
   const { error } = await supabase
     .from('events')
-    .update({
-      current_performance_id: next.id,
-      is_voting_open: true
-    })
+  .update({
+  current_performance_id: next.id,
+  current_performance_started_at:
+    new Date().toISOString(),
+  is_voting_open: true,
+})
     .eq('id', eventId);
 
   if (error) {
@@ -961,193 +969,28 @@ account?.subscription_status &&
 }
   
   return (
-    <main
-  className="container"
-  style={{
-    background: '#0f172a',
-    minHeight: '100vh',
-    color: 'white',
-    padding: 32,
-    maxWidth: '1600px',
-margin: '0 auto'
-  }}
->
-   
-    <div
-  style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24
-  }}
->
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 16
-    }}
-  >
-    <img
-      src="/stagevotes-logo.png"
-      alt="StageVotes"
-      style={{
-        width: 180,
-        height: 'auto'
-      }}
-    />
-
-    <div
-      style={{
-        fontSize: 32,
-        opacity: 0.7
-      }}
-    >
-      Host Dashboard
-    </div>
-  </div>
-
-<div
-  style={{
-    display: 'flex',
-    gap: 10,
-    marginLeft: 'auto'
-  }}
+<SVShell
+  title={event?.name || 'Host Dashboard'}
+  subtitle={event?.venue || 'Live show control center'}
 >
       
-<button
-  onClick={() => router.push('/account')}
-  style={{
-  background: '#38bdf8',
-  color: '#0f172a',
-  border: 'none',
-  borderRadius: 999,
-  padding: '10px 18px',
-  fontWeight: 'bold',
-  cursor: 'pointer',
-  maxWidth: '1400px',
-margin: '0 auto 24px auto'
-}}
->
-  Account
-</button>
-      
-  <button
-    onClick={logout}
-    style={{
-      background: '#c2410c',
-      color: 'white',
-      border: 'none',
-      borderRadius: 999,
-      padding: '10px 18px',
-      fontWeight: 'bold',
-      cursor: 'pointer',
-      maxWidth: '1400px',
-margin: '0 auto 24px auto'
-    }}
-  >
-    Logout
-  </button>
-</div>
-</div>
-      
-<div
-  className="card"
-  style={{
-    position: 'sticky',
-    top: 16,
-    zIndex: 20,
-    padding: 18
-  }}
->
-  <h2
-  style={{
-    color: '#c2410c',
-    fontSize: 26,
-    marginBottom: 16
-  }}
->
-  🎙 NOW SINGING
-</h2>
-          {current ? (
-            <>
-              <h3
-  style={{
-    fontSize: 32,
-    color: '#38bdf8',
-    marginBottom: 8
-  }}
->
-  {current.singer_name}
-</h3>
-              <p>
-                {current.song_title}
-                {current.artist ? ` by ${current.artist}` : ''}
-              </p>
-              <p>
-                Voting:{' '}
-                <span
-  style={{
-    background: event?.is_voting_open ? '#16a34a' : '#7f1d1d',
-    color: 'white',
-    padding: '4px 10px',
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 'bold'
-  }}
->
-  {event?.is_voting_open ? '🟢 OPEN' : '🔴 CLOSED'}
-</span>
-              </p>
-              <div
-  style={{
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 16,
-    background: 'rgba(56,189,248,0.12)',
-    border: '1px solid rgba(56,189,248,0.35)'
-  }}
->
-  <h3 style={{ color: '#38bdf8', marginTop: 0 }}>⏭ Up Next</h3>
-
-  {upNext ? (
-    <>
-      <div style={{ fontSize: 28, fontWeight: 900 }}>
-        {upNext.singer_name}
-      </div>
-      <div className="small">
-        {upNext.song_title}
-        {upNext.artist ? ` by ${upNext.artist}` : ''}
-      </div>
-    </>
-  ) : (
-    <p>No one waiting.</p>
-  )}
-</div>
-           <div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: '1fr',
-    marginTop: 12
-  }}
->
-  <button
-    onClick={nextSinger}
-    style={{
-      background: '#38bdf8',
-      color: '#0f172a',
-      fontWeight: 'bold'
-    }}
-  >
-    ⏭️ Next Singer
-  </button>
-</div>
-
-</>
-) : (
-  <p>No current singer selected.</p>
-)}
-        </div>
+<SVHostHero
+  singerName={
+    current?.singer_name || 'No current singer'
+  }
+  songTitle={
+    current?.song_title || 'Waiting to begin'
+  }
+  artist={current?.artist || ''}
+  votingOpen={!!event?.is_voting_open}
+  showName={
+    event?.name || 'Tonight’s Karaoke'
+  }
+  startedAt={
+    event?.current_performance_started_at ||
+    null
+  }
+/>
 
  <div className="card">
         <h2 style={{ color: '#38bdf8' }}>
@@ -2063,6 +1906,6 @@ style={{
     </div>
   </div>
 </div>
-    </main>
+    </SVShell>
   );
     }
