@@ -1,55 +1,64 @@
 'use client';
 
-import useMyStage from '@/hooks/useMyStage';    
+import { Suspense } from 'react';
+import useMyStage from '@/hooks/useMyStage';
 import Link from 'next/link';
 import StatCard from '@/components/my-stage/StatCard';
-import InfoCard from '@/components/my-stage/InfoCard';
 import PerformanceSummary from '@/components/my-stage/PerformanceSummary';
-import AchievementGrid from "@/components/my-stage/AchievementGrid";
+import AchievementGrid from '@/components/my-stage/AchievementGrid';
 import MyStageHero from '@/components/my-stage/MyStageHero';
 import ExploreGrid from '@/components/my-stage/ExploreGrid';
 import PersonalBests from '@/components/my-stage/PersonalBests';
 import CareerTimeline from '@/components/my-stage/CareerTimeline';
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from 'next/navigation';
 
-import useLiveEvent from "@/hooks/useLiveEvent";
-import SVLiveShowBanner from "@/components/singer/SVLiveShowBanner";
+import useLiveEvent from '@/hooks/useLiveEvent';
+import SVLiveShowBanner from '@/components/singer/SVLiveShowBanner';
 
 export default function MyStagePage() {
+  return (
+    <Suspense fallback={<MyStageLoading />}>
+      <MyStageContent />
+    </Suspense>
+  );
+}
 
-const router = useRouter();
+function MyStageLoading() {
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: '#07111f',
+        color: 'white',
+      }}
+    >
+      <p>Loading My Stage...</p>
+    </main>
+  );
+}
 
-const searchParams = useSearchParams();
+function MyStageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-const eventId = searchParams.get("event");
+  const eventId = searchParams.get('event');
+  const liveEvent = useLiveEvent(eventId);
 
-const liveEvent = useLiveEvent(eventId);
-
-const {
-  profile,
-  stats,
-  personalBests,
-  performerLevel,
-  timeline,
-  loading,
-  message,
-  handlePhotoUpload,
-} = useMyStage();
+  const {
+    profile,
+    stats,
+    personalBests,
+    performerLevel,
+    timeline,
+    loading,
+    message,
+    handlePhotoUpload,
+  } = useMyStage();
 
   if (loading) {
-    return (
-      <main
-        style={{
-          minHeight: '100vh',
-          display: 'grid',
-          placeItems: 'center',
-          background: '#07111f',
-          color: 'white',
-        }}
-      >
-        <p>Loading My Stage...</p>
-      </main>
-    );
+    return <MyStageLoading />;
   }
 
   return (
@@ -68,44 +77,43 @@ const {
           margin: '0 auto',
         }}
       >
-
-{liveEvent.error && (
-  <div
-    style={{
-      padding: 12,
-      marginBottom: 16,
-      borderRadius: 10,
-      background: '#fee2e2',
-      color: '#991b1b',
-    }}
-  >
-    Live event error: {liveEvent.error}
-  </div>
-)}
+        {liveEvent.error && (
+          <div
+            style={{
+              padding: 12,
+              marginBottom: 16,
+              borderRadius: 10,
+              background: '#fee2e2',
+              color: '#991b1b',
+            }}
+          >
+            Live event error: {liveEvent.error}
+          </div>
+        )}
 
         {eventId && (
-  <SVLiveShowBanner
-    venueName={liveEvent.venueName}
-    status={liveEvent.queueState}
-    currentSinger={
-      liveEvent.currentPerformance?.singer_name ?? ""
-    }
-    currentSong={
-      liveEvent.currentPerformance?.song_title ?? ""
-    }
-    currentArtist={
-      liveEvent.currentPerformance?.artist
-    }
-    position={liveEvent.myPosition}
-    estimatedWaitMinutes={
-      liveEvent.estimatedWaitMinutes
-    }
-    loading={liveEvent.loading}
-  onReturn={() =>
-  router.push(`/signup/${eventId}`)
-}
-  />
-)}
+          <SVLiveShowBanner
+            venueName={liveEvent.venueName}
+            status={liveEvent.queueState}
+            currentSinger={
+              liveEvent.currentPerformance?.singer_name ?? ''
+            }
+            currentSong={
+              liveEvent.currentPerformance?.song_title ?? ''
+            }
+            currentArtist={
+              liveEvent.currentPerformance?.artist
+            }
+            position={liveEvent.myPosition}
+            estimatedWaitMinutes={
+              liveEvent.estimatedWaitMinutes
+            }
+            loading={liveEvent.loading}
+            onReturn={() =>
+              router.push(`/signup/${eventId}`)
+            }
+          />
+        )}
 
         <header
           style={{
@@ -153,29 +161,29 @@ const {
           </Link>
         </header>
 
-{profile && (
-  <MyStageHero
-    profile={profile}
-    stats={stats}
-    level={performerLevel}
-    onPhotoUpload={handlePhotoUpload}
-  />
-)}
+        {profile && (
+          <MyStageHero
+            profile={profile}
+            stats={stats}
+            level={performerLevel}
+            onPhotoUpload={handlePhotoUpload}
+          />
+        )}
 
         <PerformanceSummary
-  performances={stats.performances}
-  venues={stats.venues}
-  averageScore={stats.averageScore}
-/>
+          performances={stats.performances}
+          venues={stats.venues}
+          averageScore={stats.averageScore}
+        />
 
-<PersonalBests bests={personalBests} />
+        <PersonalBests bests={personalBests} />
 
-<AchievementGrid
-  performances={stats.performances}
-  venues={stats.venues}
-  averageScore={stats.averageScore}
-  wins={stats.wins}
-/>
+        <AchievementGrid
+          performances={stats.performances}
+          venues={stats.venues}
+          averageScore={stats.averageScore}
+          wins={stats.wins}
+        />
 
         <section style={{ marginTop: 28 }}>
           <div style={{ marginBottom: 14 }}>
@@ -192,7 +200,9 @@ const {
               Activity
             </p>
 
-            <h2 style={{ margin: '5px 0 0' }}>This Month</h2>
+            <h2 style={{ margin: '5px 0 0' }}>
+              This Month
+            </h2>
           </div>
 
           <div
@@ -209,7 +219,7 @@ const {
           </div>
         </section>
 
-<CareerTimeline entries={timeline} />
+        <CareerTimeline entries={timeline} />
 
         <ExploreGrid />
 

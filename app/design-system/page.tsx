@@ -22,38 +22,74 @@ export default function DesignSystemPage() {
   const [addSingerOpen, setAddSingerOpen] = useState(false);
   const [selectedSingerId, setSelectedSingerId] = useState<string | null>(null);
 const [hostQueue, setHostQueue] = useState([
- {
-  id: '1',
-  singerName: 'Brad Bock',
-  songTitle: 'Are You Gonna Be My Girl',
-  artist: 'Jet',
-  status: 'current' as const,
-  round: 1,
-},
-{
-  id: '2',
-  singerName: 'John',
-  songTitle: 'Sweet Caroline',
-  artist: 'Neil Diamond',
-  status: 'next' as const,
-  round: 1,
-},
-{
-  id: '3',
-  singerName: 'Sarah',
-  songTitle: 'Before He Cheats',
-  artist: 'Carrie Underwood',
-  status: 'waiting' as const,
-  round: 1,
-},
-{
-  id: '4',
-  singerName: 'Brad Bock',
-  songTitle: 'Cold',
-  artist: 'Chris Stapleton',
-  status: 'waiting' as const,
-  round: 2,
-},
+  {
+    id: '1',
+    singerName: 'Brad Bock',
+    songTitle: 'Are You Gonna Be My Girl',
+    artist: 'Jet',
+    status: 'current' as const,
+    round: 1,
+    performance: {
+      id: '1',
+      singer_name: 'Brad Bock',
+      song_title: 'Are You Gonna Be My Girl',
+      artist: 'Jet',
+      status: 'current',
+      round: 1,
+      queue_order: 1,
+    },
+  },
+  {
+    id: '2',
+    singerName: 'John',
+    songTitle: 'Sweet Caroline',
+    artist: 'Neil Diamond',
+    status: 'next' as const,
+    round: 1,
+    performance: {
+      id: '2',
+      singer_name: 'John',
+      song_title: 'Sweet Caroline',
+      artist: 'Neil Diamond',
+      status: 'next',
+      round: 1,
+      queue_order: 2,
+    },
+  },
+  {
+    id: '3',
+    singerName: 'Sarah',
+    songTitle: 'Before He Cheats',
+    artist: 'Carrie Underwood',
+    status: 'waiting' as const,
+    round: 1,
+    performance: {
+      id: '3',
+      singer_name: 'Sarah',
+      song_title: 'Before He Cheats',
+      artist: 'Carrie Underwood',
+      status: 'waiting',
+      round: 1,
+      queue_order: 3,
+    },
+  },
+  {
+    id: '4',
+    singerName: 'Brad Bock',
+    songTitle: 'Cold',
+    artist: 'Chris Stapleton',
+    status: 'waiting' as const,
+    round: 2,
+    performance: {
+      id: '4',
+      singer_name: 'Brad Bock',
+      song_title: 'Cold',
+      artist: 'Chris Stapleton',
+      status: 'waiting',
+      round: 2,
+      queue_order: 4,
+    },
+  },
 ]);
 
 const [activityItems, setActivityItems] = useState<SVActivityItem[]>([
@@ -214,121 +250,122 @@ onNextSinger={advanceQueue}
 />
 
 <SVHostQueue
-items={hostQueue}
-  onMoveUp={(id) => console.log('Move up', id)}
-onSkip={(id) => {
-  const skippedSinger = hostQueue.find(
-    (item) => item.id === id
-  );
-
-  setHostQueue((currentQueue) => {
-    const singerToSkip = currentQueue.find(
+  items={hostQueue}
+  onSkip={(id: string) => {
+    const skippedSinger = hostQueue.find(
       (item) => item.id === id
     );
 
-    if (!singerToSkip) return currentQueue;
+    setHostQueue((currentQueue) => {
+      const singerToSkip = currentQueue.find(
+        (item) => item.id === id
+      );
 
-    const remainingQueue = currentQueue.filter(
-      (item) => item.id !== id
+      if (!singerToSkip) {
+        return currentQueue;
+      }
+
+      const remainingQueue = currentQueue.filter(
+        (item) => item.id !== id
+      );
+
+      const currentSinger = remainingQueue.find(
+        (item) => item.status === 'current'
+      );
+
+      const waitingQueue = remainingQueue.filter(
+        (item) => item.status !== 'current'
+      );
+
+      const updatedWaiting = [
+        ...waitingQueue,
+        {
+          ...singerToSkip,
+          status: 'waiting' as const,
+        },
+      ].map((item, index) => ({
+        ...item,
+        status:
+          index === 0
+            ? ('next' as const)
+            : ('waiting' as const),
+      }));
+
+      return currentSinger
+        ? [
+            {
+              ...currentSinger,
+              status: 'current' as const,
+            },
+            ...updatedWaiting,
+          ]
+        : updatedWaiting;
+    });
+
+    if (skippedSinger) {
+      logActivity(
+        'performance',
+        `${skippedSinger.singerName} was skipped`,
+        skippedSinger.artist
+          ? `${skippedSinger.songTitle} by ${skippedSinger.artist}`
+          : skippedSinger.songTitle
+      );
+    }
+
+    setSelectedSingerId(null);
+  }}
+  onRemove={(id: string) => {
+    const removedSinger = hostQueue.find(
+      (item) => item.id === id
     );
 
-    const currentSinger = remainingQueue.find(
-      (item) => item.status === 'current'
-    );
+    setHostQueue((currentQueue) => {
+      const remainingQueue = currentQueue.filter(
+        (item) => item.id !== id
+      );
 
-    const waitingQueue = remainingQueue.filter(
-      (item) => item.status !== 'current'
-    );
+      const currentSinger = remainingQueue.find(
+        (item) => item.status === 'current'
+      );
 
-    const updatedWaiting = [
-      ...waitingQueue,
-      {
-        ...singerToSkip,
-        status: 'waiting' as const,
-      },
-    ].map((item, index) => ({
-      ...item,
-      status:
-        index === 0
-          ? ('next' as const)
-          : ('waiting' as const),
-    }));
+      const waitingQueue = remainingQueue.filter(
+        (item) => item.status !== 'current'
+      );
 
-    return currentSinger
-      ? [
-          {
-            ...currentSinger,
-            status: 'current' as const,
-          },
-          ...updatedWaiting,
-        ]
-      : updatedWaiting;
-  });
+      const updatedWaiting = waitingQueue.map(
+        (item, index) => ({
+          ...item,
+          status:
+            index === 0
+              ? ('next' as const)
+              : ('waiting' as const),
+        })
+      );
 
-  if (skippedSinger) {
-    logActivity(
-      'performance',
-      `${skippedSinger.singerName} was skipped`,
-      skippedSinger.artist
-        ? `${skippedSinger.songTitle} by ${skippedSinger.artist}`
-        : skippedSinger.songTitle
-    );
-  }
+      return currentSinger
+        ? [
+            {
+              ...currentSinger,
+              status: 'current' as const,
+            },
+            ...updatedWaiting,
+          ]
+        : updatedWaiting;
+    });
 
-  setSelectedSingerId(null);
-}}
+    if (removedSinger) {
+      logActivity(
+        'performance',
+        `${removedSinger.singerName} was removed from the rotation`,
+        removedSinger.artist
+          ? `${removedSinger.songTitle} by ${removedSinger.artist}`
+          : removedSinger.songTitle
+      );
+    }
 
-onRemove={(id) => {
-  const removedSinger = hostQueue.find(
-    (item) => item.id === id
-  );
-
-  setHostQueue((currentQueue) => {
-    const remainingQueue = currentQueue.filter(
-      (item) => item.id !== id
-    );
-
-    const currentSinger = remainingQueue.find(
-      (item) => item.status === 'current'
-    );
-
-    const waitingQueue = remainingQueue.filter(
-      (item) => item.status !== 'current'
-    );
-
-    const updatedWaiting = waitingQueue.map((item, index) => ({
-      ...item,
-      status:
-        index === 0
-          ? ('next' as const)
-          : ('waiting' as const),
-    }));
-
-    return currentSinger
-      ? [
-          {
-            ...currentSinger,
-            status: 'current' as const,
-          },
-          ...updatedWaiting,
-        ]
-      : updatedWaiting;
-  });
-
-  if (removedSinger) {
-    logActivity(
-      'performance',
-      `${removedSinger.singerName} was removed from the rotation`,
-      removedSinger.artist
-        ? `${removedSinger.songTitle} by ${removedSinger.artist}`
-        : removedSinger.songTitle
-    );
-  }
-
-  setSelectedSingerId(null);
-}}
+    setSelectedSingerId(null);
+  }}
   onReorder={reorderHostQueue}
-  onSelect={(id) => setSelectedSingerId(id)}
 />
 
 <SVLiveActivity items={activityItems} />
@@ -610,14 +647,25 @@ onRemove={(id) => {
       currentQueue.find((item) => item.status === 'current')?.round ??
       Math.min(...currentQueue.map((item) => item.round), 1);
 
-    const newSinger = {
-      id: crypto.randomUUID(),
-      singerName: singer.singerName,
-      songTitle: singer.songTitle,
-      artist: singer.artist,
-      status: 'waiting' as const,
-      round: activeRound,
-    };
+ const newSingerId = crypto.randomUUID();
+
+const newSinger = {
+  id: newSingerId,
+  singerName: singer.singerName,
+  songTitle: singer.songTitle,
+  artist: singer.artist,
+  status: 'waiting' as const,
+  round: activeRound,
+  performance: {
+    id: newSingerId,
+    singer_name: singer.singerName,
+    song_title: singer.songTitle,
+    artist: singer.artist,
+    status: 'waiting',
+    round: activeRound,
+    queue_order: currentQueue.length + 1,
+  },
+};
 
     const currentRoundItems = currentQueue.filter(
       (item) => item.round === activeRound
