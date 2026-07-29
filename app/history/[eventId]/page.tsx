@@ -1,281 +1,902 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  Archive,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
+  History,
+  MapPin,
+  Mic2,
+  Music2,
+  Trophy,
+  Users,
+} from 'lucide-react';
 
-import { useParams } from 'next/navigation';
+import SVShell from '@/components/ui/SVShell';
+import {
+  supabase,
+  EventRow,
+  PerformanceRow,
+} from '@/lib/supabase';
 
-export default function EventReportPage() {
+type ArchivedEvent = EventRow & {
+  created_at?: string | null;
+};
+
+export default function HistoryPage() {
   const params = useParams();
+  const router = useRouter();
+
   const eventId = params.eventId as string;
 
-  const [event, setEvent] = useState<any>(null);
-  const [performances, setPerformances] = useState<any[]>([]);
-  const [votes, setVotes] = useState<any[]>([]);
-  const [peopleVotes, setPeopleVotes] = useState<any[]>([]);
-  const [message, setMessage] = useState('');
+  const [event, setEvent] =
+    useState<EventRow | null>(null);
+
+  const [performances, setPerformances] =
+    useState<PerformanceRow[]>([]);
+
+  const [archivedEvents, setArchivedEvents] =
+    useState<ArchivedEvent[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
 
   useEffect(() => {
-    loadReport();
-  }, []);
+    loadHistory();
+  }, [eventId]);
 
-  async function loadReport() {
-    const { data: eventData, error: eventError } = await supabase
-      .from('events')
-      .select('*')
-      .eq('id', eventId)
-      .single();
+  async function loadHistory() {
+    setLoading(true);
 
-    if (eventError) {
-      setMessage(eventError.message);
+    const { data: userData } =
+      await supabase.auth.getUser();
+
+    if (!userData.user) {
+      router.push('/login');
       return;
     }
 
-    setEvent(eventData);
+    const {
+      data: accountUser,
+      error: accountUserError,
+    } = await supabase
+      .from('account_users')
+      .select('account_id')
+      .eq('user_id', userData.user.id)
+      .single();
 
-    const { data: performanceData } = await supabase
-      .from('performances')
-      .select('*')
-      .eq('event_id', eventId)
-      .order('created_at', { ascending: true });
+    if (
+      accountUserError ||
+      !accountUser
+    ) {
+      console.error(accountUserError);
 
-    setPerformances(performanceData || []);
+      alert(
+        'No StageVotes account was found.'
+      );
 
-    const { data: voteData } = await supabase
-      .from('votes')
-      .select('*')
-      .eq('event_id', eventId);
-
-    setVotes(voteData || []);
-
-    const { data: peopleVoteData } = await supabase
-      .from('peoples_choice_votes')
-      .select('*')
-      .eq('event_id', eventId);
-
-    setPeopleVotes(peopleVoteData || []);
-  }
-
-  const uniqueSingers = new Set(
-    performances.map((p) => p.singer_name).filter(Boolean)
-  );
-
-const completedSongs = performances.filter(
-  (p) => p.status === 'completed'
-).length;
-
-const uniqueJudgeBallots = new Set(
-  votes.map((v) => v.voter_key || v.judge_id || v.device_id).filter(Boolean)
-).size;
-
-const totalScore = votes.reduce((sum, vote) => {
-  return sum + Number(vote.score || 0);
-}, 0);
-
-const averageScore =
-  votes.length > 0 ? totalScore / votes.length : 0;
-
-const mostActiveSinger = Object.entries(
-  performances.reduce((acc: Record<string, number>, performance) => {
-    const singer = performance.singer_name || 'Unknown';
-    acc[singer] = (acc[singer] || 0) + 1;
-    return acc;
-  }, {})
-).sort((a, b) => b[1] - a[1])[0];
-  
-  const peopleChoiceCounts: Record<string, number> = {};
-
-  peopleVotes.forEach((vote) => {
-    const singer = vote.singer_name || vote.performer_name || vote.singer || 'Unknown';
-    peopleChoiceCounts[singer] = (peopleChoiceCounts[singer] || 0) + 1;
-  });
-
-  const peopleChoiceWinner =
-    Object.entries(peopleChoiceCounts).sort((a, b) => b[1] - a[1])[0];
-
-  const peopleChoiceResults = Object.entries(peopleChoiceCounts)
-  .map(([singer, count]) => ({
-    singer,
-    count,
-  }))
-  .sort((a, b) => b.count - a.count);
-
-  const scoreTotals: Record<string, { singer: string; total: number; count: number }> = {};
-
-  votes.forEach((vote) => {
-    const performance = performances.find((p) => p.id === vote.performance_id);
-    if (!performance) return;
-
-    const singer = performance.singer_name || 'Unknown';
-
-    if (!scoreTotals[performance.id]) {
-      scoreTotals[performance.id] = {
-        singer,
-        total: 0,
-        count: 0,
-      };
+      router.push('/');
+      return;
     }
 
-    scoreTotals[performance.id].total += Number(vote.score || 0);
-    scoreTotals[performance.id].count += 1;
-  });
+    const accountId =
+      accountUser.account_id;
 
-  const leaderboard = Object.values(scoreTotals)
-    .map((entry) => ({
-      singer: entry.singer,
-      average: entry.count > 0 ? entry.total / entry.count : 0,
-      total: entry.total,
-    }))
-    .sort((a, b) => b.total - a.total);
+      const recentArchivedEvents =
+  archivedEvents.slice(0, 6);
 
-  const overallWinner = leaderboard[0];
+    const [
+      eventResult,
+      performancesResult,
+      archivedResult,
+    ] = await Promise.all([
+      supabase
+        .from('events')
+        .select('*')
+        .eq('id', eventId)
+        .eq('account_id', accountId)
+        .single(),
+
+      supabase
+        .from('performances')
+        .select('*')
+        .eq('event_id', eventId)
+        .eq('account_id', accountId)
+        .order('queue_order', {
+          ascending: true,
+        }),
+
+      supabase
+        .from('events')
+        .select('*')
+        .eq('account_id', accountId)
+        .eq('is_archived', true)
+        .neq('id', eventId)
+        .order('created_at', {
+          ascending: false,
+        }),
+    ]);
+
+    if (
+      eventResult.error ||
+      !eventResult.data
+    ) {
+      console.error(
+        eventResult.error
+      );
+
+      alert(
+        'You do not have access to this event.'
+      );
+
+      router.push('/');
+      return;
+    }
+
+    setEvent(eventResult.data);
+
+    setPerformances(
+      performancesResult.data || []
+    );
+
+    if (archivedResult.error) {
+      console.error(
+        archivedResult.error
+      );
+
+      setArchivedEvents([]);
+    } else {
+      setArchivedEvents(
+        archivedResult.data || []
+      );
+    }
+
+    setLoading(false);
+  }
+
+  const completedPerformances =
+    useMemo(() => {
+      return performances.filter(
+        (performance) =>
+          performance.status ===
+          'completed'
+      );
+    }, [performances]);
+
+  const skippedPerformances =
+    useMemo(() => {
+      return performances.filter(
+        (performance) =>
+          performance.status ===
+          'skipped'
+      );
+    }, [performances]);
+
+const recentArchivedEvents = useMemo(() => {
+  return archivedEvents.slice(0, 6);
+}, [archivedEvents]);
+
+  const uniqueSingerCount =
+    new Set(
+      performances.map(
+        (performance) =>
+          performance.singer_name
+            .trim()
+            .toLowerCase()
+      )
+    ).size;
+
+  function formatDate(
+    dateValue?: string | null
+  ) {
+    if (!dateValue) {
+      return 'Date unavailable';
+    }
+
+    const parsedDate =
+      new Date(dateValue);
+
+    if (
+      Number.isNaN(
+        parsedDate.getTime()
+      )
+    ) {
+      return 'Date unavailable';
+    }
+
+    return parsedDate.toLocaleDateString(
+      'en-US',
+      {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }
+    );
+  }
+
+  if (loading) {
+    return (
+      <SVShell
+        title="History"
+        subtitle="Loading show history..."
+      >
+        <div className="sv-card">
+          Loading...
+        </div>
+      </SVShell>
+    );
+  }
+
+  const summaryCards = [
+    {
+      label: 'Singers Tonight',
+      value: uniqueSingerCount,
+      icon: Users,
+      accent: '#38bdf8',
+    },
+    {
+      label: 'Songs Submitted',
+      value: performances.length,
+      icon: Music2,
+      accent: '#f97316',
+    },
+    {
+      label: 'Completed',
+      value:
+        completedPerformances.length,
+      icon: CheckCircle2,
+      accent: '#4ade80',
+    },
+    {
+      label: 'Skipped',
+      value:
+        skippedPerformances.length,
+      icon: Clock3,
+      accent: '#c084fc',
+    },
+  ];
 
   return (
-    <main className="container">
-      <div className="card">
-        <h1>Event Report</h1>
+    <SVShell
+      title="History"
+      subtitle={
+        event?.name
+          ? `${event.name} show history`
+          : 'Review completed performances and previous shows.'
+      }
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(auto-fit, minmax(190px, 1fr))',
+          gap: 14,
+        }}
+      >
+        {summaryCards.map(
+          (card) => {
+            const Icon =
+              card.icon;
 
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-          <Link href="/history">
-            <button type="button">← Back to History</button>
-          </Link>
+            return (
+              <section
+                key={card.label}
+                className="sv-card"
+                style={{
+                  display: 'flex',
+                  alignItems:
+                    'center',
+                  gap: 14,
+                  padding: 18,
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    display: 'grid',
+                    placeItems:
+                      'center',
+                    color:
+                      card.accent,
+                    background:
+                      `${card.accent}1f`,
+                  }}
+                >
+                  <Icon size={22} />
+                </div>
 
-          <Link href={`/history/${eventId}/winner`}>
-  <button type="button">
-    Winner Graphic
-  </button>
-</Link>
+                <div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      opacity: 0.65,
+                    }}
+                  >
+                    {card.label}
+                  </div>
 
-<button type="button" onClick={() => window.print()}>
-  Download PDF
-</button>
-          
-          {event && (
-            <Link href={`/host/${event.id}`}>
-              <button type="button">Open Dashboard</button>
-            </Link>
-          )}
-        </div>
-
-        {message && <p>{message}</p>}
-
-        {event && (
-          <>
-            <h2>{event.name}</h2>
-            <p>{event.venue}</p>
-            <p>{new Date(event.created_at).toLocaleString()}</p>
-
-            <h2>Show Summary</h2>
-
-            <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-              <div className="card">
-                <h3>Singers</h3>
-                <p>{uniqueSingers.size}</p>
-              </div>
-
-              <div className="card">
-                <h3>Songs</h3>
-                <p>{performances.length}</p>
-              </div>
-
-              <div className="card">
-                <h3>Judge Votes</h3>
-                <p>{votes.length}</p>
-              </div>
-
-              <div className="card">
-                <h3>People's Choice Votes</h3>
-                <p>{peopleVotes.length}</p>
-              </div>
-
-              <div className="card">
-  <h3>Completed Songs</h3>
-  <p>{completedSongs}</p>
-</div>
-
-<div className="card">
-  <h3>Judge Ballots</h3>
-  <p>{uniqueJudgeBallots}</p>
-</div>
-
-<div className="card">
-  <h3>Average Score</h3>
-  <p>{averageScore.toFixed(2)}</p>
-</div>
-
-<div className="card">
-  <h3>Most Active Singer</h3>
-  <p>
-    {mostActiveSinger
-      ? `${mostActiveSinger[0]} (${mostActiveSinger[1]} song${mostActiveSinger[1] === 1 ? '' : 's'})`
-      : 'N/A'}
-  </p>
-</div>
-              
-            </div>
-
-            <h2>Winners</h2>
-
-            <div className="card">
-              <p>
-                <strong>Overall Winner:</strong>{' '}
-                {overallWinner ? overallWinner.singer : 'No judge scores yet'}
-              </p>
-
-              <p>
-                <strong>People's Choice Winner:</strong>{' '}
-                {peopleChoiceWinner
-                  ? `${peopleChoiceWinner[0]} (${peopleChoiceWinner[1]} votes)`
-                  : 'No People’s Choice votes yet'}
-              </p>
-            </div>
-
-          <h2>People's Choice Results</h2>
-
-{peopleChoiceResults.length === 0 ? (
-  <p>No People's Choice votes yet.</p>
-) : (
-  <div className="card">
-    {peopleChoiceResults.map((entry, index) => (
-      <p key={entry.singer}>
-        #{index + 1} {entry.singer} — {entry.count} vote{entry.count === 1 ? '' : 's'}
-      </p>
-    ))}
-  </div>
-)}
-            
-            <h2>Leaderboard</h2>
-
-            {leaderboard.length === 0 ? (
-              <p>No judge scores yet.</p>
-            ) : (
-              <div className="card">
-                {leaderboard.map((entry, index) => (
-                  <p key={index}>
-                    #{index + 1} {entry.singer} — Total: {entry.total.toFixed(2)}
-                  </p>
-                ))}
-              </div>
-            )}
-
-            <h2>Performances</h2>
-
-            <div className="card">
-              {performances.length === 0 ? (
-                <p>No performances.</p>
-              ) : (
-                performances.map((p, index) => (
-                  <p key={p.id}>
-                    #{index + 1} {p.singer_name} — {p.song_title}
-                    {p.artist ? ` by ${p.artist}` : ''}
-                  </p>
-                ))
-              )}
-            </div>
-          </>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      fontSize: 26,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {card.value}
+                  </div>
+                </div>
+              </section>
+            );
+          }
         )}
       </div>
-    </main>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
+          gap: 20,
+          marginTop: 20,
+        }}
+      >
+        <section className="sv-card">
+          <div
+            style={{
+              display: 'flex',
+              justifyContent:
+                'space-between',
+              alignItems: 'center',
+              gap: 16,
+              marginBottom: 18,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+            >
+              <CheckCircle2
+                size={22}
+                color="#4ade80"
+              />
+
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 20,
+                }}
+              >
+                Completed Tonight
+              </h2>
+            </div>
+
+            <span
+              style={{
+                borderRadius: 999,
+                padding: '5px 10px',
+                background:
+                  'rgba(74,222,128,0.12)',
+                color: '#4ade80',
+                fontSize: 11,
+                fontWeight: 800,
+                textTransform:
+                  'uppercase',
+                letterSpacing:
+                  '0.05em',
+              }}
+            >
+              {
+                completedPerformances.length
+              }{' '}
+              completed
+            </span>
+          </div>
+
+          {completedPerformances.length ===
+          0 ? (
+            <div
+              style={{
+                padding: '34px 20px',
+                textAlign: 'center',
+                borderRadius: 14,
+                background:
+                  'rgba(255,255,255,0.025)',
+                border:
+                  '1px dashed rgba(255,255,255,0.12)',
+              }}
+            >
+              <Mic2
+                size={30}
+                style={{
+                  opacity: 0.4,
+                }}
+              />
+
+              <h3
+                style={{
+                  margin:
+                    '12px 0 5px',
+                }}
+              >
+                No completed songs yet
+              </h3>
+
+              <p
+                style={{
+                  margin: 0,
+                  opacity: 0.6,
+                  fontSize: 13,
+                }}
+              >
+                Performances will appear here
+                as the show progresses.
+              </p>
+            </div>
+          ) : (
+            completedPerformances.map(
+              (
+                performance,
+                index
+              ) => (
+                <div
+                  key={
+                    performance.id
+                  }
+                  style={{
+                    display: 'flex',
+                    justifyContent:
+                      'space-between',
+                    alignItems:
+                      'center',
+                    gap: 16,
+                    padding:
+                      '14px 0',
+                    borderBottom:
+                      index ===
+                      completedPerformances.length -
+                        1
+                        ? 'none'
+                        : '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 12,
+                      alignItems:
+                        'center',
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius:
+                          10,
+                        display:
+                          'grid',
+                        placeItems:
+                          'center',
+                        background:
+                          'rgba(74,222,128,0.12)',
+                        color:
+                          '#4ade80',
+                        fontWeight:
+                          900,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+
+                    <div
+                      style={{
+                        minWidth: 0,
+                      }}
+                    >
+                      <strong>
+                        {
+                          performance.singer_name
+                        }
+                      </strong>
+
+                      <div
+                        style={{
+                          marginTop: 4,
+                          opacity: 0.65,
+                          fontSize: 13,
+                          overflow:
+                            'hidden',
+                          textOverflow:
+                            'ellipsis',
+                          whiteSpace:
+                            'nowrap',
+                        }}
+                      >
+                        {
+                          performance.song_title
+                        }
+
+                        {performance.artist
+                          ? ` by ${performance.artist}`
+                          : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    style={{
+                      color:
+                        '#4ade80',
+                      fontSize: 12,
+                      fontWeight: 800,
+                    }}
+                  >
+                    COMPLETED
+                  </span>
+                </div>
+              )
+            )
+          )}
+        </section>
+
+        <section className="sv-card">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 18,
+            }}
+          >
+            <History
+              size={22}
+              color="#38bdf8"
+            />
+
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 20,
+              }}
+            >
+              Current Show
+            </h2>
+          </div>
+
+          <div
+            style={{
+              display: 'grid',
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 12,
+                background:
+                  'rgba(255,255,255,0.04)',
+                border:
+                  '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 9,
+                  alignItems:
+                    'center',
+                  opacity: 0.65,
+                  fontSize: 12,
+                }}
+              >
+                <Trophy size={15} />
+                Show
+              </div>
+
+              <strong
+                style={{
+                  display: 'block',
+                  marginTop: 7,
+                }}
+              >
+                {event?.name ||
+                  'Current Show'}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 12,
+                background:
+                  'rgba(255,255,255,0.04)',
+                border:
+                  '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 9,
+                  alignItems:
+                    'center',
+                  opacity: 0.65,
+                  fontSize: 12,
+                }}
+              >
+                <MapPin size={15} />
+                Venue
+              </div>
+
+              <strong
+                style={{
+                  display: 'block',
+                  marginTop: 7,
+                }}
+              >
+                {event?.venue ||
+                  'Venue not set'}
+              </strong>
+            </div>
+
+            <div
+              style={{
+                padding: 14,
+                borderRadius: 12,
+                background:
+                  'rgba(255,255,255,0.04)',
+                border:
+                  '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 9,
+                  alignItems:
+                    'center',
+                  opacity: 0.65,
+                  fontSize: 12,
+                }}
+              >
+                <Archive size={15} />
+                Status
+              </div>
+
+              <strong
+                style={{
+                  display: 'block',
+                  marginTop: 7,
+                  color:
+                    event?.is_archived
+                      ? '#facc15'
+                      : '#4ade80',
+                }}
+              >
+                {event?.is_archived
+                  ? 'Archived'
+                  : 'Active Show'}
+              </strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section
+  className="sv-card"
+  style={{
+    marginTop: 20,
+  }}
+>
+  <div
+    style={{
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 16,
+      marginBottom: 18,
+    }}
+  >
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
+      <Archive
+        size={22}
+        color="#c084fc"
+      />
+
+      <h2
+        style={{
+          margin: 0,
+          fontSize: 20,
+        }}
+      >
+        Previous Shows
+      </h2>
+    </div>
+
+    <span
+      style={{
+        opacity: 0.6,
+        fontSize: 12,
+      }}
+    >
+      {archivedEvents.length} archived
+    </span>
+  </div>
+
+  {archivedEvents.length === 0 ? (
+    <div
+      style={{
+        padding: '32px 20px',
+        textAlign: 'center',
+        borderRadius: 14,
+        background:
+          'rgba(255,255,255,0.025)',
+        border:
+          '1px dashed rgba(255,255,255,0.12)',
+      }}
+    >
+      <CalendarDays
+        size={30}
+        style={{
+          opacity: 0.4,
+        }}
+      />
+
+      <h3
+        style={{
+          margin: '12px 0 5px',
+        }}
+      >
+        No archived shows yet
+      </h3>
+
+      <p
+        style={{
+          margin: 0,
+          opacity: 0.6,
+          fontSize: 13,
+        }}
+      >
+        End or archive a show and it will appear here.
+      </p>
+    </div>
+  ) : (
+    <>
+      <div
+        style={{
+          display: 'grid',
+        }}
+      >
+        {recentArchivedEvents.map(
+          (archivedEvent, index) => (
+            <button
+              key={archivedEvent.id}
+              type="button"
+              onClick={() =>
+            router.push(`/history/${archivedEvent.id}`)
+              }
+              style={{
+                width: '100%',
+                display: 'grid',
+                gridTemplateColumns:
+                  'minmax(0, 1fr) auto auto',
+                alignItems: 'center',
+                gap: 16,
+                padding: '15px 4px',
+                background: 'transparent',
+                color: 'white',
+                border: 'none',
+                borderBottom:
+                  index ===
+                  recentArchivedEvents.length - 1
+                    ? 'none'
+                    : '1px solid rgba(255,255,255,0.08)',
+                textAlign: 'left',
+                cursor: 'pointer',
+              }}
+            >
+              <div
+                style={{
+                  minWidth: 0,
+                }}
+              >
+                <strong
+                  style={{
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {archivedEvent.name ||
+                    'Archived Show'}
+                </strong>
+
+                <div
+                  style={{
+                    marginTop: 4,
+                    opacity: 0.6,
+                    fontSize: 12,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {archivedEvent.venue ||
+                    'Venue not set'}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
+                  opacity: 0.65,
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <CalendarDays size={14} />
+
+                {formatDate(
+                  archivedEvent.created_at
+                )}
+              </div>
+
+              <span
+                style={{
+                  fontSize: 20,
+                  opacity: 0.45,
+                }}
+              >
+                ›
+              </span>
+            </button>
+          )
+        )}
+      </div>
+
+      {archivedEvents.length > 6 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            paddingTop: 16,
+            borderTop:
+              '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <button
+            type="button"
+            className="secondary"
+            onClick={() =>
+              router.push('/show-history')
+            }
+          >
+            View All {archivedEvents.length} Shows
+          </button>
+        </div>
+      )}
+    </>
+  )}
+</section>
+    </SVShell>
   );
 }

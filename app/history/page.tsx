@@ -37,6 +37,7 @@ const [duplicateName, setDuplicateName] = useState('');
       return;
     }
 
+
     const { data: accountUser, error: accountUserError } = await supabase
       .from('account_users')
       .select('account_id')

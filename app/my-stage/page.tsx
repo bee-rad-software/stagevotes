@@ -10,9 +10,21 @@ import MyStageHero from '@/components/my-stage/MyStageHero';
 import ExploreGrid from '@/components/my-stage/ExploreGrid';
 import PersonalBests from '@/components/my-stage/PersonalBests';
 import CareerTimeline from '@/components/my-stage/CareerTimeline';
+import { useRouter, useSearchParams } from "next/navigation";
 
+import useLiveEvent from "@/hooks/useLiveEvent";
+import SVLiveShowBanner from "@/components/singer/SVLiveShowBanner";
 
 export default function MyStagePage() {
+
+const router = useRouter();
+
+const searchParams = useSearchParams();
+
+const eventId = searchParams.get("event");
+
+const liveEvent = useLiveEvent(eventId);
+
 const {
   profile,
   stats,
@@ -56,6 +68,45 @@ const {
           margin: '0 auto',
         }}
       >
+
+{liveEvent.error && (
+  <div
+    style={{
+      padding: 12,
+      marginBottom: 16,
+      borderRadius: 10,
+      background: '#fee2e2',
+      color: '#991b1b',
+    }}
+  >
+    Live event error: {liveEvent.error}
+  </div>
+)}
+
+        {eventId && (
+  <SVLiveShowBanner
+    venueName={liveEvent.venueName}
+    status={liveEvent.queueState}
+    currentSinger={
+      liveEvent.currentPerformance?.singer_name ?? ""
+    }
+    currentSong={
+      liveEvent.currentPerformance?.song_title ?? ""
+    }
+    currentArtist={
+      liveEvent.currentPerformance?.artist
+    }
+    position={liveEvent.myPosition}
+    estimatedWaitMinutes={
+      liveEvent.estimatedWaitMinutes
+    }
+    loading={liveEvent.loading}
+  onReturn={() =>
+  router.push(`/signup/${eventId}`)
+}
+  />
+)}
+
         <header
           style={{
             display: 'flex',

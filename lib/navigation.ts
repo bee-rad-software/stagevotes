@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
-  Mic2,
-  Vote,
+  Users,
   Monitor,
   ChartColumn,
   History,
@@ -10,7 +9,7 @@ import {
 
 export const navigation = [
   {
-    title: 'LIVE',
+    title: 'SHOW',
     items: [
       {
         icon: LayoutDashboard,
@@ -18,14 +17,9 @@ export const navigation = [
         href: '/',
       },
       {
-        icon: Mic2,
-        label: 'Queue',
-        href: '/queue',
-      },
-      {
-        icon: Vote,
-        label: 'Voting',
-        href: '/voting',
+        icon: Users,
+        label: 'Audience',
+        href: '/audience',
       },
       {
         icon: Monitor,
@@ -35,7 +29,7 @@ export const navigation = [
     ],
   },
   {
-    title: 'MANAGE',
+    title: 'INSIGHTS',
     items: [
       {
         icon: ChartColumn,
@@ -47,6 +41,11 @@ export const navigation = [
         label: 'History',
         href: '/history',
       },
+    ],
+  },
+  {
+    title: 'SYSTEM',
+    items: [
       {
         icon: Settings,
         label: 'Account',

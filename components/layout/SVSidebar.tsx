@@ -7,6 +7,13 @@ import { usePathname } from 'next/navigation';
 
 export default function SVSidebar() {
   const pathname = usePathname();
+
+const eventMatch = pathname.match(
+  /^\/(?:host|audience|displays|analytics|history)\/([^/]+)/
+);
+
+const currentEventId = eventMatch?.[1] || null;
+
   return (
     <aside className="sv-sidebar">
       <div className="sv-logo-area">
@@ -33,12 +40,25 @@ export default function SVSidebar() {
             {section.items.map((item) => {
               const Icon = item.icon;
 
+const href =
+  item.label === 'Dashboard' && currentEventId
+    ? `/host/${currentEventId}`
+    : item.label === 'Audience' && currentEventId
+    ? `/audience/${currentEventId}`
+    : item.label === 'Displays' && currentEventId
+    ? `/displays/${currentEventId}`
+    : item.label === 'Analytics' && currentEventId
+    ? `/analytics/${currentEventId}`
+    : item.label === 'History' && currentEventId
+    ? `/history/${currentEventId}`
+    : item.href;
+
               return (
                 <Link
                   key={item.label}
-                  href={item.href}
+                  href={href}
                   className={
-  pathname === item.href
+  pathname === href
     ? 'sv-nav-item sv-nav-item-active'
     : 'sv-nav-item'
 }

@@ -1,6 +1,10 @@
 'use client'
-
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import Link from 'next/link';
@@ -10,6 +14,34 @@ import AppQRCode from '@/components/AppQRCode';
 import AppShell from '@/components/AppShell';
 import SVShell from '@/components/ui/SVShell';
 import SVHostHero from '@/components/dashboard/SVHostHero';
+import SVMissionControl from '@/components/dashboard/SVMissionControl';
+import SVSongPicker, {
+  SVSongOption,
+} from '@/components/singer/SVSongPicker';
+import SVHostQueue, {
+  SVHostQueueItem,
+} from '@/components/dashboard/SVHostQueue';
+
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+
+import { CSS } from '@dnd-kit/utilities';
+
+import { GripVertical } from 'lucide-react';
 
 export default function HostPage() {
   const params = useParams();
@@ -22,6 +54,16 @@ export default function HostPage() {
   const [singerName, setSingerName] = useState('');
   const [songTitle, setSongTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [pickerSongs, setPickerSongs] =
+  useState<SVSongOption[]>([]);
+
+const [pickerLoading, setPickerLoading] =
+  useState(false);
+
+const [
+  showManualSongFields,
+  setShowManualSongFields,
+] = useState(false);
   const [singerView, setSingerView] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 const [editSingerName, setEditSingerName] = useState('');
@@ -41,7 +83,6 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   account.subscription_status === 'trialing';
   const [showSingerSignup, setShowSingerSignup] = useState(false);
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
-  const [showCheckinSettings, setShowCheckinSettings] = useState(false);
   const [showCheckinStats, setShowCheckinStats] = useState(false);
   const [showCompletedTonight, setShowCompletedTonight] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
@@ -153,7 +194,9 @@ checkAuth();
       .subscribe();
 
 const interval = setInterval(() => {
-  loadAll();
+  if (!showSingerSignup) {
+    loadAll();
+  }
 }, 3000);
 
     return () => {
@@ -164,7 +207,7 @@ const interval = setInterval(() => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId, router])
+  }, [eventId, router, showSingerSignup]);
 
   async function loadAll() {
    await Promise.all([
@@ -184,9 +227,9 @@ async function loadCheckins() {
     .eq('event_id', eventId);
 
   if (error) {
-    console.error(error.message);
-    return;
-  }
+  console.error(error);
+  return false;
+}
 
   setCheckinCount(count || 0);
 }
@@ -276,7 +319,7 @@ if (accountData) {
     console.error(error.message);
     alert('You do not have access to this event.');
     router.push('/');
-    return;
+    return false;
   }
 
   setEvent(data);
@@ -299,7 +342,7 @@ if (accountData) {
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadAll();
@@ -311,14 +354,20 @@ if (accountData) {
 
   const { data, error } = await supabase
     .from('performances')
-    .select('*')
+    .select(`
+  *,
+  singer_profiles (
+    id,
+    photo_url
+  )
+`)
     .eq('event_id', eventId)
     .eq('account_id', accountId)
     .order('queue_order', { ascending: true });
 
   if (error) {
     console.error(error.message);
-    return;
+    return false;
   }
 
   setPerformances(data || []);
@@ -332,7 +381,7 @@ async function loadPeoplesChoice() {
 
   if (error) {
     console.error(error.message);
-    return;
+    return false;
   }
 
   const counts: Record<string, number> = {};
@@ -368,7 +417,7 @@ async function loadPeoplesChoice() {
 
   if (error) {
     console.error(error.message);
-    return;
+    return false;
   }
 
   setVotes(data || []);
@@ -412,7 +461,7 @@ async function logout() {
 
   if (error) {
     console.error(error.message);
-    return;
+    return false;
   }
 
   setCategories(data || []);
@@ -428,11 +477,72 @@ function getCurrentActiveRound() {
   return Math.min(...active.map((p: any) => p.round || 1));
 }
   
-  async function addPerformance() {
-    if (!singerName.trim() || !songTitle.trim()) {
-      alert('Singer name and song title are required.');
+const searchPickerSongs = useCallback(
+  async (searchText: string) => {
+    const term = searchText.trim();
+
+    if (term.length < 2) {
+      setPickerSongs([]);
+      setPickerLoading(false);
       return;
     }
+
+    setPickerLoading(true);
+
+    const { data, error } = await supabase
+      .from('songs')
+      .select('id, title, artist')
+      .or(
+        `title.ilike.%${term}%,artist.ilike.%${term}%`
+      )
+      .limit(20);
+
+    if (error) {
+      console.error(
+        'Host song search failed:',
+        error
+      );
+
+      setPickerSongs([]);
+      setPickerLoading(false);
+      return;
+    }
+
+    const results: SVSongOption[] =
+      (data || []).map((result) => {
+        const alreadyQueued =
+          performances.some(
+            (performance) =>
+              performance.song_title
+                .trim()
+                .toLowerCase() ===
+                result.title
+                  .trim()
+                  .toLowerCase() &&
+              performance.status !==
+                'completed'
+          );
+
+        return {
+          title: result.title,
+          artist: result.artist || '',
+          status: alreadyQueued
+            ? 'queued'
+            : 'available',
+        };
+      });
+
+    setPickerSongs(results);
+    setPickerLoading(false);
+  },
+  [performances]
+);
+
+  async function addPerformance(): Promise<boolean> {
+  if (!singerName.trim() || !songTitle.trim()) {
+    alert('Singer name and song title are required.');
+    return false;
+  }
 const currentRound = getCurrentActiveRound();
 
 const singerKey = singerName.trim().toLowerCase();
@@ -467,7 +577,7 @@ const nextOrder =
     : maxOrderInAssignedRound + 1;
 
 const accountId = await getMyAccountId();
-if (!accountId) return;
+if (!accountId) return false;
 
 const { error } = await supabase.from('performances').insert({
   event_id: eventId,
@@ -479,15 +589,19 @@ const { error } = await supabase.from('performances').insert({
   round: assignedRound
 });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+if (error) {
+  alert(error.message);
+  return false;
+}
 
     setSingerName('');
     setSongTitle('');
     setArtist('');
+    setPickerSongs([]);
+setShowManualSongFields(false);
     await loadPerformances();
+
+    return true;
   }
 
   async function setCurrent(performanceId: string) {
@@ -503,7 +617,7 @@ const { error } = await supabase.from('performances').insert({
 
     if (error) {
       alert(error.message);
-      return;
+      return false;
     }
 
     await loadAll();
@@ -547,7 +661,7 @@ async function newShow() {
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   window.open(`/display/${eventId}`, '_blank');
@@ -563,7 +677,7 @@ async function toggleCheckinRequired(required: boolean) {
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadEvent();
@@ -604,7 +718,7 @@ function useCurrentLocationForCheckin() {
 
       if (error) {
         alert(error.message);
-        return;
+        return false;
       }
 
       alert('Venue location saved.');
@@ -642,7 +756,7 @@ const { error } = await supabase
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   cancelEditing();
@@ -662,7 +776,7 @@ const { error } = await supabase
   .eq('account_id', accountId);
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadAll();
@@ -680,7 +794,7 @@ const { error } = await supabase
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadAll();
@@ -739,7 +853,7 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadAll();
@@ -752,7 +866,7 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
 
     if (error) {
       alert(error.message);
-      return;
+      return false;
     }
 
     await loadEvent();
@@ -769,7 +883,7 @@ async function toggleQrSetting(
 
   if (error) {
     alert(error.message);
-    return;
+    return false;
   }
 
   await loadEvent();
@@ -788,6 +902,40 @@ async function toggleQrSetting(
       return (a.queue_order || 0) - (b.queue_order || 0);
     });
 }, [performances]);
+
+const hostQueueItems: SVHostQueueItem[] =
+  rotatedQueue.map((performance, index) => {
+    const isCurrent =
+      performance.id ===
+      event?.current_performance_id;
+
+    const firstWaitingIndex =
+      rotatedQueue.findIndex(
+        (item) =>
+          item.id !==
+          event?.current_performance_id
+      );
+
+    const isNext =
+      !isCurrent &&
+      index === firstWaitingIndex;
+
+return {
+  id: performance.id,
+  singerName: performance.singer_name,
+  songTitle: performance.song_title,
+  artist: performance.artist || undefined,
+  photoUrl: performance.singer_profiles?.photo_url || null,
+  round: 1,
+  status: isCurrent
+    ? 'current'
+    : isNext
+    ? 'next'
+    : 'waiting',
+  performance,
+};
+  });
+
 const fairQueue = useMemo(() => {
   const sorted = [...performances].sort((a, b) => a.queue_order - b.queue_order);
   const singerCounts = new Map<string, number>();
@@ -923,10 +1071,102 @@ const singerGroups = activeQueue.reduce((groups, p) => {
   return groups;
 }, {} as Record<string, typeof activeQueue>);
 
+async function handleQueueReorder(
+  draggedId: string,
+  targetId: string
+) {
+  const currentId =
+    event?.current_performance_id;
+
+  const movableQueue = rotatedQueue.filter(
+    (performance) =>
+      performance.id !== currentId
+  );
+
+  const oldIndex = movableQueue.findIndex(
+    (performance) =>
+      performance.id === draggedId
+  );
+
+  const newIndex = movableQueue.findIndex(
+    (performance) =>
+      performance.id === targetId
+  );
+
+  if (
+    oldIndex === -1 ||
+    newIndex === -1 ||
+    oldIndex === newIndex
+  ) {
+    return;
+  }
+
+  const reordered = [...movableQueue];
+
+  const [movedPerformance] =
+    reordered.splice(oldIndex, 1);
+
+  reordered.splice(
+    newIndex,
+    0,
+    movedPerformance
+  );
+
+  const updates = reordered.map(
+    (performance, index) => ({
+      id: performance.id,
+      queue_order: index + 1,
+    })
+  );
+
+  setPerformances((current) =>
+    current.map((performance) => {
+      const update = updates.find(
+        (item) =>
+          item.id === performance.id
+      );
+
+      return update
+        ? {
+            ...performance,
+            queue_order:
+              update.queue_order,
+          }
+        : performance;
+    })
+  );
+
+  const results = await Promise.all(
+    updates.map((update) =>
+      supabase
+        .from('performances')
+        .update({
+          queue_order:
+            update.queue_order,
+        })
+        .eq('id', update.id)
+    )
+  );
+
+  const failedUpdate = results.find(
+    (result) => result.error
+  );
+
+  if (failedUpdate?.error) {
+    console.error(
+      'Queue reorder failed:',
+      failedUpdate.error
+    );
+
+    await loadAll();
+  }
+}
+
 if (
 account?.subscription_status &&
 !isSubscribed
 ) {
+
   return (
   <div
     style={{
@@ -992,257 +1232,64 @@ account?.subscription_status &&
   }
 />
 
- <div className="card">
-        <h2 style={{ color: '#38bdf8' }}>
-  📋 Queue
-</h2>
-     <div
-  style={{
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginBottom: 16
-  }}
->
-  <button
-  onClick={() => setSingerView(!singerView)}
-  style={{
-    background: singerView ? '#38bdf8' : 'rgba(255,255,255,0.08)',
-    color: singerView ? '#0f172a' : 'white',
-    border: '1px solid rgba(255,255,255,0.15)',
-    fontWeight: 'bold',
-    padding: '6px 10px',
-    borderRadius: 999
-  }}
->
-  {singerView ? '👤 Singer View On' : '👤 Normal View'}
-</button>
-       
-  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
-    🎤 Active: {rotatedQueue.filter((p) => p.status !== 'completed' && p.status !== 'skipped').length}
-  </span>
+<SVMissionControl
+  onStartShow={startShow}
+  onEndShow={endShow}
+  onAddSinger={() =>
+    setShowSingerSignup(true)
+  }
+  onNextSinger={nextSinger}
+  onToggleVoting={() =>
+    toggleVoting(!event?.is_voting_open)
+  }
+  onOpenDisplay={() =>
+    window.open(
+      `/display/${eventId}`,
+      '_blank'
+    )
+  }
+  onAwards={() =>
+    window.open(
+      `/awards/${eventId}`,
+      '_blank'
+    )
+  }
+  showStarted={!!current}
+  votingOpen={!!event?.is_voting_open}
+  hasCurrentSinger={!!current}
+  currentSingerName={current?.singer_name}
+  nextSingerName={upNext?.singer_name}
+/>
 
-  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
-    ⏭️ Up Next: {upNext?.singer_name || 'None'}
-  </span>
 
-  <span className="badge" style={{ padding: '6px 10px', fontWeight: 'bold' }}>
-    ✅ Completed: {performances.filter((p) => p.status === 'completed').length}
-  </span>
-</div>
-   
-     {singerView ? (
-  Object.entries(singerGroups).map(([singer, songs]) => (
-    <div className="leaderboard-row" key={singer}>
-      <div style={{ width: '100%' }}>
-        <strong style={{ color: '#38bdf8', fontSize: 22 }}>
-  {singer} ({(songs as PerformanceRow[]).length} song
-  {(songs as PerformanceRow[]).length !== 1 ? 's' : ''})
-</strong>
-
-        {(songs as PerformanceRow[]).map((p) => (
-          <div
-            key={p.id}
-            style={{
-              marginTop: 10,
-              paddingLeft: 14,
-              borderLeft: '3px solid #c2410c'
-            }}
-          >
-            <div className="small">
-              {p.song_title}
-              {p.artist ? ` by ${p.artist}` : ''}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  ))
-) : (
-  <>
-    {rotatedQueue
-  .filter((p) => p.status !== 'completed' && p.status !== 'skipped')
-.map((p, index) => {
-  const isCurrent =
-    p.id === event?.current_performance_id;
-
-  const isOnDeck =
-    index === 1;
-
-  return (
-    <div
-  className="queue-row"
-  key={p.id}
-style={{
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  padding: '16px',
-
-  background: isCurrent
-    ? 'rgba(194,65,12,0.25)'
-    : isOnDeck
-    ? 'rgba(56,189,248,0.15)'
-    : 'transparent',
-
-  border: isCurrent
-    ? '2px solid #c2410c'
-    : isOnDeck
-    ? '1px solid #38bdf8'
-    : 'none',
-
-  borderRadius: 12,
-  marginBottom: 6
-}}
->
-        <div>
-          {editingId === p.id ? (
-            <div style={{ width: '100%' }}>
-              <label>Singer name</label>
-              <input
-                value={editSingerName}
-                onChange={(e) => setEditSingerName(e.target.value)}
-              />
-
-              <label>Song title</label>
-              <input
-                value={editSongTitle}
-                onChange={(e) => setEditSongTitle(e.target.value)}
-              />
-
-              <label>Artist</label>
-              <input
-                value={editArtist}
-                onChange={(e) => setEditArtist(e.target.value)}
-              />
-            </div>
-          ) : (
-     <div style={{ flex: 1 }}>
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      marginBottom: 4
-    }}
-  >
-    <strong
-      style={{
-        color: isCurrent
-          ? '#f97316'
-          : isOnDeck
-          ? '#38bdf8'
-          : 'white'
-      }}
-    >
-      {p.singer_name}
-    </strong>
-
-    {isCurrent && (
-      <span
-        style={{
-          background: '#c2410c',
-          color: 'white',
-          fontSize: 10,
-          fontWeight: 'bold',
-          padding: '2px 8px',
-          borderRadius: 999
-        }}
-      >
-        CURRENT
-      </span>
-    )}
-
-    {isOnDeck && !isCurrent && (
-      <span
-        style={{
-          background: '#38bdf8',
-          color: '#000',
-          fontSize: 10,
-          fontWeight: 'bold',
-          padding: '2px 8px',
-          borderRadius: 999
-        }}
-      >
-        ON DECK
-      </span>
-    )}
-  </div>
-
-  <div className="small">
-    {p.song_title}
-    {p.artist ? ` by ${p.artist}` : ''}
-  </div>
-</div>
-          )}
-        </div>
-
-        <div
-  style={{
-    display: 'flex',
-    gap: 6,
-    alignItems: 'center'
-  }}
->
-          {editingId === p.id ? (
-            <>
-              <button onClick={() => saveEdit(p.id)}>Save</button>
-              <button onClick={cancelEditing}>Cancel</button>
-            </>
-          ) : (
-            <>
-          {isCurrent && (
-  <button
-    className="btn-small primary"
-    onClick={() => setCurrent(p.id)}
-  >
-    ▶
-  </button>
-)}
-<button
-  className="btn-small"
-  onClick={() => moveSinger(p.id, 'up')}
->
-  ↑
-</button>
-
-<button
-  className="btn-small"
-  onClick={() => moveSinger(p.id, 'down')}
->
-  ↓
-</button>
-
-<button
-  className="btn-small warning"
-  onClick={() => skipSinger(p.id)}
->
-  Skip
-</button>
-
-<button
-  className="btn-small danger"
-  onClick={() => removeSinger(p.id)}
->
-  ✕
-</button>
-
-<button
-  className="btn-small"
-  onClick={() => startEditing(p)}
->
-  Edit
-</button>
-            </>
-          )}
-        </div>
-      </div>
-);
-})}
-</>
-)}
-</div>
+<SVHostQueue
+  items={hostQueueItems}
+  completedCount={
+    performances.filter(
+      (performance) =>
+        performance.status === 'completed'
+    ).length
+  }
+  singerView={singerView}
+  editingId={editingId}
+  editSingerName={editSingerName}
+  editSongTitle={editSongTitle}
+  editArtist={editArtist}
+  onToggleSingerView={() =>
+    setSingerView((current) => !current)
+  }
+  onEditSingerName={setEditSingerName}
+  onEditSongTitle={setEditSongTitle}
+  onEditArtist={setEditArtist}
+  onStartEdit={(item) =>
+  startEditing(item.performance)
+}
+  onSaveEdit={saveEdit}
+  onCancelEdit={cancelEditing}
+  onSkip={skipSinger}
+  onRemove={removeSinger}
+  onReorder={handleQueueReorder}
+/>
 
 <h2 style={{ color: '#38bdf8', marginTop: 24 }}>
   📊 Show Summary
@@ -1284,628 +1331,395 @@ style={{
     </div>
   </div>
 </div>
-      
-   <div className="card">
-  <h2 style={{ color: '#38bdf8' }}>⚡ Quick Actions</h2>
-<div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 20
-  }}
->
-  <div>
-    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>
-  🎬 Show
-</h3>
-
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <button
-        onClick={startShow}
+  
+{showSingerSignup && (
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="add-singer-title"
+    onClick={() => setShowSingerSignup(false)}
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 1000,
+      display: 'grid',
+      placeItems: 'center',
+      padding: 20,
+      background: 'rgba(2, 6, 23, 0.78)',
+      backdropFilter: 'blur(8px)',
+    }}
+  >
+    <section
+      className="sv-card"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+      style={{
+        width: 'min(100%, 760px)',
+        maxHeight: 'calc(100vh - 40px)',
+        overflowY: 'auto',
+        padding: 24,
+        border:
+          '1px solid rgba(56,189,248,0.24)',
+        boxShadow:
+          '0 28px 80px rgba(0,0,0,0.55)',
+      }}
+    >
+      <div
         style={{
-          background: '#38bdf8',
-          color: 'white',
-          fontWeight: 'bold'
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 16,
+          marginBottom: 24,
         }}
       >
-        🎤 Start Show
-      </button>
+        <div>
+          <div
+            style={{
+              color: '#38bdf8',
+              fontSize: 12,
+              fontWeight: 800,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              marginBottom: 6,
+            }}
+          >
+            Manual Signup
+          </div>
 
-      <button
-        onClick={endShow}
+          <h2
+            id="add-singer-title"
+            style={{
+              margin: 0,
+              fontSize: 26,
+            }}
+          >
+            Add Singer
+          </h2>
+
+          <p
+            style={{
+              margin: '7px 0 0',
+              opacity: 0.65,
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
+            Add a walk-up singer directly to the
+            live queue.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Close signup"
+          onClick={() =>
+            setShowSingerSignup(false)
+          }
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            display: 'grid',
+            placeItems: 'center',
+            padding: 0,
+            background:
+              'rgba(255,255,255,0.06)',
+            border:
+              '1px solid rgba(255,255,255,0.1)',
+            color: 'white',
+            cursor: 'pointer',
+            fontSize: 20,
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      <div
         style={{
-          background: '#c2410c',
-          color: 'white',
-          fontWeight: 'bold'
+          display: 'grid',
+          gap: 18,
         }}
       >
-        🏁 End Show
-      </button>
+        <div>
+          <label
+            htmlFor="host-singer-name"
+            style={{
+              display: 'block',
+              marginBottom: 7,
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            Singer name
+          </label>
 
-      <button
-        onClick={newShow}
+          <input
+            id="host-singer-name"
+            value={singerName}
+            onChange={(event) =>
+              setSingerName(event.target.value)
+            }
+            placeholder="Enter singer name"
+            autoFocus
+          />
+        </div>
+
+    <div>
+  <label
+    style={{
+      display: 'block',
+      marginBottom: 8,
+      fontSize: 13,
+      fontWeight: 700,
+    }}
+  >
+    Find a song
+  </label>
+
+  <SVSongPicker
+    songs={pickerSongs}
+    onSearch={searchPickerSongs}
+    loading={pickerLoading}
+    onSelect={(selected) => {
+      setSongTitle(selected.title);
+      setArtist(selected.artist);
+      setPickerSongs([]);
+      setShowManualSongFields(false);
+    }}
+    onSurpriseMe={async () => {
+      setPickerLoading(true);
+
+      const { data, error } =
+        await supabase
+          .from('songs')
+          .select('id, title, artist')
+          .limit(100);
+
+      if (error || !data?.length) {
+        console.error(
+          'Surprise song search failed:',
+          error
+        );
+
+        alert(
+          'We could not find a surprise song. Try again.'
+        );
+
+        setPickerLoading(false);
+        return;
+      }
+
+      const availableSongs =
+        data.filter((result) => {
+          return !performances.some(
+            (performance) =>
+              performance.song_title
+                .trim()
+                .toLowerCase() ===
+                result.title
+                  .trim()
+                  .toLowerCase() &&
+              performance.status !==
+                'completed'
+          );
+        });
+
+      if (availableSongs.length === 0) {
+        alert(
+          'No available surprise songs were found.'
+        );
+
+        setPickerLoading(false);
+        return;
+      }
+
+      const randomSong =
+        availableSongs[
+          Math.floor(
+            Math.random() *
+              availableSongs.length
+          )
+        ];
+
+      setSongTitle(randomSong.title);
+      setArtist(randomSong.artist || '');
+      setPickerLoading(false);
+      setShowManualSongFields(false);
+    }}
+  />
+
+  {songTitle && (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 14,
+        borderRadius: 12,
+        background:
+          'rgba(56,189,248,0.08)',
+        border:
+          '1px solid rgba(56,189,248,0.2)',
+      }}
+    >
+      <div
         style={{
-          background: '#c2410c',
-          color: 'white',
-          fontWeight: 'bold'
+          color: '#38bdf8',
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: 5,
         }}
       >
-        ➕ New Show
-      </button>
+        Selected song
+      </div>
+
+      <strong>{songTitle}</strong>
+
+      {artist && (
+        <div
+          style={{
+            marginTop: 4,
+            opacity: 0.65,
+            fontSize: 13,
+          }}
+        >
+          {artist}
+        </div>
+      )}
     </div>
-  </div>
+  )}
 
-  <div>
-    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>🗳️ Voting</h3>
+  <button
+    type="button"
+    className="secondary"
+    onClick={() =>
+      setShowManualSongFields(
+        (current) => !current
+      )
+    }
+    style={{
+      marginTop: 12,
+      width: '100%',
+    }}
+  >
+    {showManualSongFields
+      ? 'Hide Manual Entry'
+      : 'Can’t Find It? Enter Manually'}
+  </button>
 
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <button
-        onClick={() => toggleVoting(true)}
-        style={{
-          background: '#38bdf8',
-          color: '#0f172a',
-          fontWeight: 'bold'
-        }}
-      >
-        Open Voting
-      </button>
+  {showManualSongFields && (
+    <div
+      style={{
+        display: 'grid',
+        gap: 14,
+        marginTop: 14,
+      }}
+    >
+      <div>
+        <label
+          htmlFor="host-song-title"
+          style={{
+            display: 'block',
+            marginBottom: 7,
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          Song title
+        </label>
 
-      <button
-        onClick={() => toggleVoting(false)}
-        style={{
-          background: '#c2410c',
-          color: 'white',
-          fontWeight: 'bold'
-        }}
-      >
-        Close Voting
-      </button>
+        <input
+          id="host-song-title"
+          value={songTitle}
+          onChange={(event) =>
+            setSongTitle(
+              event.target.value
+            )
+          }
+          placeholder="Enter song title"
+        />
+      </div>
 
-      <button
-        className="secondary"
-        onClick={() => window.open(`/peopleschoice/${eventId}`, '_blank')}
-        style={{
-          background: '#38bdf8',
-          color: 'white',
-          fontWeight: 'bold'
-        }}
-      >
-        🎉 People's Choice
-      </button>
+      <div>
+        <label
+          htmlFor="host-song-artist"
+          style={{
+            display: 'block',
+            marginBottom: 7,
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          Artist
+        </label>
+
+        <input
+          id="host-song-artist"
+          value={artist}
+          onChange={(event) =>
+            setArtist(
+              event.target.value
+            )
+          }
+          placeholder="Enter artist"
+        />
+      </div>
     </div>
-  </div>
+  )}
+</div>
+      </div>
 
-  <div>
-    <h3 style={{ marginBottom: 12, color: '#38bdf8', fontSize: 16 }}>📺 Display</h3>
-
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <button
-        className="secondary"
-        onClick={() => window.open(`/display/${eventId}`, '_blank')}
+      <div
         style={{
-          background: '#38bdf8',
-          color: 'white',
-          fontWeight: 'bold'
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: 10,
+          marginTop: 24,
+          paddingTop: 20,
+          borderTop:
+            '1px solid rgba(255,255,255,0.08)',
         }}
       >
-        📺 Launch TV Display
-      </button>
+        <button
+          type="button"
+          className="secondary"
+          onClick={() =>
+            setShowSingerSignup(false)
+          }
+        >
+          Cancel
+        </button>
 
 <button
-  className="secondary"
-  onClick={() =>
-  window.open(
-    `/karafun-display/${eventId}`,
-    "karafunDisplay",
-    "width=520,height=900,left=100,top=100,menubar=no,toolbar=no,location=no,status=no,scrollbars=no,resizable=yes"
-  )
-}
+  type="button"
+  onClick={async () => {
+    const added = await addPerformance();
+
+    if (added) {
+      setShowSingerSignup(false);
+    }
+  }}
   style={{
     background: '#f97316',
     color: 'white',
-    fontWeight: 'bold'
+    border: 'none',
+    borderRadius: 10,
+    padding: '12px 16px',
+    fontWeight: 800,
+    cursor: 'pointer',
   }}
 >
-  🎶 Launch KaraFun Layout
-</button>
-      
-    </div>
-  </div>
-</div>
-      </div>  
-    
-<div className="card">
-  <h2
-    style={{ color: '#38bdf8', cursor: 'pointer' }}
-  onClick={() => setShowSingerSignup(!showSingerSignup)}
->
-  🎤 Singer Signup {showSingerSignup ? '▲' : '▼'}
-</h2>
-      {showSingerSignup && (
-  <>
-        <label>Singer name</label>
-        <input value={singerName} onChange={(e) => setSingerName(e.target.value)} />
-
-        <label>Song title</label>
-        <input value={songTitle} onChange={(e) => setSongTitle(e.target.value)} />
-
-        <label>Artist</label>
-        <input value={artist} onChange={(e) => setArtist(e.target.value)} />
-
-        <button onClick={addPerformance}>Add to Queue</button>
-      </>
-)}
-</div>
-  
-<div className="card">
- <h2
-  style={{ cursor: 'pointer' }}
-  onClick={() => setShowAudienceAccess(!showAudienceAccess)}
->
-  📱 Audience Access {showAudienceAccess ? '▲' : '▼'}
-</h2>
-  {showAudienceAccess && (
-  <>
-
- <div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: 16
-  }}
->
-  <div>
-  <div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8
-  }}
->
-  <h3 style={{ margin: 0 }}>Signup</h3>
-
-  <span
-    style={{
-      background: staticSignupQr ? '#16a34a' : '#475569',
-      color: 'white',
-      padding: '2px 8px',
-      borderRadius: 999,
-      fontSize: 12,
-      fontWeight: 'bold'
-    }}
-  >
-    {staticSignupQr ? 'Static QR' : 'Event QR'}
-  </span>
-</div>
-
-<div
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8
-  }}
->
-<button onClick={() => copyLink('signup', signupUrl)}>
-  {copiedLink === 'signup' ? '✓ Copied!' : 'Copy Link'}
+  Add to Queue
 </button>
 
-<button onClick={() => downloadQR(signupUrl, 'signup-qr.png')}>
-  Download QR
-</button>
-  </div>
-
-<label
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: 'fit-content',
-    alignSelf: 'center'
-  }}
->
-    <input
-      type="checkbox"
-      checked={!!event?.show_signup_qr}
-      onChange={(e) =>
-        toggleQrSetting('show_signup_qr', e.target.checked)
-      }
-    />
-    Show on TV
-  </label>
-</div>
-      
-    <div>
-      
-      <div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8
-  }}
->
-  <h3 style={{ margin: 0 }}>Voting</h3>
-
-  <span
-    style={{
-      background: staticJudgeQr ? '#16a34a' : '#475569',
-      color: 'white',
-      padding: '2px 8px',
-      borderRadius: 999,
-      fontSize: 12,
-      fontWeight: 'bold'
-    }}
-  >
-    {staticJudgeQr ? 'Static QR' : 'Event QR'}
-  </span>
-</div>
-      
-     <div
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8
-  }}
->
-    <button onClick={() => copyLink('voting', voteUrl)}>
-  {copiedLink === 'voting' ? '✓ Copied!' : 'Copy Link'}
-</button>
-      <button onClick={() => downloadQR(voteUrl, 'voting-qr.png')}>Download QR</button>
-    </div>
-
-       <label
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: 'fit-content',
-    alignSelf: 'center'
-  }}
->
-    <input
-      type="checkbox"
-      checked={!!event?.show_voting_qr}
-      onChange={(e) =>
-       toggleQrSetting('show_voting_qr', e.target.checked)
-      }
-    />
-    Show on TV
-  </label>
-</div>
-      
-    <div>
-      
-      <div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8
-  }}
->
-  <h3 style={{ margin: 0 }}>People's Choice</h3>
-
-  <span
-    style={{
-      background: staticPeopleQr ? '#16a34a' : '#475569',
-      color: 'white',
-      padding: '2px 8px',
-      borderRadius: 999,
-      fontSize: 12,
-      fontWeight: 'bold'
-    }}
-  >
-    {staticPeopleQr ? 'Static QR' : 'Event QR'}
-  </span>
-</div>
-      
-      <div
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8
-  }}
->
-     <button onClick={() => copyLink('peoplesChoice', peoplesChoiceUrl)}>
-  {copiedLink === 'peoplesChoice' ? '✓ Copied!' : 'Copy Link'}
-</button>
-      <button onClick={() => downloadQR(peoplesChoiceUrl, 'peoples-choice-qr.png')}>Download QR</button>
-    </div>
-      
-  <label
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: 'fit-content',
-    alignSelf: 'center'
-  }}
->
-    <input
-      type="checkbox"
-      checked={!!event?.show_peoples_choice_qr}
-      onChange={(e) =>
-       toggleQrSetting('show_peoples_choice_qr', e.target.checked)
-      }
-    />
-    Show on TV
-  </label>
-</div>
-
-    <div>
-      <div
-  style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 8
-  }}
->
-  <h3 style={{ margin: 0 }}>Check-In</h3>
-
-  <span
-    style={{
-      background: '#475569',
-      color: 'white',
-      padding: '2px 8px',
-      borderRadius: 999,
-      fontSize: 12,
-      fontWeight: 'bold'
-    }}
-  >
-    Event QR
-  </span>
-</div>
-      
-      <div
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8
-  }}
->
-      <button onClick={() => copyLink('checkin', checkinUrl)}>
-  {copiedLink === 'checkin' ? '✓ Copied!' : 'Copy Link'}
-</button>
-      <button onClick={() => downloadQR(checkinUrl, 'checkin-qr.png')}>Download QR</button>
-    </div>
-
-      <label
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 8,
-    width: 'fit-content',
-    alignSelf: 'center'
-  }}
->
-  <input
-    type="checkbox"
-    checked={!event?.show_checkin_qr}
-    onChange={(e) =>
-      toggleQrSetting('show_checkin_qr', e.target.checked)
-    }
-  />
-  <span>Show on TV</span>
-</label>
       </div>
+    </section>
   </div>
-    </>
 )}
-</div>
-<div className="card">
-  <h2
-  style={{ cursor: 'pointer' }}
-  onClick={() => setShowCheckinSettings(!showCheckinSettings)}
->
-  📍 Check-In Settings {showCheckinSettings ? '▲' : '▼'}
-</h2>
-{showCheckinSettings && (
-  <>
- <label
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '20px',
-    width: 'auto'
-  }}
->
-  <input
-    type="checkbox"
-    checked={event?.checkin_required ?? false}
-    onChange={(e) => toggleCheckinRequired(e.target.checked)}
-    style={{
-      width: 'auto',
-      margin: 0
-    }}
-  />
 
-  <span>
-    Require check-in before People's Choice voting
-  </span>
-</label>
-
-<br />
-    
-  <button className="secondary" onClick={useCurrentLocationForCheckin}>
-    Use My Current Location
-  </button>
-
-  <p className="small">
-    Current venue location:{' '}
-    {event?.venue_lat && event?.venue_lng
-      ? `${event.venue_lat.toFixed(5)}, ${event.venue_lng.toFixed(5)}`
-      : 'Not set'}
-  </p>
-
-  <p className="small">
-    Check-in radius: {event?.checkin_radius_meters || 150} meters
-  </p>
-  </>
-  )}
-    </div>
-
-<div className="card">
-<h2
-  style={{ cursor: 'pointer' }}
-  onClick={() => setShowCheckinStats(!showCheckinStats)}
->
-  📊 Check-In Stats {showCheckinStats ? '▲' : '▼'}
-</h2>
-  {showCheckinStats && (
-  <>
-  <p>
-    <strong>Checked In:</strong> {checkinCount}
-  </p>
-
-  <p>
-    <strong>People’s Choice Votes:</strong> {peoplesChoiceResults.reduce((sum, p) => sum + p.votes, 0)}
-  </p>
-
-  <p>
-    <strong>Participation:</strong>{' '}
-    {checkinCount > 0
-      ? `${Math.round((peoplesChoiceResults.reduce((sum, p) => sum + p.votes, 0) / checkinCount) * 100)}%`
-      : '0%'}
-  </p>
-        </>
-)}
-</div>
-      
-<div className="grid">
-
-             </div>
-
-<div className="card">
-<h2
-  style={{ color: '#38bdf8', cursor: 'pointer' }}
-  onClick={() => setShowCompletedTonight(!showCompletedTonight)}
->
-  ✅ Completed Tonight {showCompletedTonight ? '▲' : '▼'}
-</h2>
-  {showCompletedTonight && (
-  <>
-
-  {performances.filter((p) => p.status === 'completed').length > 0 ? (
-    performances
-      .filter((p) => p.status === 'completed')
-      .map((p) => (
-        <div className="leaderboard-row" key={p.id}>
-          <div>
-            <strong>{p.singer_name}</strong>
-            <div className="small">
-              {p.song_title}
-              {p.artist ? ` by ${p.artist}` : ''}
-            </div>
-          </div>
-        </div>
-      ))
-  ) : (
-    <p className="small">No completed songs yet.</p>
-  )}
-      </>
-)}
-</div>    
-      
-      <div className="card">
-       <h2
-  style={{ color: '#38bdf8', cursor: 'pointer' }}
-  onClick={() => setShowLeaderboard(!showLeaderboard)}
->
-  🏆 Leaderboard {showLeaderboard ? '▲' : '▼'}
-</h2>
-        {showLeaderboard && (
-  <>
-        {leaderboard.map((p, index) => (
-          <div className="leaderboard-row" key={p.singer_name}>
-          <div>
-  <strong>
-    #{index + 1} {p.singer_name}
-  </strong>
-</div>
-
-<div>
- {p.averageScore.toFixed(2)} ⭐
-<div className="small">
-  TB: {((p.tiebreakerScore || 0) / p.performances).toFixed(2)}
-</div>
-</div>
-     
-          </div>
-        ))}
-     </>
-)} 
-      </div>
-   
-      <div className="card">
-  <h2
-  style={{ color: '#c2410c', cursor: 'pointer' }}
-  onClick={() => setShowPeoplesChoice(!showPeoplesChoice)}
->
-  🎉 People's Choice {showPeoplesChoice ? '▲' : '▼'}
-</h2>
-        {showPeoplesChoice && (
-  <>
-
-  {peoplesChoiceResults.length === 0 ? (
-    <p className="small">No votes yet.</p>
-  ) : (
-    peoplesChoiceResults.map((row, index) => (
-      <div className="leaderboard-row" key={row.singer_name}>
-        <div>
-          <strong>
-            #{index + 1} {row.singer_name}
-          </strong>
-        </div>
-
-        <div>
-          {row.votes} vote{row.votes !== 1 ? 's' : ''}
-        </div>
-      </div>
-    ))
-  )}
-      </>
-)}
-</div>
-              
-      <div
-  style={{
-    marginTop: 40,
-    display: 'flex',
-    justifyContent: 'center',
-    gap: 40,
-    alignItems: 'center',
-    borderTop: '1px solid rgba(255,255,255,0.15)',
-    paddingTop: 20
-  }}
->
-  <div style={{ textAlign: 'center' }}>
-   <AppQRCode value={signupUrl} size={60} />
-    <div style={{ color: '#38bdf8', fontSize: 12 }}>
-      Signup
-    </div>
-  </div>
-
-<div style={{ textAlign: 'center' }}>
- <AppQRCode value={peoplesChoiceUrl} size={60} />
-  <div style={{ color: '#facc15', fontSize: 12 }}>
-    People's Choice
-  </div>
-</div>
-    
-  <div style={{ textAlign: 'center' }}>
-   <AppQRCode value={voteUrl} size={60} />
-    <div style={{ color: '#c2410c', fontSize: 12 }}>
-      Vote
-    </div>
-  </div>
-</div>
-    </SVShell>
+</SVShell>
   );
     }

@@ -40,6 +40,8 @@ export default function SVSongPicker({
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  const onSearchRef = useRef(onSearch);
+
 useEffect(() => {
   const timer = window.setTimeout(() => {
     searchInputRef.current?.focus();
@@ -49,19 +51,23 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
+  onSearchRef.current = onSearch;
+}, [onSearch]);
+
+useEffect(() => {
   const term = searchTerm.trim();
 
   if (term.length < 2) {
-    onSearch?.('');
+    onSearchRef.current?.('');
     return;
   }
 
   const timer = window.setTimeout(() => {
-    onSearch?.(term);
+    onSearchRef.current?.(term);
   }, 350);
 
   return () => window.clearTimeout(timer);
-}, [searchTerm, onSearch]);
+}, [searchTerm]);
 
   const filteredSongs = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();

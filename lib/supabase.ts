@@ -14,6 +14,8 @@ export type EventRow = {
   is_show_ended: boolean;
   current_performance_id: string | null;
   current_performance_started_at: string | null;
+  tiebreaker_category_name: string | null;
+  is_archived: boolean;
   created_at: string;
   venue_lat: number | null;
 venue_lng: number | null;
@@ -35,6 +37,11 @@ export type PerformanceRow = {
   queue_order: number;
   status: string;
   created_at: string;
+  singer_profile_id?: string | null;
+  singer_profiles?: {
+  id?: string;
+  photo_url?: string | null;
+} | null;
 };
 
 export type VoteRow = {
