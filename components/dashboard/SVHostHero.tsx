@@ -1,7 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Clock3, Mic2, Radio } from 'lucide-react';
+import {
+  Clock3,
+  Mic2,
+  Radio,
+} from 'lucide-react';
 
 type Props = {
   singerName?: string;
@@ -32,16 +36,14 @@ export default function SVHostHero({
     }
 
     function updateElapsed() {
-     const startedTime = new Date(
-  startedAt!
-).getTime();
-
-      const now = Date.now();
+      const startedTime = new Date(
+        startedAt!
+      ).getTime();
 
       const seconds = Math.max(
         0,
         Math.floor(
-          (now - startedTime) / 1000
+          (Date.now() - startedTime) / 1000
         )
       );
 
@@ -64,7 +66,8 @@ export default function SVHostHero({
     elapsedSeconds
   );
 
-  const hasCurrentSinger = Boolean(startedAt);
+  const hasCurrentSinger =
+    Boolean(startedAt);
 
   const initials =
     singerName
@@ -76,8 +79,26 @@ export default function SVHostHero({
       .slice(0, 2)
       .toUpperCase() || 'SV';
 
+const displaySingerName = singerName
+  .split(' ')
+  .filter(Boolean)
+  .map(
+    (part) =>
+      part.charAt(0).toUpperCase() +
+      part.slice(1).toLowerCase()
+  )
+  .join(' ');
+
   return (
-    <section className="sv-host-hero">
+    <section
+      className={
+        hasCurrentSinger
+          ? 'sv-host-hero is-live'
+          : 'sv-host-hero is-waiting'
+      }
+    >
+      <div className="sv-host-hero-glow" />
+
       <div className="sv-host-hero-top">
         <div>
           <div
@@ -88,18 +109,25 @@ export default function SVHostHero({
             }
           >
             <span />
+
             {hasCurrentSinger
               ? 'Live now'
-              : 'Waiting'}
+              : 'Waiting to begin'}
           </div>
 
-          <div className="sv-mobile-kicker">
+          <div className="sv-host-show-name">
             {showName}
           </div>
         </div>
 
-        <div className="sv-host-hero-status">
-          <Radio size={17} />
+        <div
+          className={
+            votingOpen
+              ? 'sv-host-hero-status is-open'
+              : 'sv-host-hero-status'
+          }
+        >
+          <Radio size={16} />
 
           {votingOpen
             ? 'Voting open'
@@ -108,15 +136,23 @@ export default function SVHostHero({
       </div>
 
       <div className="sv-host-hero-main">
-        <div className="sv-host-avatar">
-          {photoUrl ? (
-            <img
-              src={photoUrl}
-              alt={singerName}
-              className="sv-host-avatar-image"
-            />
-          ) : (
-            initials
+        <div className="sv-host-avatar-wrap">
+          <div className="sv-host-avatar">
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                alt={singerName}
+                className="sv-host-avatar-image"
+              />
+            ) : (
+              initials
+            )}
+          </div>
+
+          {hasCurrentSinger && (
+            <div className="sv-host-avatar-live">
+              <Mic2 size={13} />
+            </div>
           )}
         </div>
 
@@ -127,7 +163,7 @@ export default function SVHostHero({
               : 'Show status'}
           </div>
 
-          <h1>{singerName}</h1>
+          <h1>{displaySingerName}</h1>
 
           <div className="sv-host-song">
             <span className="sv-host-song-note">
@@ -139,28 +175,30 @@ export default function SVHostHero({
 
           {artist && (
             <div className="sv-host-artist">
-              by {artist}
+              {artist}
             </div>
           )}
         </div>
 
         <div className="sv-host-mic-art">
           <Mic2
-            size={108}
-            strokeWidth={2.2}
+            size={118}
+            strokeWidth={1.8}
           />
         </div>
       </div>
 
       <div className="sv-host-hero-footer">
         <div className="sv-host-timer">
-          <Clock3 size={18} />
+          <span className="sv-host-timer-icon">
+            <Clock3 size={17} />
+          </span>
 
           <div>
             <span>
               {hasCurrentSinger
                 ? 'Live for'
-                : 'Timer'}
+                : 'Performance timer'}
             </span>
 
             <strong>
@@ -171,10 +209,18 @@ export default function SVHostHero({
           </div>
         </div>
 
-        <div className="sv-host-hero-footer-note">
+        <div className="sv-host-hero-footer-status">
+          <span
+            className={
+              hasCurrentSinger
+                ? 'sv-host-status-dot is-live'
+                : 'sv-host-status-dot'
+            }
+          />
+
           {hasCurrentSinger
-            ? 'Current singer is live'
-            : 'Start the show to begin'}
+            ? 'Current singer is on stage'
+            : 'Start the first singer when ready'}
         </div>
       </div>
     </section>

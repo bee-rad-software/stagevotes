@@ -21,6 +21,7 @@ import SVSongPicker, {
 import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
+import SVHostIQ from '@/components/dashboard/SVHostIQ';
 
 import {
   DndContext,
@@ -92,6 +93,9 @@ const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
 const [staticSignupQr, setStaticSignupQr] = useState(false);
 const [staticJudgeQr, setStaticJudgeQr] = useState(false);
 const [staticPeopleQr, setStaticPeopleQr] = useState(false);
+const [advancingSinger, setAdvancingSinger] =
+  useState(false);
+const ENABLE_HOST_IQ = false;
 
   
  const voteUrl =
@@ -325,24 +329,93 @@ if (accountData) {
   setEvent(data);
 }
   
-  async function endShow() {
+ async function endShow() {
   if (!confirm('End the show and show awards?')) return;
 
   const accountId = await getMyAccountId();
   if (!accountId) return;
 
+  const judgeWinner = leaderboard[0];
+
+  const peoplesChoiceWinner =
+    peoplesChoiceResults[0];
+
+  const uniqueSingerCount = new Set(
+    performances.map((performance) =>
+      performance.singer_name
+        .trim()
+        .toLowerCase()
+    )
+  ).size;
+
+  const totalPeopleVotes =
+    peoplesChoiceResults.reduce(
+      (sum, singer) => sum + singer.votes,
+      0
+    );
+
+  const { error: resultError } =
+    await supabase
+      .from('event_results')
+      .upsert(
+        {
+          event_id: eventId,
+
+          venue_id: event?.venue_id,
+
+          event_name: event?.name,
+
+          venue_name: event?.venue,
+
+          judge_winner_name:
+            judgeWinner?.singer_name || null,
+
+          judge_score:
+            judgeWinner?.averageScore || null,
+
+          peoples_choice_name:
+            peoplesChoiceWinner?.singer_name ||
+            null,
+
+          peoples_choice_votes:
+            peoplesChoiceWinner?.votes || 0,
+
+          total_performers:
+            uniqueSingerCount,
+
+          total_judge_votes:
+            judgeBallotCount,
+
+          total_people_votes:
+            totalPeopleVotes,
+
+          finished_at:
+            new Date().toISOString(),
+
+          account_id: accountId,
+        },
+        {
+          onConflict: 'event_id',
+        }
+      );
+
+  if (resultError) {
+    alert(resultError.message);
+    return;
+  }
+
   const { error } = await supabase
     .from('events')
     .update({
       is_voting_open: false,
-      is_show_ended: true
+      is_show_ended: true,
     })
     .eq('id', eventId)
     .eq('account_id', accountId);
 
   if (error) {
     alert(error.message);
-    return false;
+    return;
   }
 
   await loadAll();
@@ -825,39 +898,60 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
   await loadAll();
 }
   async function nextSinger() {
-  const completedId = event?.current_performance_id;
+  if (advancingSinger) return;
 
-  if (completedId) {
-    await supabase
-      .from('performances')
-      .update({ status: 'completed' })
-      .eq('id', completedId);
+  setAdvancingSinger(true);
+
+  try {
+    const completedId = event?.current_performance_id;
+
+    if (completedId) {
+      const { error: completeError } =
+        await supabase
+          .from('performances')
+          .update({
+            status: 'completed',
+          })
+          .eq('id', completedId);
+
+      if (completeError) {
+        alert(completeError.message);
+        return;
+      }
+    }
+
+    const next = rotatedQueue.find(
+      (p) =>
+        p.id !== completedId &&
+        p.status !== 'completed'
+    );
+
+    if (!next) {
+      alert('No more singers in the queue.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('events')
+      .update({
+        current_performance_id: next.id,
+        current_performance_started_at:
+          new Date().toISOString(),
+        is_voting_open: true,
+      })
+      .eq('id', eventId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadAll();
+  } finally {
+    setAdvancingSinger(false);
   }
-
-  const next = rotatedQueue.find((p) => p.id !== completedId && p.status !== 'completed');
-
-  if (!next) {
-    alert('No more singers in the queue.');
-    return;
-  }
-
-  const { error } = await supabase
-    .from('events')
-  .update({
-  current_performance_id: next.id,
-  current_performance_started_at:
-    new Date().toISOString(),
-  is_voting_open: true,
-})
-    .eq('id', eventId);
-
-  if (error) {
-    alert(error.message);
-    return false;
-  }
-
-  await loadAll();
 }
+
   async function toggleVoting(open: boolean) {
     const { error } = await supabase
       .from('events')
@@ -1162,10 +1256,23 @@ async function handleQueueReorder(
   }
 }
 
+const hostIQ = ENABLE_HOST_IQ
+  ? [
+      {
+        id: 'duplicates',
+        title: 'Duplicate song detected',
+        message:
+          '"Tennessee Whiskey" appears twice tonight.',
+        severity: 'warning' as const,
+      },
+    ]
+  : [];
+
 if (
 account?.subscription_status &&
 !isSubscribed
 ) {
+
 
   return (
   <div
@@ -1226,6 +1333,9 @@ account?.subscription_status &&
   showName={
     event?.name || 'Tonight’s Karaoke'
   }
+  photoUrl={
+  current?.singer_profiles?.photo_url || null
+}
   startedAt={
     event?.current_performance_started_at ||
     null
@@ -1257,10 +1367,14 @@ account?.subscription_status &&
   showStarted={!!current}
   votingOpen={!!event?.is_voting_open}
   hasCurrentSinger={!!current}
+  advancingSinger={advancingSinger}
   currentSingerName={current?.singer_name}
   nextSingerName={upNext?.singer_name}
 />
 
+{ENABLE_HOST_IQ && (
+  <SVHostIQ items={hostIQ} />
+)}
 
 <SVHostQueue
   items={hostQueueItems}

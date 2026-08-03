@@ -2794,16 +2794,16 @@ background:
   position: relative;
   display: grid;
   grid-template-columns:
-    34px
-    56px
-    54px
+    28px
+    76px
+    48px
     minmax(0, 1fr)
     auto;
   align-items: center;
-  gap: 14px;
+  column-gap: 10px;
 
-  min-height: 76px;
-  padding: 10px 14px;
+  min-height: 66px;
+  padding: 9px 14px;
 
   border: 1px solid var(--sv-border);
   border-radius: 17px;
@@ -2820,8 +2820,8 @@ background:
 }
 
 .sv-host-queue-drag-handle {
-  width: 30px;
-  height: 40px;
+  width: 28px;
+  height: 36px;
   display: grid;
   place-items: center;
   padding: 0;

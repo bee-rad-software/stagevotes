@@ -9,6 +9,7 @@ export type EventRow = {
   id: string;
   name: string;
   venue: string | null;
+  venue_id?: string | null;
   host_pin: string;
   is_voting_open: boolean;
   is_show_ended: boolean;

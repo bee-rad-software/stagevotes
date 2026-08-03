@@ -10,6 +10,8 @@ import {
   Trophy,
 } from 'lucide-react';
 
+import { useEffect, useState } from 'react';
+
 type Props = {
   onStartShow?: () => void;
   onEndShow?: () => void;
@@ -22,6 +24,7 @@ type Props = {
   votingOpen?: boolean;
   hasCurrentSinger?: boolean;
   showStarted?: boolean;
+  advancingSinger?: boolean;
 
   currentSingerName?: string;
   nextSingerName?: string;
@@ -39,10 +42,97 @@ export default function SVMissionControl({
   votingOpen = false,
   hasCurrentSinger = false,
   showStarted = false,
+  advancingSinger = false,
 
   currentSingerName,
   nextSingerName,
 }: Props) {
+
+  const getBadge = (
+  type:
+    | 'next'
+    | 'walkup'
+    | 'voting'
+    | 'display'
+    | 'awards'
+    | 'end'
+) => {
+  switch (type) {
+    case 'next':
+      return {
+        label: hasCurrentSinger
+          ? 'READY'
+          : 'WAITING',
+        className: hasCurrentSinger
+          ? 'success'
+          : 'neutral',
+      };
+
+    case 'walkup':
+      return {
+        label: 'READY',
+        className: 'info',
+      };
+
+    case 'voting':
+      return {
+        label: votingOpen
+          ? 'LIVE'
+          : 'OFF',
+        className: votingOpen
+          ? 'success'
+          : 'neutral',
+      };
+
+    case 'display':
+      return {
+        label: 'CONNECTED',
+        className: 'info',
+      };
+
+    case 'awards':
+      return {
+        label: showStarted
+          ? 'READY'
+          : 'LOCKED',
+        className: showStarted
+          ? 'warning'
+          : 'neutral',
+      };
+
+    case 'end':
+      return {
+        label: showStarted
+          ? 'READY'
+          : 'LOCKED',
+        className: showStarted
+          ? 'danger'
+          : 'neutral',
+      };
+  }
+};
+
+const StatusBadge = ({
+  type,
+}: {
+  type:
+    | 'next'
+    | 'walkup'
+    | 'voting'
+    | 'display'
+    | 'awards'
+    | 'end';
+}) => {
+  const badge = getBadge(type);
+
+  return (
+    <span
+      className={`sv-action-badge sv-action-badge-${badge.className}`}
+    >
+      {badge.label}
+    </span>
+  );
+};
 
   return (
     <section className="sv-mission-control">
@@ -75,12 +165,23 @@ export default function SVMissionControl({
       type="button"
       className="sv-mission-action sv-mission-large"
       onClick={onNextSinger}
-      disabled={!hasCurrentSinger}
+      disabled={!hasCurrentSinger || advancingSinger}
       aria-disabled={!hasCurrentSinger}
     >
-      <SkipForward size={34} />
 
-      <span>Next Singer</span>
+<StatusBadge type="next" />
+
+      {advancingSinger ? (
+  <div className="sv-spinner" />
+) : (
+  <SkipForward size={34} />
+)}
+
+      <span>
+  {advancingSinger
+    ? 'Advancing...'
+    : 'Next Singer'}
+</span>
 
     <small>
   {currentSingerName
@@ -97,11 +198,16 @@ export default function SVMissionControl({
     className="sv-mission-action sv-mission-large"
     onClick={onAddSinger}
   >
+
+    <StatusBadge type="walkup" />
+
     <UserPlus size={34} />
 
     <span>Walk-Up Singer</span>
 
-    <small>Manual host signup</small>
+    <small>
+Add singer directly to tonight's queue
+</small>
   </button>
 
 </div>
@@ -118,6 +224,9 @@ export default function SVMissionControl({
           disabled={!hasCurrentSinger}
           aria-disabled={!hasCurrentSinger}
         >
+
+          <StatusBadge type="voting" />
+
           <Vote size={26} />
 
           <span>
@@ -140,11 +249,16 @@ export default function SVMissionControl({
           className="sv-mission-action"
           onClick={onOpenDisplay}
         >
+
+          <StatusBadge type="display" />
+
           <Monitor size={26} />
 
           <span>TV Display</span>
 
-          <small>Open audience screen</small>
+          <small>
+Launch audience display
+</small>
         </button>
 
         <button
@@ -152,11 +266,16 @@ export default function SVMissionControl({
           className="sv-mission-action"
           onClick={onAwards}
         >
+
+          <StatusBadge type="awards" />
+
           <Trophy size={26} />
 
           <span>Awards</span>
 
-          <small>View show results</small>
+          <small>
+View winners & rankings
+</small>
         </button>
 
 {showStarted && (
@@ -165,11 +284,16 @@ export default function SVMissionControl({
     className="sv-mission-action"
     onClick={onEndShow}
   >
+
+    <StatusBadge type="end" />
+
     <Square size={26} />
 
     <span>End Show</span>
 
-    <small>Archive tonight's event</small>
+    <small>
+Close tonight's show
+</small>
   </button>
 )}
 

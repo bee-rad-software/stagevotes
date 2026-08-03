@@ -109,6 +109,12 @@ export default function SignupPage() {
   const [notifiedCurrent, setNotifiedCurrent] =
     useState(false);
 
+   const [pendingConflictSong, setPendingConflictSong] =
+  useState<any | null>(null);
+
+const [songConflictWarning, setSongConflictWarning] =
+  useState('');
+
   const [tipsEnabled, setTipsEnabled] =
     useState(false);
 
@@ -579,52 +585,116 @@ export default function SignupPage() {
   }
 
   async function checkDuplicateSong(
-    songTitle: string
-  ) {
-    const { data, error } = await supabase
-      .from('performances')
-      .select(
-        `
-        id,
-        singer_name,
-        song_title
-        `
-      )
-      .eq('event_id', eventId)
-      .neq('status', 'completed')
-      .neq('status', 'skipped')
-      .ilike(
-        'song_title',
-        songTitle.trim()
-      )
-      .limit(10);
+  songTitle: string
+) {
+  const normalizedTitle = songTitle
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 
-    if (error) {
-      console.error(
-        'Duplicate check failed:',
-        error.message
-      );
+  const deviceId = getDeviceId();
 
-      return false;
-    }
+  const { data, error } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      song_title,
+      status,
+      device_id,
+      singer_profile_id
+    `)
+    .eq('event_id', eventId);
 
-    const duplicate = (data || []).find(
-      (performance) =>
-        performance.id !==
-        editingPerformanceId
+  if (error) {
+    console.error(
+      'Duplicate check failed:',
+      error.message
     );
 
-    if (duplicate) {
-      setDuplicateWarning(
-        `⚠️ "${duplicate.song_title}" is already queued by ${duplicate.singer_name}.`
+    return {
+      blocked: false,
+      warning: '',
+    };
+  }
+
+  const matchingSongs = (data || []).filter(
+    (performance) => {
+      if (
+        performance.id ===
+        editingPerformanceId
+      ) {
+        return false;
+      }
+
+      return (
+        performance.song_title
+          ?.trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase() ===
+        normalizedTitle
+      );
+    }
+  );
+
+  const myDuplicate = matchingSongs.find(
+    (performance) => {
+      const sameProfile = Boolean(
+        singerProfile?.id &&
+          performance.singer_profile_id ===
+            singerProfile.id
       );
 
-      return true;
-    }
+      const sameDevice = Boolean(
+        deviceId &&
+          performance.device_id === deviceId
+      );
 
-    setDuplicateWarning('');
-    return false;
+      const sameName =
+        performance.singer_name
+          ?.trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase() ===
+        singerName
+          .trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase();
+
+      return (
+        sameProfile ||
+        sameDevice ||
+        sameName
+      );
+    }
+  );
+
+  if (myDuplicate) {
+    return {
+      blocked: true,
+      warning:
+        `You already have "${myDuplicate.song_title}" in your songs tonight.`,
+    };
   }
+
+  const anotherSinger = matchingSongs[0];
+
+  if (anotherSinger) {
+    const alreadySung =
+      anotherSinger.status === 'completed';
+
+    return {
+      blocked: false,
+      warning: alreadySung
+        ? `"${anotherSinger.song_title}" has already been sung tonight by ${anotherSinger.singer_name}.`
+        : `"${anotherSinger.song_title}" is already in tonight’s queue for ${anotherSinger.singer_name}.`,
+    };
+  }
+
+  return {
+    blocked: false,
+    warning: '',
+  };
+}
 
   async function getNextQueueDetails() {
     const { data, error } = await supabase
@@ -715,6 +785,65 @@ export default function SignupPage() {
     return true;
   }
 
+async function verifySingerNameAvailable() {
+  const cleanName = singerName
+    .trim()
+    .replace(/\s+/g, ' ');
+
+  const normalizedName =
+    cleanName.toLowerCase();
+
+  const deviceId = getDeviceId();
+
+  const { data, error } = await supabase
+    .from('performances')
+    .select(
+      `
+      id,
+      singer_name,
+      device_id,
+      singer_profile_id
+      `
+    )
+    .eq('event_id', eventId)
+    .neq('status', 'completed')
+    .neq('status', 'skipped');
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const matchingSinger = (data || []).find(
+    (performance) =>
+      performance.singer_name
+        ?.trim()
+        .replace(/\s+/g, ' ')
+        .toLowerCase() === normalizedName
+  );
+
+  if (!matchingSinger) {
+    return true;
+  }
+
+  const belongsToSameSinger =
+    matchingSinger.device_id === deviceId ||
+    Boolean(
+      singerProfile?.id &&
+        matchingSinger.singer_profile_id ===
+          singerProfile.id
+    );
+
+  if (belongsToSameSinger) {
+    return true;
+  }
+
+  setMessage(
+    `"${cleanName}" is already signed up for this show. Please use a last initial or ask the host for help.`
+  );
+
+  return false;
+}
+
   async function addSongToQueue(
     song: SVSongOption
   ) {
@@ -741,6 +870,13 @@ export default function SignupPage() {
     if (!deviceAllowed) {
       return;
     }
+
+    const nameAvailable =
+  await verifySingerNameAvailable();
+
+if (!nameAvailable) {
+  return;
+}
 
     setSubmitting(true);
     setMessage('');
@@ -836,31 +972,47 @@ export default function SignupPage() {
     setSubmitting(false);
   }
 
-  async function handleSongSelection(
-    song: SVSongOption
-  ) {
-    if (song.status === 'queued') {
-      return;
-    }
+  async function handleSongSelection(song: any) {
+  setDuplicateWarning('');
+  setSongConflictWarning('');
 
-    const duplicate =
-      await checkDuplicateSong(song.title);
+  const duplicateCheck =
+    await checkDuplicateSong(song.title);
 
-    if (duplicate) {
-      return;
-    }
-
-    if (editingPerformanceId) {
-      await changeQueuedSong(
-        editingPerformanceId,
-        song
-      );
-
-      return;
-    }
-
-    await addSongToQueue(song);
+  if (duplicateCheck.blocked) {
+    setDuplicateWarning(
+      duplicateCheck.warning
+    );
+    return;
   }
+
+  if (duplicateCheck.warning) {
+    setSongConflictWarning(
+      duplicateCheck.warning
+    );
+
+    setPendingConflictSong(song);
+    return;
+  }
+
+  await confirmSongSelection(song);
+}
+
+async function confirmSongSelection(song: any) {
+  setPendingConflictSong(null);
+  setSongConflictWarning('');
+  setDuplicateWarning('');
+
+  // Move the rest of your existing
+  // handleSongSelection logic here.
+  //
+  // This includes whichever logic currently:
+  // - updates the selected song
+  // - edits an existing performance
+  // - adds a new performance
+  // - closes the song sheet
+  // - refreshes the singer's songs
+}
 
   function openAddSong() {
     setEditingPerformanceId(null);
@@ -1220,6 +1372,67 @@ export default function SignupPage() {
             {duplicateWarning}
           </p>
         )}
+
+        {songConflictWarning &&
+  !duplicateWarning && (
+    <div className="sv-song-conflict-warning">
+      <strong>Heads up</strong>
+
+      <p>{songConflictWarning}</p>
+
+      <span>
+        You can still choose this song if
+        you want.
+      </span>
+    </div>
+  )}
+
+{pendingConflictSong &&
+  songConflictWarning && (
+    <div className="sv-song-conflict-confirm">
+      <div className="sv-song-conflict-icon">
+        ⚠️
+      </div>
+
+      <div>
+        <strong>Song already used tonight</strong>
+
+        <p>{songConflictWarning}</p>
+
+        <span>
+          You can still add it, but choosing
+          another song will keep the show
+          more varied.
+        </span>
+      </div>
+
+      <div className="sv-song-conflict-actions">
+        <button
+          type="button"
+          className="sv-secondary-button"
+          onClick={() => {
+            setPendingConflictSong(null);
+            setSongConflictWarning('');
+          }}
+        >
+          Choose Another
+        </button>
+
+        <button
+          type="button"
+          className="sv-primary-button"
+          onClick={() =>
+            confirmSongSelection(
+              pendingConflictSong
+            )
+          }
+        >
+          Add Anyway
+        </button>
+      </div>
+    </div>
+  )}
+
       </SVBottomSheet>
     </main>
   );

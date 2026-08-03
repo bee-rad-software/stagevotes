@@ -67,6 +67,13 @@ type LeaderboardEntry = {
   total_score: number;
 };
 
+type LiveActivityItem = {
+  id: string;
+  icon: string;
+  title: string;
+  detail?: string;
+};
+
 export default function VenueProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -366,6 +373,43 @@ if (activeEventData) {
         ? 'Community Verified'
         : 'Unverified Venue';
 
+    const singersTonightCount =
+  (currentPerformance ? 1 : 0) + upNext.length;
+
+const waitingCount = upNext.length;
+
+const liveActivity: LiveActivityItem[] = [];
+
+if (currentPerformance) {
+  liveActivity.push({
+    id: `current-${currentPerformance.id}`,
+    icon: '🎤',
+    title: `${currentPerformance.singer_name} is performing`,
+    detail: currentPerformance.song_title,
+  });
+}
+
+upNext.forEach((singer, index) => {
+  liveActivity.push({
+    id: `waiting-${singer.id}`,
+    icon: index === 0 ? '⏭' : '🎶',
+    title:
+      index === 0
+        ? `${singer.singer_name} is up next`
+        : `${singer.singer_name} is waiting`,
+    detail: singer.song_title,
+  });
+});
+
+if (liveEvent) {
+  liveActivity.push({
+    id: `event-${liveEvent.id}`,
+    icon: '🟢',
+    title: `${liveEvent.name} is live tonight`,
+    detail: venue.name,
+  });
+}
+
   return (
     <main className={styles.page}>
       <section
@@ -420,109 +464,167 @@ if (activeEventData) {
         </div>
       </section>
 
-      <div className={styles.content}>
-      {liveEvent && (
-  <section className={styles.liveTonightCard}>
-    <div className={styles.liveTonightTop}>
-      <div>
-        <div className={styles.liveStatus}>
-          <span className={styles.liveStatusDot} />
-          Live Tonight
+     <div className={styles.content}>
+  {liveEvent && (
+    <section className={styles.liveTonightCard}>
+      <div className={styles.liveTonightHeader}>
+        <div>
+          <div className={styles.liveStatus}>
+            <span className={styles.liveStatusDot} />
+            Live Tonight
+          </div>
+
+          <h2>{liveEvent.name}</h2>
         </div>
 
-        <h2>{liveEvent.name}</h2>
-
-       {currentPerformance ? (
-  <>
-    <p
-      style={{
-        fontWeight: 700,
-        marginBottom: 8
-      }}
-    >
-      🎤 Currently Singing
-    </p>
-
-    <h3
-      style={{
-        fontSize: '2rem',
-        margin: 0
-      }}
-    >
-      {currentPerformance.singer_name}
-    </h3>
-
-    <p
-      style={{
-        marginTop: 6
-      }}
-    >
-      "{currentPerformance.song_title}"
-    </p>
-
-{upNext.length > 0 && (
-  <div style={{ marginTop: 28 }}>
-    <p
-      style={{
-        fontWeight: 700,
-        marginBottom: 12
-      }}
-    >
-      ⏭ Up Next
-    </p>
-
-    {upNext.map((singer, index) => (
-      <div
-        key={singer.id}
-      style={{
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)',
-  gap: 16,
-  marginBottom: 10,
-  opacity: 0.92
-}}
-      >
-        <span>
-          {index + 1}. {singer.singer_name}
-        </span>
-
-        <span
-         style={{
-  color: '#94a3b8',
-  textAlign: 'right'
-}}
-        >
-          {singer.song_title}
-        </span>
+        <div className={styles.liveTonightIcon}>
+          🎤
+        </div>
       </div>
-    ))}
+
+      <div className={styles.liveTonightGrid}>
+        <div className={styles.nowPerformingPanel}>
+          {currentPerformance ? (
+            <>
+              <div className={styles.liveSectionLabel}>
+                🎤 Now Performing
+              </div>
+
+              <h3 className={styles.currentSingerName}>
+                {currentPerformance.singer_name}
+              </h3>
+
+              <div className={styles.currentSongTitle}>
+                ♪ {currentPerformance.song_title}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={styles.liveSectionLabel}>
+                Show Status
+              </div>
+
+              <h3 className={styles.currentSingerName}>
+                Karaoke is live
+              </h3>
+
+              <div className={styles.currentSongArtist}>
+                Join tonight’s show at {venue.name}.
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className={styles.upNextPanel}>
+          <div className={styles.liveSectionLabel}>
+            ⏭ Up Next
+          </div>
+
+          {upNext.length > 0 ? (
+            <div className={styles.upNextList}>
+              {upNext.map((singer, index) => (
+                <div
+                  key={singer.id}
+                  className={styles.upNextCard}
+                >
+                  <div className={styles.upNextPosition}>
+                    {index + 1}
+                  </div>
+
+                  <div className={styles.upNextCopy}>
+                    <strong>
+                      {singer.singer_name}
+                    </strong>
+
+                    <span>
+                      ♪ {singer.song_title}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.upNextEmpty}>
+              No singers are waiting yet.
+            </div>
+          )}
+        </div>
+      </div>
+
+<div className={styles.liveStats}>
+  <div className={styles.liveStat}>
+    <strong>{singersTonightCount}</strong>
+
+    <span>
+      {singersTonightCount === 1
+        ? 'Singer tonight'
+        : 'Singers tonight'}
+    </span>
   </div>
-)}
 
-  </>
-) : (
-  <p>
-    Karaoke is happening now at {venue.name}.
-  </p>
-)}
+  <div className={styles.liveStat}>
+    <strong>{waitingCount}</strong>
+
+    <span>
+      {waitingCount === 1
+        ? 'Waiting'
+        : 'Waiting'}
+    </span>
+  </div>
+
+</div>
+
+      <div className={styles.liveTonightFooter}>
+        <a
+          href={`/signup/${liveEvent.id}`}
+          className={styles.joinShowButton}
+        >
+          Join This Show
+        </a>
+
+        <span className={styles.liveTonightNote}>
+          View the queue and submit your song
+        </span>
+      </div>
+    </section>
+  )}
+
+{liveEvent && (
+  <section className={styles.liveActivityCard}>
+    <div className={styles.liveActivityHeader}>
+      <div>
+        <div className={styles.liveActivityEyebrow}>
+          Current Show
+        </div>
+
+        <h2>What’s happening now</h2>
       </div>
 
-      <div className={styles.liveTonightIcon}>
-        🎤
-      </div>
+      <span className={styles.liveActivityPulse}>
+        <span />
+        Live
+      </span>
     </div>
 
-    <div className={styles.liveTonightActions}>
-      <a
-        href={`/signup/${liveEvent.id}`}
-        className={styles.joinShowButton}
-      >
-        Join This Show
-      </a>
+    <div className={styles.liveActivityList}>
+      {liveActivity.map((item) => (
+        <div
+          key={item.id}
+          className={styles.liveActivityItem}
+        >
+          <div className={styles.liveActivityIcon}>
+            {item.icon}
+          </div>
 
-      <span className={styles.liveTonightNote}>
-        View the queue and submit your song
-      </span>
+          <div className={styles.liveActivityCopy}>
+            <strong>{item.title}</strong>
+
+            {item.detail && (
+              <span>{item.detail}</span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   </section>
 )}

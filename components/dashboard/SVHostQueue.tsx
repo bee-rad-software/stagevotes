@@ -28,6 +28,20 @@ import {
 
 import { CSS } from '@dnd-kit/utilities';
 
+  function formatSingerName(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(
+      (part) =>
+        part.charAt(0).toUpperCase() +
+        part.slice(1).toLowerCase()
+    )
+    .join(' ');
+}
+
+
 export type SVHostQueueItem = {
   id: string;
   singerName: string;
@@ -157,8 +171,8 @@ const rowStyle: React.CSSProperties = {
           disabled={isCurrent || editing}
           aria-label={
             isCurrent
-              ? `${item.singerName} is currently performing`
-              : `Drag ${item.singerName} to reorder`
+              ? `${formatSingerName(item.singerName)} is currently performing`
+              : `Drag ${formatSingerName(item.singerName)} to reorder`
           }
           title={
             isCurrent
@@ -176,19 +190,31 @@ const rowStyle: React.CSSProperties = {
           <GripVertical size={20} />
         </button>
 
-        <div className="sv-host-queue-position">
-          {isCurrent
-            ? 'NOW'
-            : isNext
-            ? 'NEXT'
-            : `#${index + 1}`}
-        </div>
+        <div
+  className={[
+    'sv-host-queue-position',
+    isCurrent
+      ? 'sv-host-queue-position-current'
+      : '',
+    isNext
+      ? 'sv-host-queue-position-next'
+      : '',
+  ]
+    .filter(Boolean)
+    .join(' ')}
+>
+  {isCurrent
+    ? '● LIVE'
+    : isNext
+    ? '● UP NEXT'
+    : `#${index + 1}`}
+</div>
 
       <div className="sv-host-queue-avatar">
   {item.photoUrl ? (
     <img
       src={item.photoUrl}
-      alt={`${item.singerName} profile`}
+      alt={`${formatSingerName(item.singerName)} profile`}
       className="sv-host-queue-avatar-image"
     />
   ) : (
@@ -197,24 +223,14 @@ const rowStyle: React.CSSProperties = {
 </div>
 
         <div className="sv-host-queue-copy">
-          <div className="sv-host-queue-name-line">
-            <strong>{item.singerName}</strong>
+  <div className="sv-host-queue-name-line">
+    <strong className="sv-queue-singer-name">
+      {formatSingerName(item.singerName)}
+    </strong>
+  </div>
 
-            {isCurrent && (
-              <span className="sv-host-queue-status sv-host-queue-status-current">
-                CURRENT
-              </span>
-            )}
-
-            {isNext && (
-              <span className="sv-host-queue-status sv-host-queue-status-next">
-                ON DECK
-              </span>
-            )}
-          </div>
-
-          <div className="sv-host-queue-song">
-            <Music2 size={15} />
+  <div className="sv-host-queue-song">
+    <Music2 size={15} />
 
             <span>{item.songTitle}</span>
           </div>
@@ -228,7 +244,7 @@ const rowStyle: React.CSSProperties = {
           <button
             type="button"
             title="Skip"
-            aria-label={`Skip ${item.singerName}`}
+            aria-label={`Skip ${formatSingerName(item.singerName)}`}
             onClick={(event) => {
               event.stopPropagation();
               onSkip?.(item.id);
@@ -240,7 +256,7 @@ const rowStyle: React.CSSProperties = {
           <button
             type="button"
             title="Remove"
-            aria-label={`Remove ${item.singerName}`}
+            aria-label={`Remove ${formatSingerName(item.singerName)}`}
             className="sv-host-queue-remove"
             onClick={(event) => {
               event.stopPropagation();
@@ -306,6 +322,8 @@ export default function SVHostQueue({
     return Array.from(groups.entries());
   }, [items]);
 
+const uniqueSingerCount = singerGroups.length;
+
   const currentSinger = items.find(
     (item) => item.status === 'current'
   );
@@ -343,23 +361,25 @@ export default function SVHostQueue({
             Tonight&apos;s Rotation
           </div>
 
-          <h2>
-            {items.length}{' '}
-            {items.length === 1
-              ? 'song in line'
-              : 'songs in line'}
-          </h2>
+         <div>
+  <h2>
+    {items.length}{' '}
+    {items.length === 1 ? 'Song' : 'Songs'}
+    <span className="sv-host-queue-inline-count">
+      {' '}• {uniqueSingerCount}{' '}
+      {uniqueSingerCount === 1
+        ? 'Singer'
+        : 'Singers'}
+    </span>
+  </h2>
+</div>
         </div>
 
         <button
-          type="button"
-          className={
-            singerView
-              ? 'sv-host-queue-view-toggle sv-host-queue-view-toggle-active'
-              : 'sv-host-queue-view-toggle'
-          }
-          onClick={onToggleSingerView}
-        >
+  type="button"
+  className="sv-singer-view-toggle"
+  onClick={onToggleSingerView}
+>
          {singerView ? (
   <List size={18} />
 ) : (
@@ -376,23 +396,25 @@ export default function SVHostQueue({
 
       <div className="sv-host-queue-stats">
         <span className="badge">
-          🎤 Active: {items.length}
+          🎤 Active • {items.length}
         </span>
 
         <span className="badge">
-          ▶ Current:{' '}
-          {currentSinger?.singerName ||
-            'Show not started'}
+          🎙 Now •{' '}
+{currentSinger
+  ? formatSingerName(currentSinger.singerName)
+  : 'Show not started'}
         </span>
 
         <span className="badge">
-          ⏭ Up Next:{' '}
-          {nextSinger?.singerName ||
-            'No one waiting'}
+          ⏭ Next •{' '}
+{nextSinger
+  ? formatSingerName(nextSinger.singerName)
+  : 'No one waiting'}
         </span>
 
         <span className="badge">
-          ✅ Completed: {completedCount}
+          ✅ Completed • {completedCount}
         </span>
       </div>
 
@@ -482,54 +504,78 @@ export default function SVHostQueue({
           </span>
         </div>
       ) : singerView ? (
-        <div className="sv-host-singer-groups">
-          {singerGroups.map(
-            ([singerName, songs]) => (
-              <div
-                className="sv-host-singer-group"
-                key={singerName}
-              >
-                <div className="sv-host-singer-group-header">
-                  <div className="sv-host-queue-avatar">
-                    {getInitials(singerName)}
-                  </div>
+  <div className="sv-host-singer-groups">
+    {singerGroups.map(
+      ([singerName, songs]) => {
+        const photoUrl =
+          songs.find(
+            (song) => song.photoUrl
+          )?.photoUrl || null;
 
-                  <div>
-                    <strong>{singerName}</strong>
-
-                    <small>
-                      {songs.length}{' '}
-                      {songs.length === 1
-                        ? 'song'
-                        : 'songs'}
-                    </small>
-                  </div>
-                </div>
-
-                <div className="sv-host-singer-group-songs">
-                  {songs.map((song) => (
-                    <button
-                      type="button"
-                      key={song.id}
-                  onClick={() =>
-  onStartEdit?.(song)
-}
-                    >
-                      <Music2 size={15} />
-
-                      <span>
-                        {song.songTitle}
-                        {song.artist
-                          ? ` by ${song.artist}`
-                          : ''}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+        return (
+          <div
+            className="sv-singer-group"
+            key={singerName}
+          >
+            <div className="sv-singer-group-header">
+              <div className="sv-singer-group-avatar">
+                {photoUrl ? (
+                  <img
+                    src={photoUrl}
+                    alt={singerName}
+                  />
+                ) : (
+                  getInitials(singerName)
+                )}
               </div>
-            )
-          )}
-        </div>
+
+              <div>
+                <strong className="sv-singer-group-name">
+                  {formatSingerName(
+                    singerName
+                  )}
+                </strong>
+
+                <span className="sv-singer-group-count">
+                  {songs.length}{' '}
+                  {songs.length === 1
+                    ? 'song'
+                    : 'songs'}
+                </span>
+              </div>
+            </div>
+
+            <div className="sv-singer-group-songs">
+              {songs.map((song) => (
+                <button
+                  type="button"
+                  key={song.id}
+                  className="sv-singer-group-song"
+                  onClick={() =>
+                    onStartEdit?.(song)
+                  }
+                >
+                  <Music2 size={16} />
+
+                  <span>
+                    <strong>
+                      {song.songTitle}
+                    </strong>
+
+                    {song.artist && (
+                      <small>
+                        {song.artist}
+                      </small>
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    )}
+  </div>
       ) : (
         <DndContext
           sensors={sensors}
