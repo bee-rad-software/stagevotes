@@ -57,9 +57,37 @@ type EventData = {
   venue_name?: string | null;
 };
 
+const CURRENT_SHOW_KEY =
+  'stagevotes_current_event_id';
+
+function rememberCurrentShow(
+  eventId: string
+) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(
+    CURRENT_SHOW_KEY,
+    eventId
+  );
+
+  window.dispatchEvent(
+    new Event(
+      'stagevotes-current-show-change'
+    )
+  );
+}
+
 export default function SignupPage() {
   const params = useParams();
   const eventId = params.eventId as string;
+
+  useEffect(() => {
+  if (!eventId) return;
+
+  rememberCurrentShow(eventId);
+}, [eventId]);
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [queue, setQueue] = useState<Performance[]>([]);
@@ -998,20 +1026,16 @@ if (!nameAvailable) {
   await confirmSongSelection(song);
 }
 
-async function confirmSongSelection(song: any) {
+async function confirmSongSelection(song: SVSongOption) {
   setPendingConflictSong(null);
   setSongConflictWarning('');
   setDuplicateWarning('');
 
-  // Move the rest of your existing
-  // handleSongSelection logic here.
-  //
-  // This includes whichever logic currently:
-  // - updates the selected song
-  // - edits an existing performance
-  // - adds a new performance
-  // - closes the song sheet
-  // - refreshes the singer's songs
+  if (editingPerformanceId) {
+    await changeQueuedSong(editingPerformanceId, song);
+  } else {
+    await addSongToQueue(song);
+  }
 }
 
   function openAddSong() {

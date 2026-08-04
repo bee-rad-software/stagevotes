@@ -16,13 +16,13 @@ export default function ExploreGrid() {
       description: 'See every song you have performed.',
       href: '/singer-history',
     },
-    {
-      icon: '🌎',
-      title: 'Karaoke Passport',
-      description: 'Track venues, cities, and places you have sung.',
-      href: '#',
-      disabled: true,
-    },
+   {
+  icon: '📍',
+  title: 'My Venues',
+  description:
+    'See the venues you follow and your performance history.',
+  href: '/my-venues',
+},
     {
       icon: '🥇',
       title: 'League Rankings',

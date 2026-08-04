@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import useLiveEvent from '@/hooks/useLiveEvent';
 import SVLiveShowBanner from '@/components/singer/SVLiveShowBanner';
+import SVSingerShell from '@/components/navigation/SVSingerShell';
 
 export default function MyStagePage() {
   return (
@@ -61,7 +62,11 @@ function MyStageContent() {
     return <MyStageLoading />;
   }
 
-  return (
+ return (
+  <SVSingerShell
+    title="My Stage"
+    subtitle="Your karaoke career"
+  >
     <main
       style={{
         minHeight: '100vh',
@@ -149,16 +154,6 @@ function MyStageContent() {
             </h1>
           </div>
 
-          <Link
-            href="/"
-            style={{
-              color: '#bae6fd',
-              textDecoration: 'none',
-              fontWeight: 800,
-            }}
-          >
-            StageVotes
-          </Link>
         </header>
 
         {profile && (
@@ -238,6 +233,7 @@ function MyStageContent() {
           </p>
         )}
       </div>
-    </main>
+       </main>
+  </SVSingerShell>
   );
 }

@@ -6,6 +6,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import SVSingerShell from '@/components/navigation/SVSingerShell';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -727,12 +728,13 @@ const featuredVenue = liveVenues[0];
 const otherVenues = liveVenues.slice(1);
 
   return (
-    <main className="atlas-live-page">
+  <SVSingerShell
+    title="Atlas"
+    subtitle="Discover karaoke near you"
+  >
+    <main className="atlas-page">
       <section className="atlas-live-hero">
-        <div className="atlas-live-eyebrow">
-          <span />
-          Project Atlas
-        </div>
+
 
         <h1>Live Tonight</h1>
 
@@ -816,7 +818,14 @@ const otherVenues = liveVenues.slice(1);
               {featuredVenue.showName}
             </div>
 
-            <h2>{featuredVenue.name}</h2>
+            <h2>
+  <Link
+    href={`/venues/${featuredVenue.slug}`}
+    className="atlas-featured-venue-link"
+  >
+    {featuredVenue.name}
+  </Link>
+</h2>
 
             <p>{featuredVenue.city}</p>
           </div>
@@ -901,19 +910,25 @@ const otherVenues = liveVenues.slice(1);
               >
                 <div className="atlas-live-card-header">
                   <div className="atlas-live-venue-logo">
-                    {venue.logoUrl ? (
-                      <img
-                        src={venue.logoUrl}
-                        alt={`${venue.name} logo`}
-                      />
-                    ) : (
-                      venue.name
-                        .split(/\s+/)
-                        .map((word) => word[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase()
-                    )}
+                   <Link
+  href={`/venues/${venue.slug}`}
+  className="atlas-live-venue-logo"
+  aria-label={`View ${venue.name}`}
+>
+  {venue.logoUrl ? (
+    <img
+      src={venue.logoUrl}
+      alt={`${venue.name} logo`}
+    />
+  ) : (
+    venue.name
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+  )}
+</Link>
                   </div>
 
                   <div className="atlas-live-pill">
@@ -927,7 +942,14 @@ const otherVenues = liveVenues.slice(1);
                     {venue.showName}
                   </div>
 
-                  <h2>{venue.name}</h2>
+                 <h2>
+  <Link
+    href={`/venues/${venue.slug}`}
+    className="atlas-live-venue-name-link"
+  >
+    {venue.name}
+  </Link>
+</h2>
 
                   <p>{venue.city}</p>
                 </div>
@@ -1253,6 +1275,7 @@ const otherVenues = liveVenues.slice(1);
     </section>
   )}
 
-    </main>
-  );
+       </main>
+  </SVSingerShell>
+);
 }

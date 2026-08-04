@@ -329,14 +329,18 @@ if (accountData) {
   setEvent(data);
 }
   
- async function endShow() {
-  if (!confirm('End the show and show awards?')) return;
+async function endShow() {
+  if (!confirm('End the show and show awards?')) {
+    return;
+  }
 
   const accountId = await getMyAccountId();
-  if (!accountId) return;
+
+  if (!accountId) {
+    return;
+  }
 
   const judgeWinner = leaderboard[0];
-
   const peoplesChoiceWinner =
     peoplesChoiceResults[0];
 
@@ -360,12 +364,10 @@ if (accountData) {
       .upsert(
         {
           event_id: eventId,
-
-          venue_id: event?.venue_id,
-
-          event_name: event?.name,
-
-          venue_name: event?.venue,
+          account_id: accountId,
+          venue_id: event?.venue_id || null,
+          event_name: event?.name || null,
+          venue_name: event?.venue || null,
 
           judge_winner_name:
             judgeWinner?.singer_name || null,
@@ -391,8 +393,6 @@ if (accountData) {
 
           finished_at:
             new Date().toISOString(),
-
-          account_id: accountId,
         },
         {
           onConflict: 'event_id',
@@ -400,25 +400,97 @@ if (accountData) {
       );
 
   if (resultError) {
-    alert(resultError.message);
+    console.error(
+      'Unable to save event results:',
+      resultError
+    );
+
+    alert(
+      `Results could not be saved: ${resultError.message}`
+    );
+
     return;
   }
 
-  const { error } = await supabase
+  const {
+    data: endedEvent,
+    error: endError,
+  } = await supabase
     .from('events')
     .update({
       is_voting_open: false,
       is_show_ended: true,
+      current_performance_id: null,
     })
     .eq('id', eventId)
-    .eq('account_id', accountId);
+    .eq('account_id', accountId)
+    .select('id, is_show_ended')
+    .maybeSingle();
 
-  if (error) {
-    alert(error.message);
+  if (endError) {
+    console.error(
+      'Unable to end show:',
+      endError
+    );
+
+    alert(
+      `The show could not be ended: ${endError.message}`
+    );
+
     return;
   }
 
+  if (!endedEvent) {
+    alert(
+      'The show was not updated. The event or account did not match.'
+    );
+
+    console.error({
+      eventId,
+      accountId,
+      eventAccountId: event?.account_id,
+    });
+
+    return;
+  }
+
+  if (!endedEvent.is_show_ended) {
+    alert(
+      'The update completed, but the show is still marked active.'
+    );
+
+    return;
+  }
+
+const {
+  data: processingResult,
+  error: processingError,
+} = await supabase.rpc(
+  'process_completed_event',
+  {
+    p_event_id: eventId,
+  }
+);
+
+if (processingError) {
+  console.error(
+    'Unable to process completed event:',
+    processingError
+  );
+
+  alert(
+    `The show ended, but post-show processing failed: ${processingError.message}`
+  );
+} else {
+  console.log(
+    'Completed event processing:',
+    processingResult
+  );
+}
+
   await loadAll();
+
+  router.push(`/leaderboard/${eventId}`);
 }
   
  async function loadPerformances() {

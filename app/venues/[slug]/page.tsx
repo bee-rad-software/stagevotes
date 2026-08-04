@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import styles from './venue-profile.module.css';
+import SVSingerShell from '@/components/navigation/SVSingerShell';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -74,6 +75,26 @@ type LiveActivityItem = {
   detail?: string;
 };
 
+type RecentVenueResult = {
+  id: string;
+  event_id: string;
+  event_name: string | null;
+  judge_winner_name: string | null;
+  judge_score: number | null;
+  peoples_choice_name: string | null;
+  peoples_choice_votes: number;
+  total_performers: number;
+  finished_at: string;
+};
+
+type TopLocalSinger = {
+  id: string;
+  singer_name: string;
+  average_score: number;
+  performance_count: number;
+  score_count: number;
+};
+
 export default function VenueProfilePage() {
   const params = useParams<{ slug: string }>();
   const slug = params.slug;
@@ -83,12 +104,25 @@ const [liveEvent, setLiveEvent] =
   const [shows, setShows] = useState<RecurringShow[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+const [followLoading, setFollowLoading] = useState(false);
   const [currentPerformance, setCurrentPerformance] =
   useState<CurrentPerformance | null>(null);
   const [upNext, setUpNext] =
   useState<QueueSinger[]>([]);
   const [leaderboard, setLeaderboard] =
   useState<LeaderboardEntry[]>([]);
+const [myVenueStats, setMyVenueStats] = useState<{
+  performances: number;
+  averageScore: number | null;
+}>({
+  performances: 0,
+  averageScore: null,
+});
+const [recentResults, setRecentResults] =
+  useState<RecentVenueResult[]>([]);
+const [topLocalSingers, setTopLocalSingers] =
+  useState<TopLocalSinger[]>([]);
   
 
   useEffect(() => {
@@ -136,6 +170,332 @@ const [liveEvent, setLiveEvent] =
       }
 
       setVenue(data as Venue);
+
+      const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+if (user) {
+  const {
+    data: singerProfileData,
+    error: singerProfileError,
+  } = await supabase
+    .from('singer_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (singerProfileError) {
+    console.error(
+      'Unable to load singer profile for venue follow:',
+      singerProfileError
+    );
+  }
+
+  if (singerProfileData?.id) {
+    const {
+      data: followData,
+      error: followError,
+    } = await supabase
+      .from('venue_follows')
+      .select('id')
+      .eq('venue_id', data.id)
+      .eq(
+        'singer_profile_id',
+        singerProfileData.id
+      )
+      .maybeSingle();
+
+    if (followError) {
+      console.error(
+        'Unable to load venue follow status:',
+        followError
+      );
+    }
+
+    setIsFollowing(Boolean(followData));
+
+    const {
+  data: performanceData,
+  error: performanceError,
+} = await supabase
+  .from('performances')
+  .select(`
+    id,
+    events!inner (
+      venue_id
+    )
+  `)
+  .eq(
+    'singer_profile_id',
+    singerProfileData.id
+  )
+  .eq(
+    'events.venue_id',
+    data.id
+  );
+
+if (performanceError) {
+  console.error(
+    'Unable to load personal venue performances:',
+    performanceError
+  );
+
+  setMyVenueStats({
+    performances: 0,
+    averageScore: null,
+  });
+} else {
+  const performanceIds = (
+    performanceData || []
+  ).map((performance) => performance.id);
+
+  let averageScore: number | null = null;
+
+  if (performanceIds.length > 0) {
+    const {
+      data: voteData,
+      error: voteError,
+    } = await supabase
+      .from('votes')
+      .select('performance_id, score')
+      .in(
+        'performance_id',
+        performanceIds
+      );
+
+    if (voteError) {
+      console.error(
+        'Unable to load personal venue scores:',
+        voteError
+      );
+    } else {
+      const scoredVotes = (voteData || []).filter(
+        (vote) => vote.score != null
+      );
+
+      if (scoredVotes.length > 0) {
+        averageScore =
+          scoredVotes.reduce(
+            (sum, vote) =>
+              sum + Number(vote.score),
+            0
+          ) / scoredVotes.length;
+      }
+    }
+  }
+
+  setMyVenueStats({
+    performances: performanceIds.length,
+    averageScore,
+  });
+}
+
+  } else {
+    setIsFollowing(false);
+  }
+} else {
+  setIsFollowing(false);
+}
+
+const {
+  data: recentResultData,
+  error: recentResultError,
+} = await supabase
+  .from('event_results')
+  .select(`
+    id,
+    event_id,
+    event_name,
+    judge_winner_name,
+    judge_score,
+    peoples_choice_name,
+    peoples_choice_votes,
+    total_performers,
+    finished_at
+  `)
+  .eq('venue_id', data.id)
+  .order('finished_at', {
+    ascending: false,
+  })
+  .limit(3);
+
+if (recentResultError) {
+  console.error(
+    'Unable to load recent venue results:',
+    recentResultError
+  );
+
+  setRecentResults([]);
+} else {
+  setRecentResults(
+    (recentResultData || []) as RecentVenueResult[]
+  );
+}
+
+const {
+  data: venuePerformanceData,
+  error: venuePerformanceError,
+} = await supabase
+  .from('performances')
+  .select(`
+    id,
+    singer_name,
+    singer_profile_id,
+    events!inner (
+      venue_id
+    )
+  `)
+  .eq('events.venue_id', data.id);
+
+if (venuePerformanceError) {
+  console.error(
+    'Unable to load venue performers:',
+    venuePerformanceError
+  );
+
+  setTopLocalSingers([]);
+} else {
+  const venuePerformances =
+    venuePerformanceData || [];
+
+  const performanceIds =
+    venuePerformances.map(
+      (performance) => performance.id
+    );
+
+  if (performanceIds.length === 0) {
+    setTopLocalSingers([]);
+  } else {
+    const {
+      data: venueVoteData,
+      error: venueVoteError,
+    } = await supabase
+      .from('votes')
+      .select(`
+        performance_id,
+        score
+      `)
+      .in(
+        'performance_id',
+        performanceIds
+      );
+
+    if (venueVoteError) {
+      console.error(
+        'Unable to load venue performer scores:',
+        venueVoteError
+      );
+
+      setTopLocalSingers([]);
+    } else {
+      const performanceMap = new Map(
+        venuePerformances.map(
+          (performance) => [
+            performance.id,
+            performance,
+          ]
+        )
+      );
+
+      const singerStats = new Map<
+        string,
+        {
+          id: string;
+          singer_name: string;
+          total_score: number;
+          score_count: number;
+          performance_ids: Set<string>;
+        }
+      >();
+
+      (venueVoteData || []).forEach((vote) => {
+        if (
+          !vote.performance_id ||
+          vote.score == null
+        ) {
+          return;
+        }
+
+        const performance =
+          performanceMap.get(
+            vote.performance_id
+          );
+
+        if (!performance) return;
+
+        const normalizedName =
+          performance.singer_name
+            ?.trim()
+            .toLowerCase();
+
+        if (!normalizedName) return;
+
+        const singerKey =
+          performance.singer_profile_id ||
+          normalizedName;
+
+        const current =
+          singerStats.get(singerKey) || {
+            id: singerKey,
+            singer_name:
+              performance.singer_name,
+            total_score: 0,
+            score_count: 0,
+            performance_ids:
+              new Set<string>(),
+          };
+
+        current.total_score +=
+          Number(vote.score);
+
+        current.score_count += 1;
+
+        current.performance_ids.add(
+          performance.id
+        );
+
+        singerStats.set(
+          singerKey,
+          current
+        );
+      });
+
+      const rankedSingers =
+        Array.from(
+          singerStats.values()
+        )
+          .filter(
+            (singer) =>
+              singer.score_count >= 3
+          )
+          .map((singer) => ({
+            id: singer.id,
+            singer_name:
+              singer.singer_name,
+            average_score:
+              singer.total_score /
+              singer.score_count,
+            performance_count:
+              singer.performance_ids.size,
+            score_count:
+              singer.score_count,
+          }))
+          .sort(
+            (a, b) =>
+              b.average_score -
+                a.average_score ||
+              b.performance_count -
+                a.performance_count
+          )
+          .slice(0, 5);
+
+      setTopLocalSingers(
+        rankedSingers
+      );
+    }
+  }
+}
 
       const { data: recurringShows, error: recurringShowsError } =
         await supabase
@@ -410,7 +770,92 @@ if (liveEvent) {
   });
 }
 
+async function toggleFollowVenue() {
+  if (!venue?.id || followLoading) return;
+
+  setFollowLoading(true);
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert('Please sign in to follow venues.');
+      return;
+    }
+
+    const {
+      data: singerProfileData,
+      error: singerProfileError,
+    } = await supabase
+      .from('singer_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (singerProfileError) {
+      throw singerProfileError;
+    }
+
+    if (!singerProfileData?.id) {
+      alert(
+        'Create your My Stage profile before following venues.'
+      );
+      return;
+    }
+
+    if (isFollowing) {
+      const { error } = await supabase
+        .from('venue_follows')
+        .delete()
+        .eq('venue_id', venue.id)
+        .eq(
+          'singer_profile_id',
+          singerProfileData.id
+        );
+
+      if (error) throw error;
+
+      setIsFollowing(false);
+    } else {
+      const { error } = await supabase
+        .from('venue_follows')
+        .insert({
+          venue_id: venue.id,
+          singer_profile_id:
+            singerProfileData.id,
+        });
+
+      if (error) throw error;
+
+      setIsFollowing(true);
+    }
+  } catch (error) {
+    console.error(
+      'Unable to update venue follow:',
+      error
+    );
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : 'Unable to update this venue.'
+    );
+  } finally {
+    setFollowLoading(false);
+  }
+}
+
   return (
+  <SVSingerShell
+    title={venue.name}
+    subtitle={
+      [venue.city, venue.state]
+        .filter(Boolean)
+        .join(', ') || 'StageVotes Venue'
+    }
+  >
     <main className={styles.page}>
       <section
         className={styles.hero}
@@ -689,9 +1134,17 @@ if (liveEvent) {
               🎤 View Karaoke Nights
             </button>
 
-            <button className={styles.secondaryButton}>
-              ♡ Follow Venue
-            </button>
+           <button
+  type="button"
+  onClick={toggleFollowVenue}
+  disabled={followLoading}
+>
+  {followLoading
+    ? 'Saving...'
+    : isFollowing
+      ? '♥ Following'
+      : '♡ Follow Venue'}
+</button>
 
             {location && (
               <a
@@ -707,6 +1160,219 @@ if (liveEvent) {
             )}
           </div>
         </section>
+
+        <section className={styles.myVenueHistoryCard}>
+  <div>
+    <div className={styles.myVenueHistoryEyebrow}>
+      Your History Here
+    </div>
+
+    <h2>
+      Your karaoke story at {venue.name}
+    </h2>
+
+    <p>
+      See how much time you have spent on this
+      stage.
+    </p>
+  </div>
+
+  <div className={styles.myVenueHistoryStats}>
+    <div>
+      <strong>
+        {myVenueStats.performances}
+      </strong>
+
+      <span>Performances</span>
+    </div>
+
+    <div>
+      <strong>
+        {myVenueStats.averageScore !== null
+          ? myVenueStats.averageScore.toFixed(2)
+          : '—'}
+      </strong>
+
+      <span>Average Score</span>
+    </div>
+
+    <div>
+      <strong>
+        {isFollowing ? 'Yes' : 'No'}
+      </strong>
+
+      <span>Following</span>
+    </div>
+  </div>
+</section>
+
+{recentResults.length > 0 && (
+  <section className={styles.recentResultsSection}>
+    <div className={styles.sectionHeading}>
+      <div>
+        <div className={styles.sectionEyebrow}>
+          Recent Results
+        </div>
+
+        <h2>Recently finished shows</h2>
+
+        <p>
+          Winners and crowd favorites from recent
+          nights at {venue.name}.
+        </p>
+      </div>
+    </div>
+
+    <div className={styles.recentResultsGrid}>
+      {recentResults.map((result) => (
+        <article
+          key={result.id}
+          className={styles.recentResultCard}
+        >
+          <div className={styles.recentResultDate}>
+            {new Date(
+              result.finished_at
+            ).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </div>
+
+          <h3>
+            {result.event_name ||
+              'Karaoke Results'}
+          </h3>
+
+          <div className={styles.resultWinner}>
+            <span>🏆 Judge Winner</span>
+
+            <strong>
+              {result.judge_winner_name ||
+                'No judged winner'}
+            </strong>
+
+            {result.judge_score !== null && (
+              <small>
+                {Number(
+                  result.judge_score
+                ).toFixed(2)}{' '}
+                average
+              </small>
+            )}
+          </div>
+
+          <div className={styles.resultPeopleChoice}>
+            <span>❤️ People’s Choice</span>
+
+            <strong>
+              {result.peoples_choice_name ||
+                'No audience winner'}
+            </strong>
+
+            {result.peoples_choice_name && (
+              <small>
+                {result.peoples_choice_votes}{' '}
+                {result.peoples_choice_votes === 1
+                  ? 'vote'
+                  : 'votes'}
+              </small>
+            )}
+          </div>
+
+          <div className={styles.resultFooter}>
+            <span>
+              {result.total_performers}{' '}
+              {result.total_performers === 1
+                ? 'performer'
+                : 'performers'}
+            </span>
+
+            <a
+              href={`/leaderboard/${result.event_id}`}
+            >
+              View Results →
+            </a>
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
+<section className={styles.topSingersSection}>
+  <div className={styles.sectionHeading}>
+    <div>
+      <div className={styles.topSingersEyebrow}>
+        Local Standouts
+      </div>
+
+      <h2>Top singers at {venue.name}</h2>
+
+      <p>
+        Ranked by judged scores from performances
+        at this venue.
+      </p>
+    </div>
+  </div>
+
+  {topLocalSingers.length > 0 ? (
+    <div className={styles.topSingersList}>
+      {topLocalSingers.map(
+        (singer, index) => (
+          <article
+            key={singer.id}
+            className={styles.topSingerRow}
+          >
+            <div className={styles.topSingerRank}>
+              {index === 0
+                ? '🥇'
+                : index === 1
+                  ? '🥈'
+                  : index === 2
+                    ? '🥉'
+                    : `#${index + 1}`}
+            </div>
+
+            <div className={styles.topSingerCopy}>
+              <strong>
+                {singer.singer_name}
+              </strong>
+
+              <span>
+                {singer.performance_count}{' '}
+                {singer.performance_count === 1
+                  ? 'scored performance'
+                  : 'scored performances'}
+              </span>
+            </div>
+
+            <div className={styles.topSingerScore}>
+              <strong>
+                {singer.average_score.toFixed(2)}
+              </strong>
+
+              <span>Average</span>
+            </div>
+          </article>
+        )
+      )}
+    </div>
+  ) : (
+    <div className={styles.topSingersEmpty}>
+      <div>🏆</div>
+
+      <strong>
+        Venue rankings are warming up
+      </strong>
+
+      <p>
+        Top singers will appear after judged
+        performances are completed here.
+      </p>
+    </div>
+  )}
+</section>
 
         <section className={styles.grid}>
           <article className={styles.card}>
@@ -857,6 +1523,7 @@ if (liveEvent) {
           </div>
         </section>
       </div>
-    </main>
+       </main>
+  </SVSingerShell>
   );
 }
