@@ -15,6 +15,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import useLiveEvent from '@/hooks/useLiveEvent';
 import SVLiveShowBanner from '@/components/singer/SVLiveShowBanner';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
+import ChampionshipJourneyCard from '@/components/my-stage/ChampionshipJourneyCard';
+import ChampionshipTrophyCase from '@/components/my-stage/ChampionshipTrophyCase';
 
 export default function MyStagePage() {
   return (
@@ -48,15 +50,99 @@ function MyStageContent() {
   const liveEvent = useLiveEvent(eventId);
 
   const {
-    profile,
-    stats,
-    personalBests,
-    performerLevel,
-    timeline,
-    loading,
-    message,
-    handlePhotoUpload,
-  } = useMyStage();
+  profile,
+  stats,
+  personalBests,
+  performerLevel,
+  timeline,
+  championshipData,
+  loading,
+  message,
+  handlePhotoUpload,
+} = useMyStage();
+
+const activeChampionship =
+  championshipData.find((entry: any) => {
+    const tournament =
+      Array.isArray(entry.tournaments)
+        ? entry.tournaments[0] || null
+        : entry.tournaments || null;
+
+    return (
+      tournament?.status === 'active' ||
+      tournament?.status === 'open'
+    );
+  }) || championshipData[0];
+
+const championshipStory = (() => {
+  if (!activeChampionship) {
+    return null;
+  }
+
+  const eventEntries =
+    activeChampionship
+      .tournament_event_entries || [];
+
+  const completedStages =
+    eventEntries.filter(
+      (entry: any) =>
+        entry.status === 'advanced' ||
+        entry.status === 'competed' ||
+        entry.status === 'eliminated'
+    );
+
+  const nextEntry =
+    eventEntries.find(
+      (entry: any) =>
+        entry.status === 'eligible' ||
+        entry.status === 'confirmed'
+    );
+
+  const nextEvent =
+    Array.isArray(
+      nextEntry?.tournament_events
+    )
+      ? nextEntry.tournament_events[0] ||
+        null
+      : nextEntry?.tournament_events ||
+        null;
+
+  const venue =
+    Array.isArray(nextEvent?.venues)
+      ? nextEvent.venues[0] || null
+      : nextEvent?.venues || null;
+
+  if (nextEvent) {
+    const eventDate = nextEvent.starts_at
+      ? new Date(
+          nextEvent.starts_at
+        ).toLocaleDateString([], {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : null;
+
+    return `You’ve completed ${completedStages.length} championship ${
+      completedStages.length === 1
+        ? 'stage'
+        : 'stages'
+    } and qualified for ${nextEvent.name}${
+      eventDate ? ` on ${eventDate}` : ''
+    }${
+      venue?.name
+        ? ` at ${venue.name}`
+        : ''
+    }.`;
+  }
+
+  return `Your championship journey is in progress with ${completedStages.length} ${
+    completedStages.length === 1
+      ? 'stage completed'
+      : 'stages completed'
+  }.`;
+})();
+
 
   if (loading) {
     return <MyStageLoading />;
@@ -165,11 +251,18 @@ function MyStageContent() {
           />
         )}
 
+        {championshipData.length > 0 && (
+  <ChampionshipJourneyCard
+    championships={championshipData}
+  />
+)}
+
         <PerformanceSummary
-          performances={stats.performances}
-          venues={stats.venues}
-          averageScore={stats.averageScore}
-        />
+  performances={stats.performances}
+  venues={stats.venues}
+  averageScore={stats.averageScore}
+  championshipStory={championshipStory}
+/>
 
         <PersonalBests bests={personalBests} />
 
@@ -179,6 +272,12 @@ function MyStageContent() {
           averageScore={stats.averageScore}
           wins={stats.wins}
         />
+
+        {championshipData.length > 0 && (
+  <ChampionshipTrophyCase
+    championships={championshipData}
+  />
+)}
 
         <section style={{ marginTop: 28 }}>
           <div style={{ marginBottom: 14 }}>

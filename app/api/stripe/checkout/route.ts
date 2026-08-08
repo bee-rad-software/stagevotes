@@ -5,36 +5,75 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
-   const { email, accountId } = await req.json();
+    const { email, accountId } = await req.json();
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      customer_email: email,
-      metadata: {
-  account_id: accountId
-},
-subscription_data: {
-  metadata: {
-    account_id: accountId
-  },
-  trial_period_days: 7
-},
-      line_items: [
+    if (!email || !accountId) {
+      return NextResponse.json(
         {
-          price: process.env.STRIPE_PRICE_ID!,
-          quantity: 1
-        }
-      ],
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/?success=true&checkout=complete`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/pricing`
-    });
+          error:
+            'An email address and StageVotes account are required.',
+        },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({ url: session.url });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+    if (!siteUrl) {
+      throw new Error(
+        'NEXT_PUBLIC_SITE_URL is not configured.'
+      );
+    }
+
+    const session =
+      await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        customer_email: email,
+
+        metadata: {
+          account_id: accountId,
+        },
+
+        subscription_data: {
+          metadata: {
+            account_id: accountId,
+          },
+          trial_period_days: 7,
+        },
+
+        line_items: [
+          {
+            price: process.env.STRIPE_PRICE_ID!,
+            quantity: 1,
+          },
+        ],
+
+        success_url: `${siteUrl}/onboarding?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${siteUrl}/onboarding?checkout=cancelled`,
+      });
+
+    if (!session.url) {
+      throw new Error(
+        'Stripe did not return a checkout URL.'
+      );
+    }
+
+    return NextResponse.json({
+      url: session.url,
+    });
   } catch (error) {
-    console.error(error);
+    console.error(
+      'Stripe checkout session error:',
+      error
+    );
 
     return NextResponse.json(
-      { error: 'Unable to create checkout session' },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to create checkout session.',
+      },
       { status: 500 }
     );
   }

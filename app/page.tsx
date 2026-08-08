@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation';
 
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
+import { createStageVotesEvent } from '@/lib/events/createStageVotesEvent';
 
 type AudienceToggleProps = {
   icon: React.ElementType;
@@ -374,68 +375,32 @@ export default function HomePage() {
       return;
     }
 
-    const {
-      data,
-      error: eventError,
-    } = await supabase
-      .from('events')
-      .insert({
-  name: name.trim(),
-  venue: venue.trim(),
-  account_id: accountId,
-
-  judging_enabled:
+   try {
+  const result = await createStageVotesEvent({
+    accountId,
+    venueName: venue,
+    name,
     judgingEnabled,
-
-  tiebreaker_category_name:
-    judgingEnabled
-      ? tiebreakerCategory
-      : null,
-
-  show_signup_qr:
+    categories: validCategories,
+    tiebreakerCategory,
     showSignupQR,
-
-  show_voting_qr:
-    judgingEnabled &&
     showVotingQR,
-
-  show_peoples_choice_qr:
     showPeoplesChoiceQR,
-})
-      .select()
-      .single();
+  });
 
-    if (eventError) {
-      setError(eventError.message);
-      return;
-    }
+  setCreatedId(result.eventId);
+} catch (error) {
+  console.error(
+    'StageVotes event creation failed:',
+    error
+  );
 
-    if (
-  judgingEnabled &&
-  validCategories.length > 0
-) {
-  const { error: categoryError } =
-    await supabase
-      .from('vote_categories')
-      .insert(
-        validCategories.map(
-          (category) => ({
-            event_id: data.id,
-            category_name: category,
-          })
-        )
-      );
-
-  if (categoryError) {
-    setError(
-      categoryError.message
-    );
-
-    return;
-  }
+  setError(
+    error instanceof Error
+      ? error.message
+      : 'Your show could not be created. Please try again.'
+  );
 }
-
-    setCreatedId(data.id);
   }
 
   const pageBackground =

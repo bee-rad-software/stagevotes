@@ -22,6 +22,7 @@ import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
 import SVHostIQ from '@/components/dashboard/SVHostIQ';
+import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
 
 import {
   DndContext,
@@ -96,6 +97,11 @@ const [staticPeopleQr, setStaticPeopleQr] = useState(false);
 const [advancingSinger, setAdvancingSinger] =
   useState(false);
 const ENABLE_HOST_IQ = false;
+const [showFirstWelcome, setShowFirstWelcome] =
+  useState(false);
+
+const [welcomeAccountId, setWelcomeAccountId] =
+  useState<string | null>(null);
 
   
  const voteUrl =
@@ -310,6 +316,12 @@ const { data: accountData } = await supabase
 
 if (accountData) {
   setAccount(accountData);
+
+  setWelcomeAccountId(accountData.id);
+
+  if (!accountData.has_seen_host_welcome) {
+    setShowFirstWelcome(true);
+  }
 }
     
   const { data, error } = await supabase
@@ -328,7 +340,38 @@ if (accountData) {
 
   setEvent(data);
 }
-  
+
+async function dismissFirstWelcome() {
+  if (!welcomeAccountId) {
+    setShowFirstWelcome(false);
+    return;
+  }
+
+  // Hide it immediately so the UI feels responsive.
+  setShowFirstWelcome(false);
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({
+      has_seen_host_welcome: true,
+    })
+    .eq('id', welcomeAccountId);
+
+  if (error) {
+    console.error(
+      'Unable to dismiss welcome card:',
+      error
+    );
+
+    // Restore it if the update failed.
+    setShowFirstWelcome(true);
+
+    alert(
+      'We could not save your preference. Please try again.'
+    );
+  }
+}
+
 async function endShow() {
   if (!confirm('End the show and show awards?')) {
     return;
@@ -1413,6 +1456,12 @@ account?.subscription_status &&
     null
   }
 />
+
+{showFirstWelcome && (
+  <SVFirstShowWelcome
+    onDismiss={dismissFirstWelcome}
+  />
+)}
 
 <SVMissionControl
   onStartShow={startShow}

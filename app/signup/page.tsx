@@ -6,6 +6,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { supabase } from '@/lib/supabase';
+import { signupHost } from '@/lib/auth/signupHost';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,125 +31,6 @@ export default function SignupPage() {
     if (isLoading) return;
 
     setMessage('');
-
-    const cleanAccountName = accountName.trim();
-    const cleanEmail = email.trim();
-
-    if (
-      !cleanAccountName ||
-      !cleanEmail ||
-      !password
-    ) {
-      setMessageType('error');
-      setMessage(
-        'Enter your account name, email address, and password.'
-      );
-      return;
-    }
-
-    if (password.length < 6) {
-      setMessageType('error');
-      setMessage(
-        'Your password must be at least 6 characters.'
-      );
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const {
-        data: authData,
-        error: authError,
-      } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password,
-      });
-
-      if (authError) {
-        throw authError;
-      }
-
-      const user = authData.user;
-
-      if (!user) {
-        setMessageType('success');
-        setMessage(
-          'Check your email to confirm your account, then return to log in.'
-        );
-        setIsLoading(false);
-        return;
-      }
-
-      const accountId = crypto.randomUUID();
-
-      const { error: accountError } =
-        await supabase.from('accounts').insert({
-          id: accountId,
-          name:
-            cleanAccountName ||
-            'My StageVotes Account',
-        });
-
-      if (accountError) {
-        throw accountError;
-      }
-
-      const { error: accountUserError } =
-        await supabase
-          .from('account_users')
-          .insert({
-            account_id: accountId,
-            user_id: user.id,
-            role: 'owner',
-          });
-
-      if (accountUserError) {
-        throw accountUserError;
-      }
-
-      const checkoutResponse = await fetch(
-        '/api/stripe/checkout',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: cleanEmail,
-            accountId,
-          }),
-        }
-      );
-
-      const checkoutData =
-        await checkoutResponse.json();
-
-      if (
-        !checkoutResponse.ok ||
-        !checkoutData.url
-      ) {
-        throw new Error(
-          checkoutData.error ||
-            'Unable to start checkout.'
-        );
-      }
-
-      window.location.href = checkoutData.url;
-    } catch (error) {
-      console.error(
-        'StageVotes signup failed:',
-        error
-      );
-
-      setMessageType('error');
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'We could not create your account. Please try again.'
-      );
-      setIsLoading(false);
-    }
   }
 
   return (

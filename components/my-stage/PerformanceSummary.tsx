@@ -2,12 +2,14 @@ type PerformanceSummaryProps = {
   performances: number;
   venues: number;
   averageScore: number;
+  championshipStory?: string | null;
 };
 
 export default function PerformanceSummary({
   performances,
   venues,
   averageScore,
+  championshipStory,
 }: PerformanceSummaryProps) {
   return (
     <section
@@ -36,25 +38,46 @@ export default function PerformanceSummary({
         Your Karaoke Journey
       </h2>
 
-      <p
-        style={{
-          color: '#cbd5e1',
-          lineHeight: 1.7,
-          fontSize: 18,
-          marginTop: 18,
-        }}
-      >
-        You've performed{' '}
-        <strong>{performances}</strong> songs across{' '}
-        <strong>{venues}</strong> venues with an average judge score
-        of{' '}
-        <strong>
-          {averageScore > 0
-            ? averageScore.toFixed(2)
-            : '—'}
-        </strong>
-        .
-      </p>
+     {championshipStory ? (
+  championshipStory
+) : (
+  <>
+    You've performed <strong>{performances}</strong> songs
+    across <strong>{venues}</strong> venues with an average
+    judge score of{' '}
+    <strong>
+      {averageScore > 0
+        ? averageScore.toFixed(2)
+        : '--'}
+    </strong>
+    .
+  </>
+)}
+<div
+  style={{
+    marginTop: 14,
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 10,
+    color: '#94a3b8',
+    fontSize: 14,
+    fontWeight: 700,
+  }}
+>
+  <span>{performances} performances</span>
+
+  <span>•</span>
+
+  <span>{venues} venues</span>
+
+  <span>•</span>
+
+  <span>
+    {averageScore > 0
+      ? `${averageScore.toFixed(2)} career average`
+      : 'No scores yet'}
+  </span>
+</div>
     </section>
   );
 }

@@ -52,6 +52,8 @@ export default function useMyStage() {
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [championshipData, setChampionshipData] =
+  useState<any[]>([]);
 
   const loadMyStage = useCallback(async () => {
     setLoading(true);
@@ -127,6 +129,100 @@ export default function useMyStage() {
     }
 
     setProfile(profileData);
+
+    const {
+  data: tournamentEntries,
+  error: tournamentError,
+} = await supabase
+  .from('tournament_entries')
+  .select(`
+    id,
+    status,
+    singer_profile_id,
+    tournaments (
+      id,
+      name,
+      slug,
+      status,
+      starts_at,
+      ends_at
+    ),
+    tournament_event_entries (
+      status,
+      seed,
+      placement,
+      average_score,
+      tournament_events (
+        id,
+        name,
+        status,
+        starts_at,
+        event_id,
+        venues (
+          id,
+          name,
+          slug,
+          city,
+          state
+        ),
+        tournament_rounds (
+          id,
+          name,
+          round_type,
+          round_order
+        )
+      )
+    )
+  `)
+  .eq(
+  'singer_profile_id',
+  profileData.id
+);
+
+  if (tournamentError) {
+  console.error(
+    'Unable to load singer championship data:',
+    tournamentError
+  );
+
+  setChampionshipData([]);
+} else {
+  const normalizedChampionships =
+    (tournamentEntries || []).map(
+      (entry: any) => ({
+        ...entry,
+
+        tournaments: Array.isArray(
+          entry.tournaments
+        )
+          ? entry.tournaments[0] || null
+          : entry.tournaments || null,
+
+        tournament_event_entries:
+          (
+            entry.tournament_event_entries ||
+            []
+          ).map((eventEntry: any) => ({
+            ...eventEntry,
+
+            tournament_events:
+              Array.isArray(
+                eventEntry.tournament_events
+              )
+                ? eventEntry
+                    .tournament_events[0] ||
+                  null
+                : eventEntry
+                    .tournament_events ||
+                  null,
+          })),
+      })
+    );
+
+  setChampionshipData(
+    normalizedChampionships
+  );
+}
 
     let completedPerformanceCount = 0;
     let venuesVisitedCount = 0;
@@ -530,6 +626,7 @@ return {
   personalBests,
   performerLevel,
   timeline,
+  championshipData,
   loading,
   message,
   reload: loadMyStage,
