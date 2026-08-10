@@ -102,7 +102,17 @@ const [showFirstWelcome, setShowFirstWelcome] =
 
 const [welcomeAccountId, setWelcomeAccountId] =
   useState<string | null>(null);
+const [welcomeDisplayOpened, setWelcomeDisplayOpened] =
+  useState(false);
 
+const [welcomeAudienceOpened, setWelcomeAudienceOpened] =
+  useState(false);
+
+const [welcomeSingerAdded, setWelcomeSingerAdded] =
+  useState(false);
+
+const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
+  useState(false);
   
  const voteUrl =
   typeof window !== 'undefined'
@@ -129,6 +139,60 @@ const checkinUrl =
   typeof window !== 'undefined'
     ? `${window.location.origin}/checkin/${eventId}`
     : '';
+
+  useEffect(() => {
+  if (!eventId) return;
+
+  try {
+    const saved = window.localStorage.getItem(
+      `stagevotes_welcome_progress_${eventId}`
+    );
+
+    if (saved) {
+      const progress = JSON.parse(saved);
+
+      setWelcomeDisplayOpened(
+        progress.displayOpened === true
+      );
+
+      setWelcomeAudienceOpened(
+        progress.audienceOpened === true
+      );
+
+      setWelcomeSingerAdded(
+        progress.singerAdded === true
+      );
+    }
+  } catch (error) {
+    console.error(
+      'Could not restore welcome progress:',
+      error
+    );
+  } finally {
+    setWelcomeProgressLoaded(true);
+  }
+}, [eventId]);
+
+useEffect(() => {
+  if (!eventId || !welcomeProgressLoaded) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    `stagevotes_welcome_progress_${eventId}`,
+    JSON.stringify({
+      displayOpened: welcomeDisplayOpened,
+      audienceOpened: welcomeAudienceOpened,
+      singerAdded: welcomeSingerAdded,
+    })
+  );
+}, [
+  eventId,
+  welcomeProgressLoaded,
+  welcomeDisplayOpened,
+  welcomeAudienceOpened,
+  welcomeSingerAdded,
+]);
 
   useEffect(() => {
 
@@ -1460,6 +1524,32 @@ account?.subscription_status &&
 {showFirstWelcome && (
   <SVFirstShowWelcome
     onDismiss={dismissFirstWelcome}
+
+    onOpenDisplay={() => {
+      setWelcomeDisplayOpened(true);
+
+      window.open(
+        `/display/${eventId}`,
+        '_blank'
+      );
+    }}
+
+    onShareSignupQr={() => {
+      setWelcomeAudienceOpened(true);
+
+      window.open(
+        `/audience/${eventId}`,
+        '_blank'
+      );
+    }}
+
+    onAddSinger={() =>
+      setShowSingerSignup(true)
+    }
+
+    displayComplete={welcomeDisplayOpened}
+    audienceComplete={welcomeAudienceOpened}
+    singerComplete={welcomeSingerAdded}
   />
 )}
 
@@ -1933,9 +2023,10 @@ account?.subscription_status &&
   onClick={async () => {
     const added = await addPerformance();
 
-    if (added) {
-      setShowSingerSignup(false);
-    }
+if (added) {
+  setWelcomeSingerAdded(true);
+  setShowSingerSignup(false);
+}
   }}
   style={{
     background: '#f97316',

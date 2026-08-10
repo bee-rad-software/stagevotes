@@ -7529,3 +7529,109 @@ a.atlas-live-venue-logo {
     width: 100%;
   }
 }
+
+.sv-first-show-welcome-action {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sv-first-show-welcome-action:hover:not(:disabled) {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.055);
+  transform: translateY(-1px);
+}
+
+.sv-first-show-welcome-action:disabled {
+  cursor: default;
+}
+
+.sv-first-show-welcome-action-number.is-complete {
+  border-color: #f97316;
+  background: #05080f;
+  color: #f97316;
+  box-shadow:
+    0 0 0 3px rgba(249, 115, 22, 0.1),
+    0 0 14px rgba(249, 115, 22, 0.18);
+}
+
+.sv-first-show-welcome-complete {
+  text-align: center;
+  padding: 34px 28px;
+}
+
+.sv-first-show-welcome-complete-icon {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  margin: 0 auto 20px;
+  border: 2px solid #f97316;
+  border-radius: 24px;
+  color: #f97316;
+  background: #05080f;
+  box-shadow:
+    0 0 0 6px rgba(249, 115, 22, 0.08),
+    0 18px 40px rgba(249, 115, 22, 0.16);
+  animation: svSetupCompletePop 320ms ease both;
+}
+
+.sv-first-show-welcome-complete h2 {
+  margin: 6px 0 8px;
+  font-size: 30px;
+}
+
+.sv-first-show-welcome-complete > p {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.sv-first-show-complete-summary {
+  display: grid;
+  gap: 9px;
+  max-width: 420px;
+  margin: 24px auto 0;
+  text-align: left;
+}
+
+.sv-first-show-complete-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 14px;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.06);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sv-first-show-complete-summary svg {
+  color: #4ade80;
+}
+
+.sv-first-show-finish-button {
+  min-width: 190px;
+  margin-top: 24px;
+  min-height: 50px;
+  font-size: 15px;
+}
+
+@keyframes svSetupCompletePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  65% {
+    transform: scale(1.08);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
