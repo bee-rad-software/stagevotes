@@ -1,4 +1,5 @@
 import {
+  Trophy,
   LayoutDashboard,
   Users,
   Monitor,
@@ -25,6 +26,11 @@ export const navigation = [
         icon: Monitor,
         label: 'Displays',
         href: '/displays',
+      },
+      {
+        icon: Trophy,
+        label: 'Tournaments',
+        href: '/tournament-director',
       },
     ],
   },

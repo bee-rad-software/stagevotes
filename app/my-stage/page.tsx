@@ -52,6 +52,7 @@ function MyStageContent() {
   const {
   profile,
   stats,
+  monthlyStats,
   personalBests,
   performerLevel,
   timeline,
@@ -307,9 +308,23 @@ const championshipStory = (() => {
               gap: 14,
             }}
           >
-            <StatCard icon="🎪" value={0} label="Shows" />
-            <StatCard icon="🎶" value={0} label="Songs" />
-            <StatCard icon="🗺️" value={0} label="New Venues" />
+            <StatCard
+  icon="🎪"
+  value={monthlyStats.shows}
+  label="Shows"
+/>
+
+<StatCard
+  icon="🎶"
+  value={monthlyStats.songs}
+  label="Songs"
+/>
+
+<StatCard
+  icon="🗺️"
+  value={monthlyStats.newVenues}
+  label="Venues"
+/>
           </div>
         </section>
 

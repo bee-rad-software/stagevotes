@@ -39,6 +39,12 @@ export default function useMyStage() {
     venues: 0,
   });
 
+  const [monthlyStats, setMonthlyStats] = useState({
+  shows: 0,
+  songs: 0,
+  newVenues: 0,
+});
+
   const [personalBests, setPersonalBests] =
     useState<PersonalBests>({
       highestScore: 0,
@@ -457,6 +463,69 @@ export default function useMyStage() {
 
         venuesVisitedCount =
           uniqueVenues.size;
+
+        const now = new Date();
+
+const monthStart = new Date(
+  now.getFullYear(),
+  now.getMonth(),
+  1
+);
+
+const thisMonthPerformances =
+  (completedPerformances || []).filter(
+    (performance: any) => {
+      const performanceDate =
+  performance.created_at;
+
+      if (!performanceDate) {
+        return false;
+      }
+
+      return (
+        new Date(performanceDate) >= monthStart
+      );
+    }
+  );
+
+const monthlyShowIds = new Set<string>();
+
+const monthlyVenueIds = new Set<string>();
+
+thisMonthPerformances.forEach(
+  (performance: any) => {
+    if (performance.event_id) {
+      monthlyShowIds.add(
+        performance.event_id
+      );
+    }
+
+    const event = Array.isArray(
+      performance.events
+    )
+      ? performance.events[0]
+      : performance.events;
+
+    if (event?.venue_id) {
+      monthlyVenueIds.add(
+        `id:${event.venue_id}`
+      );
+    } else if (event?.venue) {
+      monthlyVenueIds.add(
+        `name:${event.venue
+          .trim()
+          .toLowerCase()}`
+      );
+    }
+  }
+);
+
+setMonthlyStats({
+  shows: monthlyShowIds.size,
+  songs: thisMonthPerformances.length,
+  newVenues: monthlyVenueIds.size,
+});
+
           const timelineEntries: TimelineEntry[] =
   (completedPerformances || [])
     .map((performance: any) => {
@@ -491,9 +560,7 @@ export default function useMyStage() {
           event?.venue ||
           'Venue unavailable',
         performedAt:
-          performance.completed_at ||
-          performance.created_at ||
-          '',
+  performance.created_at || '',
         averageScore:
           performanceAverage,
       };
@@ -623,6 +690,7 @@ setTimeline(timelineEntries);
 return {
   profile,
   stats,
+  monthlyStats,
   personalBests,
   performerLevel,
   timeline,

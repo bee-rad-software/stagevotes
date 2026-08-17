@@ -20,6 +20,7 @@ import SVSongPicker, {
   type SVSongOption,
 } from '@/components/singer/SVSongPicker';
 import SVTipCard from '@/components/singer/SVTipCard';
+import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
 
 type QueueState =
   | 'waiting'
@@ -47,6 +48,9 @@ type Performance = {
   status?: string | null;
   device_id?: string | null;
   singer_profile_id?: string | null;
+
+  checked_in_at?: string | null;
+  checked_in_by?: string | null;
 };
 
 type EventData = {
@@ -55,6 +59,8 @@ type EventData = {
   name?: string | null;
   venue?: string | null;
   venue_name?: string | null;
+  current_performance_id?: string | null;
+  competition_mode?: string | null;
 };
 
 const CURRENT_SHOW_KEY =
@@ -171,6 +177,32 @@ const [songConflictWarning, setSongConflictWarning] =
     return deviceId;
   }
 
+  async function claimGuestPerformances(
+  profileId: string
+) {
+  const deviceId = getDeviceId();
+
+  if (!deviceId || !eventId || !profileId) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from('performances')
+    .update({
+      singer_profile_id: profileId,
+    })
+    .eq('event_id', eventId)
+    .eq('device_id', deviceId)
+    .is('singer_profile_id', null);
+
+  if (error) {
+    console.error(
+      'Unable to claim guest performances:',
+      error.message
+    );
+  }
+}
+
   async function loadSingerProfile() {
     setProfileLoading(true);
 
@@ -211,6 +243,14 @@ const [songConflictWarning, setSongConflictWarning] =
     const profile = data as SingerProfile | null;
 
     setSingerProfile(profile);
+
+   if (profile?.id) {
+  await claimGuestPerformances(
+    profile.id
+  );
+
+  await loadQueue();
+}
 
     const profileName =
       profile?.stage_name?.trim() ||
@@ -264,7 +304,7 @@ const [songConflictWarning, setSongConflictWarning] =
           `
         )
         .eq('id', eventData.account_id)
-        .single();
+        .maybeSingle();
 
     if (accountError) {
       console.error(
@@ -306,9 +346,31 @@ const [songConflictWarning, setSongConflictWarning] =
 
     const queueData = (data || []) as Performance[];
 
-    setQueue(queueData);
-    setCurrentSinger(queueData[0] || null);
-    setOnDeckSinger(queueData[1] || null);
+   setQueue(queueData);
+
+const { data: currentEvent } = await supabase
+  .from('events')
+  .select('current_performance_id')
+  .eq('id', eventId)
+  .single();
+
+const currentPerformanceId =
+  currentEvent?.current_performance_id || null;
+
+const actualCurrentSinger =
+  queueData.find(
+    (performance) =>
+      performance.id === currentPerformanceId
+  ) || null;
+
+setCurrentSinger(actualCurrentSinger);
+
+const waitingQueue = queueData.filter(
+  (performance) =>
+    performance.id !== currentPerformanceId
+);
+
+setOnDeckSinger(waitingQueue[0] || null);
   }
 
   useEffect(() => {
@@ -331,21 +393,34 @@ const [songConflictWarning, setSongConflictWarning] =
       );
     }
 
-    const channel = supabase
-      .channel(`signup-${eventId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'performances',
-          filter: `event_id=eq.${eventId}`,
-        },
-        () => {
-          loadQueue();
-        }
-      )
-      .subscribe();
+   const channel = supabase
+  .channel(`signup-${eventId}`)
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'performances',
+      filter: `event_id=eq.${eventId}`,
+    },
+    () => {
+      loadQueue();
+    }
+  )
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'events',
+      filter: `id=eq.${eventId}`,
+    },
+    () => {
+      loadEvent();
+      loadQueue();
+    }
+  )
+  .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
@@ -390,11 +465,42 @@ const [songConflictWarning, setSongConflictWarning] =
     performanceBelongsToSinger
   );
 
-  const myPosition =
-    myIndex >= 0 ? myIndex + 1 : null;
+  const rawMyPosition =
+  myIndex >= 0 ? myIndex + 1 : null;
 
   const hasJoined =
     myPerformances.length > 0;
+
+  const isTournament =
+  event?.competition_mode === 'tournament';
+
+  const performanceNeedingSong =
+  myPerformances.find(
+    (performance) =>
+      !performance.song_title?.trim()
+  ) || null;
+
+const tournamentPerformance =
+  isTournament
+    ? myPerformances[0] || null
+    : null;
+
+const isCheckedIn =
+  Boolean(
+    tournamentPerformance?.checked_in_at
+  );
+
+const isTournamentReady =
+  Boolean(
+    tournamentPerformance?.checked_in_at &&
+    tournamentPerformance?.song_title?.trim()
+  );
+
+const needsCompetitionSong =
+  Boolean(
+    singerProfile?.id &&
+    performanceNeedingSong
+  );
 
   const isCurrentSinger = Boolean(
     currentSinger &&
@@ -405,6 +511,13 @@ const [songConflictWarning, setSongConflictWarning] =
     onDeckSinger &&
       performanceBelongsToSinger(onDeckSinger)
   );
+
+  const myPosition =
+  isCurrentSinger
+    ? 0
+    : isOnDeckSinger
+    ? 1
+    : rawMyPosition;
 
   const queueState: QueueState =
     isCurrentSinger
@@ -418,10 +531,14 @@ const [songConflictWarning, setSongConflictWarning] =
   const averageMinutesPerSong = 4;
 
   const estimatedWaitMinutes =
-    myPosition && myPosition > 1
-      ? (myPosition - 1) *
-        averageMinutesPerSong
-      : 0;
+  isCurrentSinger
+    ? 0
+    : isOnDeckSinger
+    ? averageMinutesPerSong
+    : myPosition && myPosition > 1
+    ? (myPosition - 1) *
+      averageMinutesPerSong
+    : 0;
 
   useEffect(() => {
     if (
@@ -1038,6 +1155,70 @@ async function confirmSongSelection(song: SVSongOption) {
   }
 }
 
+async function checkInTournamentSinger() {
+  if (
+    !isTournament ||
+    !tournamentPerformance ||
+    !singerProfile?.id
+  ) {
+    return;
+  }
+
+  setSubmitting(true);
+  setMessage('');
+
+  const { error } = await supabase
+    .from('performances')
+    .update({
+      checked_in_at:
+        new Date().toISOString(),
+      checked_in_by: 'singer',
+    })
+    .eq(
+      'id',
+      tournamentPerformance.id
+    )
+    .eq(
+      'event_id',
+      eventId
+    )
+    .eq(
+      'singer_profile_id',
+      singerProfile.id
+    );
+
+  if (error) {
+    setMessage(
+      error.message ||
+      'Unable to check in.'
+    );
+
+    setSubmitting(false);
+    return;
+  }
+
+  setMessage('');
+
+  await loadQueue();
+  setSubmitting(false);
+}
+
+function openCompetitionSong() {
+  if (!performanceNeedingSong) {
+    return;
+  }
+
+  setEditingPerformanceId(
+    performanceNeedingSong.id
+  );
+
+  setPickerSongs([]);
+  setSurpriseSong(null);
+  setDuplicateWarning('');
+  setMessage('');
+  setSongSheetOpen(true);
+}
+
   function openAddSong() {
     setEditingPerformanceId(null);
     setPickerSongs([]);
@@ -1099,9 +1280,23 @@ async function confirmSongSelection(song: SVSongOption) {
         }}
       />
 
+      {!profileLoading && !singerProfile && (
+  <SVSingerProfilePrompt
+    onCreateProfile={() => {
+      window.location.href =
+        `/singer-signup?event=${eventId}`;
+    }}
+    onSignIn={() => {
+  window.location.href =
+    `/singer-login?event=${eventId}`;
+}}
+  />
+)}
+
       {hasJoined && myPosition && (
         <SVQueueStatusCard
           queueState={queueState}
+          position={myPosition}
           singerName={
             savedSingerName ||
             singerName ||
@@ -1115,6 +1310,13 @@ async function confirmSongSelection(song: SVSongOption) {
             onDeckSinger?.singer_name ||
             'Next singer'
           }
+          currentSongTitle={
+  currentSinger?.song_title || ''
+}
+
+currentArtist={
+  currentSinger?.artist || ''
+}
           estimatedWaitMinutes={
             estimatedWaitMinutes
           }
@@ -1159,15 +1361,72 @@ async function confirmSongSelection(song: SVSongOption) {
         <div className="sv-mobile-card-header">
           <div>
             <div className="sv-mobile-kicker">
-              My songs tonight
-            </div>
+  {isTournament
+    ? 'Competition Entry'
+    : 'My songs tonight'}
+</div>
 
-            <h2>
-              {myPerformances.length}{' '}
-              {myPerformances.length === 1
-                ? 'song queued'
-                : 'songs queued'}
-            </h2>
+<h2>
+  {isTournament
+    ? 'Your tournament song'
+    : `${myPerformances.length} ${
+        myPerformances.length === 1
+          ? 'song queued'
+          : 'songs queued'
+      }`}
+</h2>
+
+{isTournament &&
+  tournamentPerformance && (
+    <div
+      className="sv-tournament-checkin"
+    >
+      {isTournamentReady ? (
+        <div className="sv-tournament-ready">
+          ✅ Ready to Compete
+        </div>
+      ) : isCheckedIn ? (
+        <div className="sv-tournament-checked-in">
+  <div className="sv-tournament-status-badge">
+    ✓ CHECKED IN
+  </div>
+
+  {!tournamentPerformance
+    .song_title
+    ?.trim() && (
+    <div className="sv-tournament-status-message">
+      Choose your competition song to become ready.
+    </div>
+  )}
+</div>
+      ) : (
+        <div className="sv-tournament-checkin-needed">
+          <div>
+            <strong>
+              You haven't checked in yet
+            </strong>
+
+            <span>
+              Let the host know you're
+              here and ready to compete.
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="sv-full-button"
+            onClick={
+              checkInTournamentSinger
+            }
+            disabled={submitting}
+          >
+            Check In
+          </button>
+        </div>
+      )}
+    </div>
+  )}
+
           </div>
 
           <ListMusic size={22} />
@@ -1197,9 +1456,10 @@ async function confirmSongSelection(song: SVSongOption) {
                   </div>
 
                   <div className="sv-song-title">
-                    {performance.song_title}
-                  </div>
-
+  {performance.song_title?.trim()
+    ? performance.song_title
+    : '🏆 Competition Song Needed'}
+</div>
                   {performance.artist && (
                     <div className="sv-song-artist">
                       {performance.artist}
@@ -1215,16 +1475,32 @@ async function confirmSongSelection(song: SVSongOption) {
 
                 {!isCurrent && (
                   <button
-                    type="button"
-                    className="sv-change-song"
-                    onClick={() =>
-                      openChangeSong(
-                        performance.id
-                      )
-                    }
-                  >
-                    Change
-                  </button>
+  type="button"
+  className="sv-change-song"
+  onClick={() => {
+    if (
+      !performance.song_title?.trim()
+    ) {
+      setEditingPerformanceId(
+        performance.id
+      );
+      setPickerSongs([]);
+      setSurpriseSong(null);
+      setDuplicateWarning('');
+      setMessage('');
+      setSongSheetOpen(true);
+      return;
+    }
+
+    openChangeSong(
+      performance.id
+    );
+  }}
+>
+  {performance.song_title?.trim()
+    ? 'Change'
+    : 'Choose Song'}
+</button>
                 )}
               </div>
             );
@@ -1248,18 +1524,21 @@ async function confirmSongSelection(song: SVSongOption) {
           </div>
         )}
 
-        <button
-          type="button"
-          className="sv-full-button"
-          onClick={openAddSong}
-          disabled={submitting}
-        >
-          <Plus size={18} />
+        {(!isTournament ||
+  myPerformances.length === 0) && (
+  <button
+    type="button"
+    className="sv-full-button"
+    onClick={openAddSong}
+    disabled={submitting}
+  >
+    <Plus size={18} />
 
-          {myPerformances.length > 0
-            ? 'Add another song'
-            : 'Choose a song'}
-        </button>
+    {myPerformances.length > 0
+      ? 'Add another song'
+      : 'Choose a song'}
+  </button>
+)}
 
         {message && (
           <p className="sv-mobile-message">

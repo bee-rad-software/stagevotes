@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import SVShell from '@/components/ui/SVShell';
 
 function createSlug(value: string) {
   return value
@@ -124,14 +125,39 @@ export default function NewTournamentPage() {
   }
 
   return (
+  <SVShell
+    title="Create Tournament"
+    subtitle="Build your championship"
+  >
     <main className="sv-director-form-page">
+      <div className="sv-director-create-layout">
       <form
         onSubmit={handleSubmit}
         className="sv-director-form"
       >
-        <div className="sv-director-eyebrow">
-          New Tournament
-        </div>
+        <div
+  style={{
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 8,
+  }}
+>
+  <span className="sv-director-eyebrow">
+    NEW TOURNAMENT
+  </span>
+
+  <span
+    style={{
+      color: '#64748b',
+      fontSize: 11,
+      fontWeight: 800,
+      letterSpacing: '0.12em',
+    }}
+  >
+    STEP 1 OF 4
+  </span>
+</div>
 
         <h1>Create a championship</h1>
 
@@ -218,10 +244,70 @@ export default function NewTournamentPage() {
           >
             {saving
               ? 'Creating...'
-              : 'Create Tournament'}
+              : 'Create & Continue →'}
           </button>
         </div>
       </form>
-    </main>
-  );
+      <aside className="sv-director-setup-card">
+  <div className="sv-director-setup-eyebrow">
+    Championship Setup
+  </div>
+
+  <h2>Build the road to the title</h2>
+
+  <div className="sv-director-setup-steps">
+    <div className="sv-director-setup-step is-active">
+      <span>1</span>
+
+      <div>
+        <strong>Create championship</strong>
+        <small>
+          Name the tournament and set the overall dates.
+        </small>
+      </div>
+    </div>
+
+    <div className="sv-director-setup-step">
+      <span>2</span>
+
+      <div>
+        <strong>Add qualifiers</strong>
+        <small>
+          Choose venues and create the events that feed the tournament.
+        </small>
+      </div>
+    </div>
+
+    <div className="sv-director-setup-step">
+      <span>3</span>
+
+      <div>
+        <strong>Set advancement</strong>
+        <small>
+          Decide who moves forward and where they go next.
+        </small>
+      </div>
+    </div>
+
+    <div className="sv-director-setup-step">
+      <span>4</span>
+
+      <div>
+        <strong>Review & open</strong>
+        <small>
+          Check the championship path and open it to singers.
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <div className="sv-director-setup-note">
+    You&apos;re creating the foundation now. We&apos;ll build the
+    championship path next.
+  </div>
+</aside>
+</div>
+       </main>
+  </SVShell>
+);
 }

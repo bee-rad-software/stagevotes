@@ -4,16 +4,22 @@ type Props = {
   queueState: QueueState;
   singerName?: string;
   currentSingerName?: string;
+  currentSongTitle?: string;
+  currentArtist?: string;
   nextSingerName?: string;
   estimatedWaitMinutes?: number;
+  position?: number | null;
 };
 
 export default function SVQueueStatusCard({
   queueState,
-  singerName = 'Brad',
-  currentSingerName = 'Sarah',
-  nextSingerName = 'Mike',
+  singerName = 'Singer',
+  currentSingerName = 'Current singer',
+  currentSongTitle = '',
+  currentArtist = '',
+  nextSingerName = 'Next singer',
   estimatedWaitMinutes = 11,
+  position = null,
 }: Props) {
   return (
     <section
@@ -28,18 +34,31 @@ export default function SVQueueStatusCard({
 }`}
     >
       {queueState === 'waiting' && (
-        <>
-          <div className="sv-mobile-kicker">Queue Position</div>
-          <div className="sv-away-number">6 Away</div>
-          <div className="sv-estimate-pill">≈ {estimatedWaitMinutes} minutes</div>
-          <div className="sv-queue-context">Relax and enjoy the show!</div>
-        </>
-      )}
+  <>
+    <div className="sv-mobile-kicker">
+      Queue Position
+    </div>
+
+    <div className="sv-away-number">
+      {position ?? '—'} Away
+    </div>
+
+    <div className="sv-estimate-pill">
+      ≈ {estimatedWaitMinutes} minutes
+    </div>
+
+    <div className="sv-queue-context">
+      Relax and enjoy the show!
+    </div>
+  </>
+)}
 
       {queueState === 'soon' && (
         <>
           <div className="sv-mobile-kicker">You're Up Soon</div>
-          <div className="sv-away-number">2 Away</div>
+          <div className="sv-away-number">
+  {position ?? 2} Away
+</div>
           <div className="sv-estimate-pill">≈ {estimatedWaitMinutes} minutes</div>
 
           <div className="sv-queue-context">
@@ -62,17 +81,27 @@ export default function SVQueueStatusCard({
       )}
      {queueState === 'performing' && (
   <>
-  <div className="sv-performing-spotlight" />
-
     <div className="sv-stage-orb">🎤</div>
 
-    <div className="sv-mobile-kicker">Now Performing</div>
-
-    <div className="sv-performing-name">Brad</div>
-
-    <div className="sv-performing-song">
-      ♪ Are You Gonna Be My Girl
+    <div className="sv-mobile-kicker">
+      Now Performing
     </div>
+
+    <div className="sv-performing-name">
+      {currentSingerName}
+    </div>
+
+    {currentSongTitle && (
+      <div className="sv-performing-song">
+        ♪ {currentSongTitle}
+      </div>
+    )}
+
+    {currentArtist && (
+      <div className="sv-performing-artist">
+        {currentArtist}
+      </div>
+    )}
 
     <div className="sv-estimate-pill">
       Voting is open now

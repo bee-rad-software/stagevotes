@@ -50,6 +50,13 @@ export type SVHostQueueItem = {
   photoUrl?: string | null;
   round: number;
   status?: 'current' | 'next' | 'waiting';
+
+  tournamentReadiness?:
+    | 'ready'
+    | 'song_needed'
+    | 'not_checked_in'
+    | null;
+
   performance: any;
 };
 
@@ -69,6 +76,7 @@ type Props = {
   onEditSingerName?: (value: string) => void;
   onEditSongTitle?: (value: string) => void;
   onEditArtist?: (value: string) => void;
+  onChooseEditSong?: () => void;
 
  onStartEdit?: (performance: SVHostQueueItem) => void;
   onSaveEdit?: (id: string) => void;
@@ -76,6 +84,10 @@ type Props = {
 
   onSkip?: (id: string) => void;
   onRemove?: (id: string) => void;
+
+  onCheckIn?: (
+  performanceId: string
+) => void;
  
 
   onReorder?: (
@@ -92,6 +104,7 @@ type SortableRowProps = {
   onStartEdit?: (performance: SVHostQueueItem) => void;
   onSkip?: (id: string) => void;
   onRemove?: (id: string) => void;
+  onCheckIn?: (id: string) => void;
 };
 
 function getInitials(name: string) {
@@ -111,9 +124,16 @@ function SortableQueueRow({
   onStartEdit,
   onSkip,
   onRemove,
+  onCheckIn,
 }: SortableRowProps) {
   const isCurrent = item.status === 'current';
   const isNext = item.status === 'next';
+
+  const isWaitingForReadiness =
+  item.tournamentReadiness ===
+    'song_needed' ||
+  item.tournamentReadiness ===
+    'not_checked_in';
 
   const {
     attributes,
@@ -204,10 +224,12 @@ const rowStyle: React.CSSProperties = {
     .join(' ')}
 >
   {isCurrent
-    ? '● LIVE'
-    : isNext
-    ? '● UP NEXT'
-    : `#${index + 1}`}
+  ? '● LIVE'
+  : isWaitingForReadiness
+  ? '◷ WAITING'
+  : isNext
+  ? '● UP NEXT'
+  : `#${index + 1}`}
 </div>
 
       <div className="sv-host-queue-avatar">
@@ -227,6 +249,19 @@ const rowStyle: React.CSSProperties = {
     <strong className="sv-queue-singer-name">
       {formatSingerName(item.singerName)}
     </strong>
+
+{item.tournamentReadiness && (
+  <span
+    className={`sv-tournament-host-status sv-tournament-host-status-${item.tournamentReadiness}`}
+  >
+    {item.tournamentReadiness === 'ready'
+      ? '✓ READY'
+      : item.tournamentReadiness === 'song_needed'
+      ? '♪ SONG NEEDED'
+      : '○ NOT CHECKED IN'}
+  </span>
+)}
+
   </div>
 
   <div className="sv-host-queue-song">
@@ -241,6 +276,42 @@ const rowStyle: React.CSSProperties = {
         </div>
 
         <div className="sv-host-queue-actions">
+
+      <button
+  type="button"
+  title={
+    item.tournamentReadiness === 'song_needed'
+      ? 'Choose Song'
+      : 'Edit'
+  }
+  aria-label={`Edit ${formatSingerName(
+    item.singerName
+  )}`}
+  onClick={(event) => {
+    event.stopPropagation();
+    onStartEdit?.(item);
+  }}
+>
+  ✏️
+</button>
+
+          {item.tournamentReadiness ===
+  'not_checked_in' && (
+  <button
+    type="button"
+    title="Check In"
+    aria-label={`Check in ${formatSingerName(
+      item.singerName
+    )}`}
+    onClick={(event) => {
+      event.stopPropagation();
+      onCheckIn?.(item.id);
+    }}
+  >
+    ✓
+  </button>
+)}
+
           <button
             type="button"
             title="Skip"
@@ -275,24 +346,21 @@ export default function SVHostQueue({
   items,
   completedCount = 0,
   singerView = false,
-
   editingId,
   editSingerName = '',
   editSongTitle = '',
   editArtist = '',
-
   onToggleSingerView,
-
   onEditSingerName,
   onEditSongTitle,
   onEditArtist,
-
+  onChooseEditSong,
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
-
   onSkip,
   onRemove,
+  onCheckIn,
   onReorder,
 }: Props) {
   const sensors = useSensors(
@@ -419,78 +487,72 @@ const uniqueSingerCount = singerGroups.length;
       </div>
 
       {editingId && (
-        <div className="sv-host-queue-editor">
-          <div>
-            <div className="sv-mobile-kicker">
-              Edit Queue Entry
-            </div>
-
-            <h3>Update singer or song</h3>
-          </div>
-
-          <label htmlFor="queue-edit-singer">
-            Singer name
-          </label>
-
-          <input
-            id="queue-edit-singer"
-            value={editSingerName}
-            onChange={(event) =>
-              onEditSingerName?.(
-                event.target.value
-              )
-            }
-          />
-
-          <label htmlFor="queue-edit-song">
-            Song title
-          </label>
-
-          <input
-            id="queue-edit-song"
-            value={editSongTitle}
-            onChange={(event) =>
-              onEditSongTitle?.(
-                event.target.value
-              )
-            }
-          />
-
-          <label htmlFor="queue-edit-artist">
-            Artist
-          </label>
-
-          <input
-            id="queue-edit-artist"
-            value={editArtist}
-            onChange={(event) =>
-              onEditArtist?.(
-                event.target.value
-              )
-            }
-          />
-
-          <div className="sv-host-queue-editor-actions">
-            <button
-              type="button"
-              className="btn-small primary"
-              onClick={() =>
-                onSaveEdit?.(editingId)
-              }
-            >
-              Save
-            </button>
-
-            <button
-              type="button"
-              className="btn-small"
-              onClick={onCancelEdit}
-            >
-              Cancel
-            </button>
-          </div>
+  <div className="sv-host-queue-editor sv-host-queue-editor-polished">
+    <div className="sv-host-editor-heading">
+      <div>
+        <div className="sv-mobile-kicker">
+          Edit Competition Entry
         </div>
-      )}
+
+        <h3>
+          {editSingerName}
+        </h3>
+      </div>
+    </div>
+
+    <div className="sv-host-editor-song-card">
+      <div>
+        <span className="sv-host-editor-label">
+          Competition Song
+        </span>
+
+        <strong>
+          {editSongTitle &&
+          editSongTitle !== 'Song Needed'
+            ? editSongTitle
+            : 'No song selected'}
+        </strong>
+
+        {editArtist && (
+          <small>
+            {editArtist}
+          </small>
+        )}
+      </div>
+
+      <button
+        type="button"
+        className="btn-small"
+        onClick={onChooseEditSong}
+      >
+        {editSongTitle &&
+        editSongTitle !== 'Song Needed'
+          ? 'Change Song'
+          : 'Choose Song'}
+      </button>
+    </div>
+
+    <div className="sv-host-queue-editor-actions">
+      <button
+        type="button"
+        className="btn-small primary"
+        onClick={() =>
+          onSaveEdit?.(editingId)
+        }
+      >
+        Save Changes
+      </button>
+
+      <button
+        type="button"
+        className="btn-small"
+        onClick={onCancelEdit}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
 
       {items.length === 0 ? (
         <div className="sv-host-queue-empty">
@@ -600,6 +662,7 @@ const uniqueSingerCount = singerGroups.length;
                   onStartEdit={onStartEdit}
                   onSkip={onSkip}
                   onRemove={onRemove}
+                  onCheckIn={onCheckIn}
                 />
               ))}
             </div>

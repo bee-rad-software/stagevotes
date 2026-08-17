@@ -1,226 +1,230 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
-  Award,
-  Check,
-  ChevronRight,
-  Heart,
+  CalendarDays,
   MapPin,
   Mic2,
   Plus,
-  QrCode,
-  Settings,
-  Sparkles,
-  Trash2,
   Trophy,
-  Users,
 } from 'lucide-react';
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-
 import { supabase } from '@/lib/supabase';
-import Image from 'next/image';
 import { createStageVotesEvent } from '@/lib/events/createStageVotesEvent';
 
-type AudienceToggleProps = {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
+type Account = {
+  id: string;
+  name: string;
 };
 
-function AudienceToggle({
-  icon: Icon,
-  title,
-  description,
-  checked,
-  onChange,
-}: AudienceToggleProps) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      style={{
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
-        padding: 16,
-        textAlign: 'left',
-        color: '#f8fafc',
-        cursor: 'pointer',
-        borderRadius: 18,
-        border: checked
-          ? '1px solid rgba(56,189,248,0.4)'
-          : '1px solid rgba(148,163,184,0.16)',
-        background: checked
-          ? 'linear-gradient(135deg, rgba(56,189,248,0.12), rgba(249,115,22,0.08))'
-          : 'rgba(255,255,255,0.035)',
-        transition: '180ms ease',
-      }}
-    >
-      <span
-        style={{
-          width: 46,
-          height: 46,
-          flex: '0 0 auto',
-          display: 'grid',
-          placeItems: 'center',
-          borderRadius: 15,
-          color: checked ? '#ffffff' : '#94a3b8',
-          background: checked
-            ? 'linear-gradient(135deg, #38bdf8, #0284c7)'
-            : 'rgba(148,163,184,0.1)',
-        }}
-      >
-        <Icon size={22} />
-      </span>
+type Venue = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+};
 
-      <span style={{ minWidth: 0, flex: 1 }}>
-        <strong
-          style={{
-            display: 'block',
-            fontSize: 15,
-          }}
-        >
-          {title}
-        </strong>
+type RecurringShow = {
+  id: string;
+  venue_id: string;
+  title: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string | null;
+  show_type: string | null;
+  description: string | null;
+  is_active: boolean;
+  venues:
+    | {
+        id: string;
+        name: string;
+        city: string | null;
+        state: string | null;
+      }[]
+    | {
+        id: string;
+        name: string;
+        city: string | null;
+        state: string | null;
+      }
+    | null;
+};
 
-        <span
-          style={{
-            display: 'block',
-            marginTop: 3,
-            color: '#94a3b8',
-            fontSize: 13,
-            lineHeight: 1.4,
-          }}
-        >
-          {description}
-        </span>
-      </span>
+type TournamentEvent = {
+  id: string;
+  name: string;
+  status: string;
+  starts_at: string | null;
+  advancement_count: number | null;
+  expected_judges: number | null;
+  event_id: string | null;
 
-      <span
-        style={{
-          width: 48,
-          height: 27,
-          flex: '0 0 auto',
-          position: 'relative',
-          borderRadius: 999,
-          background: checked
-            ? '#22c55e'
-            : 'rgba(148,163,184,0.22)',
-          transition: '180ms ease',
-        }}
-      >
-        <span
-          style={{
-            width: 21,
-            height: 21,
-            position: 'absolute',
-            top: 3,
-            left: checked ? 24 : 3,
-            display: 'grid',
-            placeItems: 'center',
-            borderRadius: 999,
-            color: '#22c55e',
-            background: '#ffffff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
-            transition: '180ms ease',
-          }}
-        >
-          {checked && <Check size={13} strokeWidth={3} />}
-        </span>
-      </span>
-    </button>
-  );
+  venues:
+    | {
+        id: string;
+        name: string;
+        city: string | null;
+        state: string | null;
+      }[]
+    | {
+        id: string;
+        name: string;
+        city: string | null;
+        state: string | null;
+      }
+    | null;
+
+  tournaments:
+    | {
+        id: string;
+        name: string;
+      }[]
+    | {
+        id: string;
+        name: string;
+      }
+    | null;
+
+  tournament_rounds:
+    | {
+        id: string;
+        name: string;
+        round_type: string;
+      }[]
+    | {
+        id: string;
+        name: string;
+        round_type: string;
+      }
+    | null;
+};
+
+const dayNames = [
+  'Sunday',
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+];
+
+function getRelation<T>(
+  relation: T | T[] | null
+): T | null {
+  if (!relation) return null;
+
+  return Array.isArray(relation)
+    ? relation[0] || null
+    : relation;
 }
 
-export default function HomePage() {
-  const router = useRouter();
+function formatTime(value: string) {
+  if (!value) return '';
 
-  const [name, setName] = useState('');
-  const [venue, setVenue] = useState('');
+  const [hourString, minuteString] =
+    value.split(':');
 
-  const [createdId, setCreatedId] =
-    useState<string | null>(null);
+  const hour = Number(hourString);
+  const minute = Number(minuteString);
 
-  const [error, setError] = useState('');
-  const [billingMessage, setBillingMessage] =
-    useState('');
+  const date = new Date();
 
-  const [categories, setCategories] =
-    useState<string[]>([
-      'Overall Performance',
-    ]);
-
-  const [
-    tiebreakerCategory,
-    setTiebreakerCategory,
-  ] = useState('Overall Performance');
-
-  const [judgingEnabled, setJudgingEnabled] =
-  useState(true);
-
-  const [showSignupQR, setShowSignupQR] =
-    useState(true);
-
-  const [showVotingQR, setShowVotingQR] =
-    useState(true);
-
-  const [
-    showPeoplesChoiceQR,
-    setShowPeoplesChoiceQR,
-  ] = useState(true);
-
-  const [
-    subscriptionStatus,
-    setSubscriptionStatus,
-  ] = useState('');
-
-  const validCategories = useMemo(
-    () =>
-      categories
-        .map((category) => category.trim())
-        .filter(Boolean),
-    [categories]
+  date.setHours(
+    hour,
+    minute,
+    0,
+    0
   );
 
+  return date.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+export default function HostHomePage() {
+  const router = useRouter();
+
+  const [account, setAccount] =
+    useState<Account | null>(null);
+
+  const [venues, setVenues] =
+    useState<Venue[]>([]);
+
+  const [
+    recurringShows,
+    setRecurringShows,
+  ] = useState<RecurringShow[]>([]);
+
+  const [
+    tournamentEvents,
+    setTournamentEvents,
+  ] = useState<TournamentEvent[]>([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [message, setMessage] =
+    useState('');
+
+  const [
+  setupTournamentEvent,
+  setSetupTournamentEvent,
+] = useState<TournamentEvent | null>(null);
+
+const [
+  tournamentJudgingEnabled,
+  setTournamentJudgingEnabled,
+] = useState(true);
+
+const [
+  tournamentExpectedJudges,
+  setTournamentExpectedJudges,
+] = useState(3);
+
+const [
+  tournamentCategories,
+  setTournamentCategories,
+] = useState([
+  'Overall Performance',
+  'Vocal Ability',
+  'Stage Presence',
+]);
+
+const [
+  tournamentTiebreaker,
+  setTournamentTiebreaker,
+] = useState('Overall Performance');
+
+const [
+  tournamentPeoplesChoice,
+  setTournamentPeoplesChoice,
+] = useState(true);
+
+const [
+  launchingTournament,
+  setLaunchingTournament,
+] = useState(false);
+
   useEffect(() => {
-    loadMyAccount();
+    loadHostHome();
   }, []);
 
-  useEffect(() => {
-    if (
-      validCategories.length === 0
-    ) {
-      setTiebreakerCategory('');
-      return;
-    }
+  async function loadHostHome() {
+    setLoading(true);
+    setMessage('');
 
-    if (
-      !validCategories.includes(
-        tiebreakerCategory
-      )
-    ) {
-      setTiebreakerCategory(
-        validCategories[0]
-      );
-    }
-  }, [
-    validCategories,
-    tiebreakerCategory,
-  ]);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  async function getMyAccountId() {
-    const { data: userData } =
-      await supabase.auth.getUser();
-
-    if (!userData.user) {
+    if (userError || !user) {
       router.push('/login');
-      return null;
+      return;
     }
 
     const {
@@ -229,27 +233,182 @@ export default function HomePage() {
     } = await supabase
       .from('account_users')
       .select('account_id')
-      .eq(
-        'user_id',
-        userData.user.id
-      )
-      .single();
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
 
     if (
       accountUserError ||
-      !accountUser
+      !accountUser?.account_id
     ) {
-      setError(
-        'No account was found for this user.'
+      setMessage(
+        'We could not find your StageVotes account.'
       );
 
-      return null;
+      setLoading(false);
+      return;
     }
 
-    return accountUser.account_id;
+    const accountId =
+      accountUser.account_id;
+
+    const {
+      data: accountData,
+      error: accountError,
+    } = await supabase
+      .from('accounts')
+      .select('id, name')
+      .eq('id', accountId)
+      .single();
+
+    if (accountError) {
+      setMessage(
+        'We could not load your StageVotes account.'
+      );
+
+      setLoading(false);
+      return;
+    }
+
+    setAccount(accountData as Account);
+
+    const {
+      data: venueData,
+      error: venueError,
+    } = await supabase
+      .from('venues')
+      .select(`
+        id,
+        name,
+        city,
+        state
+      `)
+      .eq('account_id', accountId)
+      .eq('is_active', true)
+      .order('name');
+
+    if (venueError) {
+      console.error(
+        'Unable to load host venues:',
+        venueError
+      );
+    }
+
+    const loadedVenues =
+      (venueData || []) as Venue[];
+
+    setVenues(loadedVenues);
+
+    const venueIds =
+      loadedVenues.map(
+        (venue) => venue.id
+      );
+
+    if (venueIds.length > 0) {
+      const {
+        data: recurringData,
+        error: recurringError,
+      } = await supabase
+        .from('venue_recurring_shows')
+        .select(`
+          id,
+          venue_id,
+          title,
+          day_of_week,
+          start_time,
+          end_time,
+          show_type,
+          description,
+          is_active,
+          venues (
+            id,
+            name,
+            city,
+            state
+          )
+        `)
+        .in('venue_id', venueIds)
+        .eq('is_active', true)
+        .order('day_of_week')
+        .order('start_time');
+
+      if (recurringError) {
+        console.error(
+          'Unable to load recurring shows:',
+          recurringError
+        );
+      } else {
+        setRecurringShows(
+          (recurringData ||
+            []) as RecurringShow[]
+        );
+      }
+    }
+
+    const {
+      data: tournamentData,
+      error: tournamentError,
+    } = await supabase
+      .from('tournament_events')
+      .select(`
+        id,
+        name,
+        status,
+        starts_at,
+        advancement_count,
+        expected_judges,
+        event_id,
+        venues (
+          id,
+          name,
+          city,
+          state
+        ),
+        tournaments (
+          id,
+          name
+        ),
+        tournament_rounds (
+          id,
+          name,
+          round_type
+        )
+      `)
+      .eq(
+        'host_account_id',
+        accountId
+      )
+      .neq('status', 'cancelled')
+      .order('starts_at', {
+        ascending: true,
+      });
+
+    if (tournamentError) {
+      console.error(
+        'Unable to load tournament assignments:',
+        tournamentError
+      );
+    } else {
+      setTournamentEvents(
+        (tournamentData ||
+          []) as TournamentEvent[]
+      );
+    }
+
+    setLoading(false);
   }
 
-  async function loadMyAccount() {
+async function launchAssignedTournament() {
+  if (
+    !setupTournamentEvent ||
+    launchingTournament
+  ) {
+    return;
+  }
+
+  try {
+    setLaunchingTournament(true);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -259,1334 +418,1226 @@ export default function HomePage() {
       return;
     }
 
-    const { data: accountUser } =
-      await supabase
-        .from('account_users')
-        .select('account_id')
-        .eq('user_id', user.id)
-        .single();
-
-    if (!accountUser) {
-      return;
-    }
-
-    const { data: account } =
-      await supabase
-        .from('accounts')
-        .select(
-          'name, subscription_status'
-        )
-        .eq(
-          'id',
-          accountUser.account_id
-        )
-        .single();
-
-    if (account?.name) {
-      setVenue(account.name);
-    }
-
-    setSubscriptionStatus(
-      account?.subscription_status || ''
-    );
-  }
-
-  function updateCategory(
-    index: number,
-    value: string
-  ) {
-    setCategories((current) =>
-      current.map(
-        (category, categoryIndex) =>
-          categoryIndex === index
-            ? value
-            : category
-      )
-    );
-  }
-
-  function addCategory() {
-    setCategories((current) => [
-      ...current,
-      '',
-    ]);
-  }
-
-  function removeCategory(index: number) {
-    setCategories((current) => {
-      if (current.length === 1) {
-        return current;
-      }
-
-      return current.filter(
-        (_, categoryIndex) =>
-          categoryIndex !== index
-      );
-    });
-  }
-
-  async function createEvent() {
-    setError('');
-    setBillingMessage('');
+    const {
+      data: accountUser,
+      error: accountUserError,
+    } = await supabase
+      .from('account_users')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
 
     if (
-      !['active', 'trialing'].includes(
-        subscriptionStatus
-      )
+      accountUserError ||
+      !accountUser?.account_id
     ) {
-      setBillingMessage(
-        'Your subscription is inactive. Please update billing to create a show.'
+      throw (
+        accountUserError ||
+        new Error(
+          'No StageVotes account was found.'
+        )
       );
-
-      return;
     }
-
-    if (!name.trim()) {
-      setError(
-        'Please enter a name for tonight’s show.'
-      );
-
-      return;
-    }
-
-    if (!venue.trim()) {
-      setError(
-        'Please enter the venue name.'
-      );
-
-      return;
-    }
-
-    if (
-  judgingEnabled &&
-  validCategories.length === 0
-) {
-  setError(
-    'Please add at least one voting category.'
-  );
-
-  return;
-}
 
     const accountId =
-      await getMyAccountId();
+      accountUser.account_id;
 
-    if (!accountId) {
+    /*
+     * Safety check:
+     * make sure this tournament event
+     * is actually assigned to this account.
+     */
+    const {
+      data: assignedEvent,
+      error: assignedEventError,
+    } = await supabase
+      .from('tournament_events')
+      .select(`
+        id,
+        event_id,
+        venue_id,
+        host_account_id,
+        name
+      `)
+      .eq(
+        'id',
+        setupTournamentEvent.id
+      )
+      .eq(
+        'host_account_id',
+        accountId
+      )
+      .single();
+
+    if (assignedEventError) {
+      throw assignedEventError;
+    }
+
+    /*
+     * If it was already launched somehow,
+     * just open the existing show.
+     */
+    if (assignedEvent.event_id) {
+      router.push(
+        `/host/${assignedEvent.event_id}`
+      );
       return;
     }
 
-   try {
-  const result = await createStageVotesEvent({
-    accountId,
-    venueName: venue,
-    name,
-    judgingEnabled,
-    categories: validCategories,
-    tiebreakerCategory,
-    showSignupQR,
-    showVotingQR,
-    showPeoplesChoiceQR,
-  });
+    const venue =
+      getRelation(
+        setupTournamentEvent.venues
+      );
 
-  setCreatedId(result.eventId);
-} catch (error) {
-  console.error(
-    'StageVotes event creation failed:',
-    error
+    if (!venue) {
+      throw new Error(
+        'This tournament event does not have a venue assigned.'
+      );
+    }
+
+    const cleanCategories =
+      tournamentCategories
+        .map(
+          (category) =>
+            category.trim()
+        )
+        .filter(Boolean);
+
+    if (
+      tournamentJudgingEnabled &&
+      cleanCategories.length === 0
+    ) {
+      throw new Error(
+        'Add at least one judging category.'
+      );
+    }
+
+    const result =
+      await createStageVotesEvent({
+        accountId,
+        venueName:
+          venue.name,
+        name:
+          setupTournamentEvent.name,
+
+        judgingEnabled:
+          tournamentJudgingEnabled,
+
+        categories:
+          tournamentJudgingEnabled
+            ? cleanCategories
+            : [],
+
+        tiebreakerCategory:
+          tournamentJudgingEnabled
+            ? tournamentTiebreaker ||
+              cleanCategories[0] ||
+              ''
+            : '',
+
+        showSignupQR: true,
+
+        showVotingQR:
+          tournamentJudgingEnabled,
+
+        showPeoplesChoiceQR:
+          tournamentPeoplesChoice,
+      });
+
+    const newEventId =
+      result.eventId;
+
+    /*
+     * Link the normal StageVotes event
+     * back to the tournament assignment.
+     */
+   const {
+  data: linkedEvent,
+  error: eventLinkError,
+} = await supabase
+  .from('events')
+  .update({
+    tournament_event_id:
+      setupTournamentEvent.id,
+
+    venue_id:
+      assignedEvent.venue_id,
+
+    competition_mode:
+      'tournament',
+  })
+  .eq(
+    'id',
+    newEventId
+  )
+  .eq(
+    'account_id',
+    accountId
+  )
+  .select(`
+    id,
+    name,
+    competition_mode,
+    tournament_event_id,
+    account_id
+  `)
+  .maybeSingle();
+
+    if (eventLinkError) {
+      throw eventLinkError;
+    }
+
+   const {
+  error: currentEventError,
+} = await supabase
+  .from('venues')
+  .update({
+    current_event_id: newEventId,
+  })
+  .eq(
+    'id',
+    assignedEvent.venue_id
   );
 
-  setError(
-    error instanceof Error
-      ? error.message
-      : 'Your show could not be created. Please try again.'
+if (currentEventError) {
+  throw currentEventError;
+} 
+
+    console.log(
+  'Tournament event after linking:',
+  linkedEvent
+);
+
+if (!linkedEvent) {
+  throw new Error(
+    'The StageVotes event was created, but the tournament link update did not match any event.'
   );
 }
+
+if (
+  linkedEvent.competition_mode !==
+  'tournament'
+) {
+  throw new Error(
+    `Tournament event was linked but competition_mode is "${linkedEvent.competition_mode}".`
+  );
+}
+
+    /*
+     * Link the tournament assignment
+     * to the newly created StageVotes event.
+     */
+    const {
+      error: tournamentLinkError,
+    } = await supabase
+      .from('tournament_events')
+      .update({
+  event_id:
+    newEventId,
+
+  status:
+    'registration_open',
+
+  expected_judges:
+    tournamentJudgingEnabled
+      ? tournamentExpectedJudges
+      : null,
+
+      results_reveal_step: 0,
+})
+      .eq(
+        'id',
+        setupTournamentEvent.id
+      )
+      .eq(
+        'host_account_id',
+        accountId
+      );
+
+    if (tournamentLinkError) {
+      throw tournamentLinkError;
+    }
+
+    const {
+  data: qualifiedEntries,
+  error: qualifiedEntriesError,
+} = await supabase
+  .from('tournament_event_entries')
+  .select(`
+    tournament_entry_id,
+    seed,
+    tournament_entries!inner (
+      singer_profile_id,
+      singer_profiles (
+        display_name,
+        stage_name
+      )
+    )
+  `)
+  .eq(
+    'tournament_event_id',
+    setupTournamentEvent.id
+  )
+  .eq(
+    'status',
+    'eligible'
+  );
+
+if (qualifiedEntriesError) {
+  throw qualifiedEntriesError;
+}
+
+const seededPerformances =
+  (qualifiedEntries || []).map(
+    (entry: any, index: number) => {
+      const tournamentEntry =
+        Array.isArray(
+          entry.tournament_entries
+        )
+          ? entry.tournament_entries[0] ||
+            null
+          : entry.tournament_entries ||
+            null;
+
+      const singerProfile =
+        Array.isArray(
+          tournamentEntry?.singer_profiles
+        )
+          ? tournamentEntry
+              .singer_profiles[0] ||
+            null
+          : tournamentEntry
+              ?.singer_profiles ||
+            null;
+
+      const singerName =
+        singerProfile?.stage_name?.trim() ||
+        singerProfile?.display_name?.trim() ||
+        'Tournament Singer';
+
+      return {
+        event_id: newEventId,
+        account_id: accountId,
+        singer_profile_id:
+          tournamentEntry?.singer_profile_id ||
+          null,
+        singer_name: singerName,
+        song_title: '',
+        artist: '',
+        queue_order:
+          entry.seed || index + 1,
+        round: 1,
+      };
+    }
+  )
+  .filter(
+    (performance) =>
+      performance.singer_profile_id
+  );
+
+if (seededPerformances.length > 0) {
+  const {
+    error: seedError,
+  } = await supabase
+    .from('performances')
+    .insert(seededPerformances);
+
+  if (seedError) {
+    throw seedError;
+  }
+}
+
+    /*
+     * Update the Host Home state immediately.
+     */
+    setTournamentEvents(
+      (current) =>
+        current.map((event) =>
+          event.id ===
+          setupTournamentEvent.id
+            ? {
+                ...event,
+                event_id:
+                  newEventId,
+                status:
+                  'registration_open',
+              }
+            : event
+        )
+    );
+
+    setSetupTournamentEvent(null);
+
+    router.push(
+      `/host/${newEventId}`
+    );
+  } catch (error: any) {
+    console.error(
+      'Unable to launch assigned tournament:',
+      error
+    );
+
+    alert(
+      error?.message ||
+      error?.details ||
+      'Unable to launch this tournament event.'
+    );
+  } finally {
+    setLaunchingTournament(false);
+  }
+}
+
+async function launchRecurringShow(
+  show: RecurringShow
+) {
+  try {
+    const venue =
+      getRelation(show.venues);
+
+    if (!venue) {
+      alert(
+        'This recurring show does not have a venue assigned.'
+      );
+      return;
+    }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const {
+      data: accountUser,
+      error: accountUserError,
+    } = await supabase
+      .from('account_users')
+      .select('account_id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (
+      accountUserError ||
+      !accountUser?.account_id
+    ) {
+      throw (
+        accountUserError ||
+        new Error(
+          'No StageVotes account was found.'
+        )
+      );
+    }
+
+    const accountId =
+      accountUser.account_id;
+
+    /*
+     * First make sure this recurring show
+     * does not already have an active event.
+     */
+    const {
+      data: activeEvent,
+      error: activeEventError,
+    } = await supabase
+      .from('events')
+      .select('id')
+      .eq(
+        'recurring_show_id',
+        show.id
+      )
+      .eq(
+        'account_id',
+        accountId
+      )
+      .eq(
+        'is_show_ended',
+        false
+      )
+      .eq(
+        'is_archived',
+        false
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false,
+        }
+      )
+      .limit(1)
+      .maybeSingle();
+
+    if (activeEventError) {
+      throw activeEventError;
+    }
+
+    if (activeEvent?.id) {
+      router.push(
+        `/host/${activeEvent.id}`
+      );
+      return;
+    }
+
+    /*
+     * Find the last event launched
+     * from this recurring show.
+     */
+    const {
+      data: previousEvent,
+      error: previousEventError,
+    } = await supabase
+      .from('events')
+      .select(`
+        id,
+        judging_enabled,
+        tiebreaker_category_name,
+        show_signup_qr,
+        show_voting_qr,
+        show_peoples_choice_qr
+      `)
+      .eq(
+        'recurring_show_id',
+        show.id
+      )
+      .eq(
+        'account_id',
+        accountId
+      )
+      .order(
+        'created_at',
+        {
+          ascending: false,
+        }
+      )
+      .limit(1)
+      .maybeSingle();
+
+    if (previousEventError) {
+      throw previousEventError;
+    }
+
+    /*
+     * If this is the first time this recurring
+     * show has ever run, send the host through
+     * the normal setup page.
+     */
+    if (!previousEvent) {
+      router.push(
+        `/create?recurringShow=${show.id}`
+      );
+      return;
+    }
+
+    /*
+     * Reuse judging categories from
+     * the previous show.
+     */
+    const {
+      data: categoryRows,
+      error: categoryError,
+    } = await supabase
+      .from('vote_categories')
+      .select('category_name')
+      .eq(
+        'event_id',
+        previousEvent.id
+      )
+      .order(
+        'created_at',
+        {
+          ascending: true,
+        }
+      );
+
+    if (categoryError) {
+      throw categoryError;
+    }
+
+    const categories =
+      (categoryRows || [])
+        .map(
+          (row) =>
+            row.category_name
+        )
+        .filter(Boolean);
+
+    const judgingEnabled =
+      previousEvent.judging_enabled ??
+      false;
+
+    const result =
+      await createStageVotesEvent({
+        accountId,
+        venueName:
+          venue.name,
+        name:
+          show.title,
+        judgingEnabled,
+        categories:
+          judgingEnabled
+            ? categories
+            : [],
+        tiebreakerCategory:
+          previousEvent
+            .tiebreaker_category_name ||
+          categories[0] ||
+          '',
+        showSignupQR:
+          previousEvent
+            .show_signup_qr ??
+          true,
+        showVotingQR:
+          previousEvent
+            .show_voting_qr ??
+          judgingEnabled,
+        showPeoplesChoiceQR:
+          previousEvent
+            .show_peoples_choice_qr ??
+          true,
+      });
+
+    const newEventId =
+      result.eventId;
+
+    /*
+     * Mark the new event as belonging to
+     * this recurring show and venue.
+     */
+    const {
+      error: linkError,
+    } = await supabase
+      .from('events')
+      .update({
+        recurring_show_id:
+          show.id,
+        venue_id:
+          show.venue_id,
+      })
+      .eq(
+        'id',
+        newEventId
+      )
+      .eq(
+        'account_id',
+        accountId
+      );
+
+    if (linkError) {
+      throw linkError;
+    }
+
+    const {
+  error: currentEventError,
+} = await supabase
+  .from('venues')
+  .update({
+    current_event_id:
+      newEventId,
+  })
+  .eq(
+    'id',
+    show.venue_id
+  );
+
+if (currentEventError) {
+  throw currentEventError;
+}
+
+    router.push(
+      `/host/${newEventId}`
+    );
+  } catch (error: any) {
+    console.error(
+      'Unable to launch recurring show:',
+      error
+    );
+
+    alert(
+      error?.message ||
+      'Unable to launch this show.'
+    );
+  }
+}
+
+  const nextTournamentEvent =
+    useMemo(() => {
+      return tournamentEvents.find(
+        (event) =>
+          event.status !== 'completed'
+      );
+    }, [tournamentEvents]);
+
+  if (loading) {
+
+    return (
+      <main className="sv-host-home-loading">
+        Loading your shows...
+      </main>
+    );
   }
 
-  const pageBackground =
-    'radial-gradient(circle at top left, rgba(56,189,248,0.14), transparent 32rem), radial-gradient(circle at top right, rgba(249,115,22,0.13), transparent 32rem), #07111f';
-
-  const cardStyle:
-    React.CSSProperties = {
-    padding: 22,
-    borderRadius: 24,
-    border:
-      '1px solid rgba(56,189,248,0.18)',
-    background:
-      'linear-gradient(145deg, rgba(18,31,56,0.94), rgba(12,23,43,0.96))',
-    boxShadow:
-      '0 24px 60px rgba(0,0,0,0.2)',
-  };
-
-  const inputStyle:
-    React.CSSProperties = {
-    width: '100%',
-    padding: '14px 15px',
-    color: '#f8fafc',
-    fontSize: 15,
-    outline: 'none',
-    borderRadius: 14,
-    border:
-      '1px solid rgba(148,163,184,0.2)',
-    background:
-      'rgba(2,8,23,0.55)',
-  };
-
-  const labelStyle:
-    React.CSSProperties = {
-    display: 'block',
-    marginBottom: 8,
-    color: '#cbd5e1',
-    fontSize: 13,
-    fontWeight: 800,
-  };
+  const activeTournamentEvents =
+  tournamentEvents.filter(
+    (event) =>
+      event.status !== 'completed'
+  );
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        padding: '28px 16px 80px',
-        color: '#f8fafc',
-        background: pageBackground,
-      }}
-    >
-      <div
-        style={{
-          width: 'min(1120px, 100%)',
-          margin: '0 auto',
-        }}
-      >
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent:
-              'space-between',
-            gap: 18,
-            marginBottom: 28,
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              color: '#ffffff',
-              textDecoration: 'none',
-              fontSize: 20,
-              fontWeight: 950,
-            }}
-          >
-<Image
-  src="/icon-512.png"
-  alt="StageVotes"
-  width={42}
-  height={42}
-  priority
-  style={{
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    objectFit: 'contain',
-    boxShadow: '0 8px 20px rgba(249,115,22,0.25)',
-  }}
-/>
+    <main className="sv-host-home">
+      <div className="sv-host-home-inner">
 
-            StageVotes
-          </Link>
+        <header className="sv-host-home-header">
+          <div>
+            <span className="sv-host-home-eyebrow">
+              Host Home
+            </span>
+
+            <h1>
+              {account?.name ||
+                'StageVotes'}
+            </h1>
+
+            <p>
+              Your shows, tournament
+              assignments, and upcoming
+              events in one place.
+            </p>
+          </div>
 
           <Link
-            href="/account"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 14px',
-              borderRadius: 12,
-              color: '#bae6fd',
-              textDecoration: 'none',
-              fontSize: 13,
-              fontWeight: 800,
-              border:
-                '1px solid rgba(56,189,248,0.18)',
-              background:
-                'rgba(56,189,248,0.06)',
-            }}
+            href="/create"
+            className="sv-host-home-create"
           >
-            <Settings size={16} />
-            Account Settings
+            <Plus size={17} />
+            Create One-Time Show
           </Link>
         </header>
 
-        <section
-          style={{
-            position: 'relative',
-            padding: '32px 26px',
-            marginBottom: 24,
-            overflow: 'hidden',
-            borderRadius: 28,
-            border:
-              '1px solid rgba(249,115,22,0.24)',
-            background:
-              'linear-gradient(135deg, rgba(22,39,70,0.98), rgba(38,28,53,0.98))',
-            boxShadow:
-              '0 30px 80px rgba(0,0,0,0.25)',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              pointerEvents: 'none',
-              background:
-                'radial-gradient(circle at top right, rgba(249,115,22,0.24), transparent 38%), radial-gradient(circle at bottom left, rgba(56,189,248,0.16), transparent 42%)',
-            }}
-          />
-
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 1,
-              display: 'grid',
-              gridTemplateColumns:
-                'auto minmax(0, 1fr)',
-              gap: 18,
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                display: 'grid',
-                placeItems: 'center',
-                borderRadius: 22,
-                background:
-                  'linear-gradient(135deg, #f97316, #ea580c)',
-                boxShadow:
-                  '0 18px 38px rgba(249,115,22,0.28)',
-              }}
-            >
-              <Mic2 size={31} />
-            </div>
-
-            <div>
-              <div
-                style={{
-                  color: '#38bdf8',
-                  fontSize: 11,
-                  fontWeight: 950,
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Host setup
-              </div>
-
-              <h1
-                style={{
-                  margin: '5px 0 7px',
-                  fontSize:
-                    'clamp(2rem, 6vw, 3.5rem)',
-                  lineHeight: 1,
-                  letterSpacing: '-0.05em',
-                }}
-              >
-                Create Tonight&apos;s Show
-              </h1>
-
-              <p
-                style={{
-                  maxWidth: 650,
-                  margin: 0,
-                  color: '#cbd5e1',
-                  fontSize: 15,
-                  lineHeight: 1.6,
-                }}
-              >
-                Set up your show, judging,
-                and audience experience in
-                just a few minutes.
-              </p>
-            </div>
+        {message && (
+          <div className="sv-host-home-message">
+            {message}
           </div>
-        </section>
+        )}
 
-        {billingMessage && (
-          <section
-            style={{
-              ...cardStyle,
-              marginBottom: 20,
-              border:
-                '1px solid rgba(249,115,22,0.35)',
-              background:
-                'rgba(249,115,22,0.08)',
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 19,
-              }}
-            >
-              Subscription Required
-            </h2>
+        {nextTournamentEvent && (
+          <section className="sv-host-home-featured">
+            <div className="sv-host-home-featured-icon">
+              <Trophy size={26} />
+            </div>
 
-            <p
-              style={{
-                color: '#fdba74',
-                lineHeight: 1.5,
-              }}
-            >
-              {billingMessage}
-            </p>
+            <div className="sv-host-home-featured-copy">
+              <span>
+                Upcoming Tournament Event
+              </span>
 
-            <Link href="/account">
-              <button
-                type="button"
-                style={{
-                  padding: '11px 15px',
-                  border: 0,
-                  borderRadius: 12,
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  fontWeight: 900,
-                  background: '#f97316',
-                }}
-              >
-                Manage Subscription
-              </button>
-            </Link>
+              <h2>
+                {nextTournamentEvent.name}
+              </h2>
+
+              <p>
+                {getRelation(
+                  nextTournamentEvent
+                    .tournaments
+                )?.name ||
+                  'Tournament Event'}
+              </p>
+
+              <div className="sv-host-home-meta">
+                {nextTournamentEvent.starts_at && (
+                  <span>
+                    <CalendarDays
+                      size={15}
+                    />
+
+                    {new Date(
+                      nextTournamentEvent
+                        .starts_at
+                    ).toLocaleString([], {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
+                  </span>
+                )}
+
+                <span>
+                  <MapPin size={15} />
+
+                  {getRelation(
+                    nextTournamentEvent
+                      .venues
+                  )?.name ||
+                    'Venue not assigned'}
+                </span>
+              </div>
+            </div>
+
+            <button
+  type="button"
+  onClick={() => {
+    if (
+      nextTournamentEvent.event_id
+    ) {
+      router.push(
+        `/host/${nextTournamentEvent.event_id}`
+      );
+
+      return;
+    }
+
+    setSetupTournamentEvent(
+      nextTournamentEvent
+    );
+  }}
+>
+  {nextTournamentEvent.event_id
+    ? 'Open Host Dashboard'
+    : 'Set Up Qualifier'}
+</button>
           </section>
         )}
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns:
-              'minmax(0, 1.4fr) minmax(300px, 0.75fr)',
-            gap: 20,
-            alignItems: 'start',
-          }}
-          className="sv-create-layout"
-        >
-          <div
-            style={{
-              display: 'grid',
-              gap: 20,
-            }}
-          >
-            <section style={cardStyle}>
-              <SectionHeading
-                icon={Sparkles}
-                eyebrow="Show details"
-                title="Set the stage"
-                description="Give tonight’s event a name and confirm where it is happening."
-              />
+        <section className="sv-host-home-section">
+          <div className="sv-host-home-section-heading">
+            <div>
+              <span>
+                Regular Schedule
+              </span>
 
-              <div
-  className="sv-show-details-grid"
-  style={{
-    display: 'grid',
-    gridTemplateColumns:
-      'repeat(2, minmax(0, 1fr))',
-    gap: 17,
-    marginTop: 22,
-  }}
->
-                <div>
-                  <label
-                    htmlFor="show-name"
-                    style={labelStyle}
-                  >
-                    Show name
-                  </label>
+              <h2>
+                Recurring Shows
+              </h2>
+            </div>
 
-                  <div
-                    style={{
-                      position: 'relative',
-                    }}
-                  >
-                    <Mic2
-                      size={18}
-                      style={{
-                        position: 'absolute',
-                        top: 15,
-                        left: 14,
-                        color: '#38bdf8',
-                      }}
-                    />
+            <strong>
+              {recurringShows.length}
+            </strong>
+          </div>
 
-                    <input
-                      id="show-name"
-                      value={name}
-                      onChange={(event) =>
-                        setName(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Friday Night Karaoke"
-                      style={{
-                        ...inputStyle,
-                        paddingLeft: 44,
-                      }}
-                    />
-                  </div>
-                </div>
+          {recurringShows.length > 0 ? (
+            <div className="sv-host-home-grid">
+              {recurringShows.map(
+                (show) => {
+                  const venue =
+                    getRelation(
+                      show.venues
+                    );
 
-                <div>
-                  <label
-                    htmlFor="venue"
-                    style={labelStyle}
-                  >
-                    Venue
-                  </label>
-
-                  <div
-                    style={{
-                      position: 'relative',
-                    }}
-                  >
-                    <MapPin
-                      size={18}
-                      style={{
-                        position: 'absolute',
-                        top: 15,
-                        left: 14,
-                        color: '#38bdf8',
-                      }}
-                    />
-
-                    <input
-                      id="venue"
-                      value={venue}
-                      onChange={(event) =>
-                        setVenue(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Venue name"
-                      style={{
-                        ...inputStyle,
-                        paddingLeft: 44,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section style={cardStyle}>
-  <SectionHeading
-    icon={Award}
-    eyebrow="Event format"
-    title="Will this event include judging?"
-    description="Turn judging on for scored competitions, or leave it off for regular karaoke."
-  />
-
-  <div style={{ marginTop: 22 }}>
-    <AudienceToggle
-      icon={Trophy}
-      title="Judged Event"
-      description={
-        judgingEnabled
-          ? 'Judges will score singers using categories.'
-          : 'No judges or category scores will be used.'
-      }
-      checked={judgingEnabled}
-      onChange={(checked) => {
-        setJudgingEnabled(checked);
-
-        if (!checked) {
-          setShowVotingQR(false);
-        } else {
-          setShowVotingQR(true);
-        }
-      }}
-    />
-  </div>
-</section>
-
-
-{judgingEnabled && (
-            <section style={cardStyle}>
-              <SectionHeading
-                icon={Award}
-                eyebrow="Judging"
-                title="Choose scoring categories"
-                description="Judges will score each singer using these categories."
-              />
-
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 11,
-                  marginTop: 22,
-                }}
-              >
-                {categories.map(
-                  (category, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns:
-                          'minmax(0, 1fr) auto',
-                        gap: 9,
-                      }}
+                  return (
+                    <article
+                      key={show.id}
+                      className="sv-host-home-card"
                     >
-                      <input
-                        value={category}
-                        onChange={(event) =>
-                          updateCategory(
-                            index,
-                            event.target.value
-                          )
-                        }
-                        placeholder={`Category ${index + 1}`}
-                        style={inputStyle}
-                      />
+                      <div className="sv-host-home-card-icon">
+                        <Mic2 size={22} />
+                      </div>
+
+                      <div>
+                        <span className="sv-host-home-card-type">
+                          {dayNames[
+                            show.day_of_week
+                          ] ||
+                            'Recurring Show'}
+                        </span>
+
+                        <h3>
+                          {show.title}
+                        </h3>
+
+                        <p>
+                          {formatTime(
+                            show.start_time
+                          )}
+
+                          {show.end_time
+                            ? ` – ${formatTime(
+                                show.end_time
+                              )}`
+                            : ''}
+                        </p>
+
+                        <div className="sv-host-home-card-venue">
+                          <MapPin
+                            size={14}
+                          />
+
+                          {venue?.name ||
+                            'Venue'}
+                        </div>
+                      </div>
+
+                      <button
+  type="button"
+  onClick={() =>
+    launchRecurringShow(show)
+  }
+>
+  Start Show
+</button>
+                    </article>
+                  );
+                }
+              )}
+            </div>
+          ) : (
+            <div className="sv-host-home-empty">
+              No recurring shows are
+              configured yet.
+            </div>
+          )}
+        </section>
+
+        <section className="sv-host-home-section">
+          <div className="sv-host-home-section-heading">
+            <div>
+              <span>
+                Championships
+              </span>
+
+              <h2>
+                Tournament Assignments
+              </h2>
+            </div>
+
+            <strong>
+              {activeTournamentEvents.length}
+            </strong>
+          </div>
+
+          {activeTournamentEvents.length > 0 ? (
+            <div className="sv-host-home-grid">
+              {activeTournamentEvents.map(
+                (event) => {
+                  const venue =
+                    getRelation(
+                      event.venues
+                    );
+
+                  const tournament =
+                    getRelation(
+                      event.tournaments
+                    );
+
+                  const round =
+                    getRelation(
+                      event
+                        .tournament_rounds
+                    );
+
+                  return (
+                    <article
+                      key={event.id}
+                      className="sv-host-home-card sv-host-home-tournament-card"
+                    >
+                      <div className="sv-host-home-card-icon">
+                        <Trophy size={22} />
+                      </div>
+
+                      <div>
+                        <span className="sv-host-home-card-type">
+                          {round?.name ||
+                            'Tournament Event'}
+                        </span>
+
+                        <h3>
+                          {event.name}
+                        </h3>
+
+                        <p>
+                          {tournament?.name}
+                        </p>
+
+                        <div className="sv-host-home-card-venue">
+                          <MapPin
+                            size={14}
+                          />
+
+                          {venue?.name ||
+                            'Venue not assigned'}
+                        </div>
+
+                        {event.advancement_count && (
+                          <div className="sv-host-home-advance">
+                            Top{' '}
+                            {
+                              event.advancement_count
+                            }{' '}
+                            advance
+                          </div>
+                        )}
+                      </div>
 
                       <button
                         type="button"
-                        aria-label="Remove category"
-                        disabled={
-                          categories.length === 1
-                        }
-                        onClick={() =>
-                          removeCategory(index)
-                        }
-                        style={{
-                          width: 48,
-                          borderRadius: 14,
-                          border:
-                            '1px solid rgba(239,68,68,0.18)',
-                          color:
-                            categories.length ===
-                            1
-                              ? '#475569'
-                              : '#fca5a5',
-                          cursor:
-                            categories.length ===
-                            1
-                              ? 'not-allowed'
-                              : 'pointer',
-                          background:
-                            'rgba(239,68,68,0.06)',
-                        }}
+                        onClick={() => {
+  if (event.event_id) {
+    router.push(
+      `/host/${event.event_id}`
+    );
+
+    return;
+  }
+
+  setSetupTournamentEvent(event);
+
+setTournamentExpectedJudges(
+  event.expected_judges || 3
+);
+}}
                       >
-                        <Trash2 size={18} />
+                        {event.event_id
+                          ? 'Open Host Dashboard'
+                          : 'Set Up Qualifier'}
                       </button>
-                    </div>
-                  )
-                )}
-              </div>
+                    </article>
+                  );
+                }
+              )}
+            </div>
+          ) : (
+            <div className="sv-host-home-empty">
+              No tournament events are
+              assigned to this account.
+            </div>
+          )}
+        </section>
+      </div>
 
-              <button
-                type="button"
-                onClick={addCategory}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  marginTop: 12,
-                  padding: 13,
-                  borderRadius: 14,
-                  color: '#7dd3fc',
-                  cursor: 'pointer',
-                  fontWeight: 900,
-                  border:
-                    '1px dashed rgba(56,189,248,0.35)',
-                  background:
-                    'rgba(56,189,248,0.06)',
-                }}
-              >
-                <Plus size={18} />
-                Add Category
-              </button>
+    {setupTournamentEvent && (
+  <div
+    className="sv-host-home-modal-backdrop"
+    onClick={() =>
+      setSetupTournamentEvent(null)
+    }
+  >
+    <div
+      className="sv-host-home-modal"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+    >
+      <span className="sv-host-home-modal-eyebrow">
+        Tournament Setup
+      </span>
 
-              <div
-                style={{
-                  marginTop: 22,
-                  paddingTop: 20,
-                  borderTop:
-                    '1px solid rgba(148,163,184,0.12)',
-                }}
-              >
-                <label
-                  htmlFor="tiebreaker"
-                  style={labelStyle}
-                >
-                  Tiebreaker category
-                </label>
+      <h2>
+        {setupTournamentEvent.name}
+      </h2>
 
-                <select
-                  id="tiebreaker"
-                  value={tiebreakerCategory}
-                  onChange={(event) =>
-                    setTiebreakerCategory(
-                      event.target.value
-                    )
-                  }
-                  style={{
-                    ...inputStyle,
-                    appearance: 'auto',
-                  }}
-                >
-                  {validCategories.map(
-                    (category) => (
-                      <option
-                        key={category}
-                        value={category}
-                      >
-                        {category}
-                      </option>
-                    )
-                  )}
-                </select>
-              </div>
-              </section>
-)}
+      <p>
+        Choose how this tournament
+        event will be judged before
+        launching the Host Dashboard.
+      </p>
 
-            <section style={cardStyle}>
-              <SectionHeading
-                icon={Users}
-                eyebrow="Audience experience"
-                title="Choose what guests can access"
-                description="These options control the QR codes shown on the live display."
-              />
+      <div className="sv-host-home-modal-summary">
+        <strong>
+          Top{' '}
+          {setupTournamentEvent
+            .advancement_count || '—'}{' '}
+          advance
+        </strong>
+      </div>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 11,
-                  marginTop: 22,
-                }}
-              >
-                <AudienceToggle
-                  icon={QrCode}
-                  title="Singer Signup"
-                  description="Let singers join the rotation from their phones."
-                  checked={showSignupQR}
-                  onChange={setShowSignupQR}
-                />
+      <label className="sv-host-home-toggle-row">
+        <div>
+          <strong>
+            Judged Competition
+          </strong>
 
-                {judgingEnabled && (
-  <AudienceToggle
-    icon={Award}
-    title="Judge Voting"
-    description="Show the QR code judges use to score singers."
-    checked={showVotingQR}
-    onChange={setShowVotingQR}
-  />
-)}
+          <span>
+            Judges score singers using
+            categories.
+          </span>
+        </div>
 
-                <AudienceToggle
-                  icon={Heart}
-                  title="People’s Choice"
-                  description="Let the audience vote for their favorite performer."
-                  checked={
-                    showPeoplesChoiceQR
-                  }
-                  onChange={
-                    setShowPeoplesChoiceQR
-                  }
-                />
-              </div>
-            </section>
-          </div>
+        <input
+          type="checkbox"
+          checked={
+            tournamentJudgingEnabled
+          }
+          onChange={(event) =>
+            setTournamentJudgingEnabled(
+              event.target.checked
+            )
+          }
+        />
+      </label>
 
-          <aside
-            style={{
-              position: 'sticky',
-              top: 20,
-              display: 'grid',
-              gap: 16,
-            }}
-          >
-            <section
-  style={{
-    ...cardStyle,
-    padding: 20,
-  }}
->
-  <SectionHeading
-    icon={QrCode}
-    eyebrow="Live preview"
-    title="What guests will see"
-    description="This preview updates as you change the show settings."
-  />
+      {tournamentJudgingEnabled && (
+        <div className="sv-host-home-modal-section">
+          
+        <div className="sv-tournament-judge-confirm">
+  <label>
+    Judges scoring tonight
+  </label>
+
+  <p>
+    The tournament director planned for{' '}
+    <strong>
+      {setupTournamentEvent.expected_judges || 3}
+    </strong>{' '}
+    judges. Confirm the number actually
+    scoring this event.
+  </p>
 
   <div
     style={{
-      display: 'grid',
-      placeItems: 'center',
-      marginTop: 24,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 18,
     }}
   >
-    <div
+    <button
+      type="button"
+      onClick={() =>
+        setTournamentExpectedJudges(
+          (current) =>
+            Math.max(1, current - 1)
+        )
+      }
+    >
+      −
+    </button>
+
+    <strong
       style={{
-        width: 'min(300px, 100%)',
-        padding: 10,
-        borderRadius: 34,
-        border:
-          '1px solid rgba(148,163,184,0.2)',
-        background:
-          'linear-gradient(145deg, #020617, #0f172a)',
-        boxShadow:
-          '0 30px 70px rgba(0,0,0,0.38)',
+        minWidth: 40,
+        textAlign: 'center',
+        fontSize: 24,
       }}
     >
-      <div
-        style={{
-          width: 92,
-          height: 22,
-          margin: '0 auto 10px',
-          borderRadius: 999,
-          background: '#000000',
-        }}
-      />
+      {tournamentExpectedJudges}
+    </strong>
 
-      <div
-        style={{
-          minHeight: 520,
-          padding: '22px 16px',
-          overflow: 'hidden',
-          borderRadius: 26,
-          color: '#f8fafc',
-          background:
-            'radial-gradient(circle at top right, rgba(249,115,22,0.18), transparent 40%), radial-gradient(circle at bottom left, rgba(56,189,248,0.14), transparent 44%), #07111f',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 9,
-            marginBottom: 22,
-          }}
-        >
-          <Image
-            src="/icon-512.png"
-            alt="StageVotes"
-            width={34}
-            height={34}
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              objectFit: 'contain',
-            }}
-          />
+    <button
+      type="button"
+      onClick={() =>
+        setTournamentExpectedJudges(
+          (current) =>
+            Math.min(20, current + 1)
+        )
+      }
+    >
+      +
+    </button>
+  </div>
+</div>
+          
+          <label>
+            Judging categories
+          </label>
 
-          <strong
-            style={{
-              fontSize: 15,
-            }}
-          >
-            StageVotes
-          </strong>
-        </div>
-
-        <div
-          style={{
-            marginBottom: 22,
-          }}
-        >
-          <div
-            style={{
-              color: '#38bdf8',
-              fontSize: 10,
-              fontWeight: 950,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-            }}
-          >
-            {judgingEnabled
-              ? 'Judged competition'
-              : 'Open karaoke'}
-          </div>
-
-          <h3
-            style={{
-              margin: '7px 0 5px',
-              fontSize: 26,
-              lineHeight: 1.05,
-              letterSpacing: '-0.04em',
-            }}
-          >
-            {name.trim() ||
-              'Tonight’s Show'}
-          </h3>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              color: '#94a3b8',
-              fontSize: 13,
-            }}
-          >
-            <MapPin size={14} />
-
-            {venue.trim() ||
-              'Choose a venue'}
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gap: 10,
-          }}
-        >
-          {showSignupQR && (
-            <PreviewAction
-              icon={Mic2}
-              title="Join the Queue"
-              description="Choose a song and sign up"
-              accent="#38bdf8"
-            />
-          )}
-
-          {judgingEnabled &&
-            showVotingQR && (
-              <PreviewAction
-                icon={Award}
-                title="Judge Voting"
-                description={`${validCategories.length} scoring ${
-                  validCategories.length === 1
-                    ? 'category'
-                    : 'categories'
-                }`}
-                accent="#f97316"
+          {tournamentCategories.map(
+            (category, index) => (
+              <input
+                key={index}
+                value={category}
+                onChange={(event) =>
+                  setTournamentCategories(
+                    (current) =>
+                      current.map(
+                        (
+                          item,
+                          itemIndex
+                        ) =>
+                          itemIndex ===
+                          index
+                            ? event.target
+                                .value
+                            : item
+                      )
+                  )
+                }
               />
-            )}
-
-          {showPeoplesChoiceQR && (
-            <PreviewAction
-              icon={Heart}
-              title="People’s Choice"
-              description="Vote for your favorite singer"
-              accent="#ec4899"
-            />
+            )
           )}
 
-          <PreviewAction
-            icon={Trophy}
-            title="Leaderboard"
-            description={
-              judgingEnabled
-                ? 'Follow scores and rankings'
-                : 'See tonight’s favorites'
-            }
-            accent="#facc15"
-          />
+          <label>
+            Tiebreaker category
+
+            <select
+              value={
+                tournamentTiebreaker
+              }
+              onChange={(event) =>
+                setTournamentTiebreaker(
+                  event.target.value
+                )
+              }
+            >
+              {tournamentCategories
+                .filter(Boolean)
+                .map((category) => (
+                  <option
+                    key={category}
+                    value={category}
+                  >
+                    {category}
+                  </option>
+                ))}
+            </select>
+          </label>
         </div>
+      )}
 
-        <div
-          style={{
-            marginTop: 22,
-            padding: 14,
-            borderRadius: 16,
-            border:
-              '1px solid rgba(148,163,184,0.12)',
-            background:
-              'rgba(255,255,255,0.035)',
-          }}
-        >
-          <div
-            style={{
-              color: '#94a3b8',
-              fontSize: 10,
-              fontWeight: 900,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Tonight’s format
-          </div>
-
-          <strong
-            style={{
-              display: 'block',
-              marginTop: 5,
-              fontSize: 14,
-            }}
-          >
-            {judgingEnabled
-              ? `${validCategories.length} judged ${
-                  validCategories.length === 1
-                    ? 'category'
-                    : 'categories'
-                }`
-              : 'No judges or scores'}
+      <label className="sv-host-home-toggle-row">
+        <div>
+          <strong>
+            People’s Choice
           </strong>
+
+          <span>
+            Let the audience vote for
+            their favorite singer.
+          </span>
         </div>
+
+        <input
+          type="checkbox"
+          checked={
+            tournamentPeoplesChoice
+          }
+          onChange={(event) =>
+            setTournamentPeoplesChoice(
+              event.target.checked
+            )
+          }
+        />
+      </label>
+
+      <div className="sv-host-home-modal-actions">
+        <button
+          type="button"
+          onClick={() =>
+            setSetupTournamentEvent(null)
+          }
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          disabled={
+            launchingTournament
+          }
+          onClick={() =>
+            launchAssignedTournament()
+          }
+        >
+          {launchingTournament
+            ? 'Launching...'
+            : 'Launch Qualifier →'}
+        </button>
       </div>
     </div>
   </div>
+)}
 
-  <button
-    type="button"
-    onClick={createEvent}
-    style={{
-      width: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 9,
-      marginTop: 20,
-      padding: '15px 16px',
-      border: 0,
-      borderRadius: 16,
-      color: '#ffffff',
-      cursor: 'pointer',
-      fontSize: 15,
-      fontWeight: 950,
-      background:
-        'linear-gradient(135deg, #f97316, #ea580c)',
-      boxShadow:
-        '0 16px 35px rgba(249,115,22,0.25)',
-    }}
-  >
-    <Mic2 size={19} />
-    Create Tonight&apos;s Show
-    <ChevronRight size={18} />
-  </button>
-
-  {error && (
-    <p
-      style={{
-        margin: '14px 0 0',
-        padding: 12,
-        color: '#fecaca',
-        fontSize: 13,
-        lineHeight: 1.45,
-        borderRadius: 12,
-        border:
-          '1px solid rgba(239,68,68,0.2)',
-        background:
-          'rgba(239,68,68,0.08)',
-      }}
-    >
-      {error}
-    </p>
-  )}
-</section>
-
-            {createdId && (
-              <section
-                style={{
-                  ...cardStyle,
-                  border:
-                    '1px solid rgba(34,197,94,0.3)',
-                  background:
-                    'linear-gradient(145deg, rgba(20,83,45,0.28), rgba(12,23,43,0.96))',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 9,
-                    color: '#86efac',
-                    fontWeight: 950,
-                  }}
-                >
-                  <Check size={20} />
-                  Show created
-                </div>
-
-                <p
-                  style={{
-                    color: '#cbd5e1',
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Your show is ready. Open
-                  the host dashboard to begin.
-                </p>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 9,
-                  }}
-                >
-                  <Link
-                    href={`/host/${createdId}`}
-                    style={{
-                      textDecoration: 'none',
-                    }}
-                  >
-                    <button
-                      type="button"
-                      style={{
-                        width: '100%',
-                        padding: 13,
-                        border: 0,
-                        borderRadius: 13,
-                        color: '#ffffff',
-                        cursor: 'pointer',
-                        fontWeight: 900,
-                        background:
-                          '#22c55e',
-                      }}
-                    >
-                      Open Host Dashboard
-                    </button>
-                  </Link>
-
-                  <Link
-                    href={`/vote/${createdId}`}
-                    style={{
-                      color: '#bae6fd',
-                      fontSize: 13,
-                      fontWeight: 800,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Open Audience Voting →
-                  </Link>
-
-                  <Link
-                    href={`/leaderboard/${createdId}`}
-                    style={{
-                      color: '#bae6fd',
-                      fontSize: 13,
-                      fontWeight: 800,
-                      textDecoration: 'none',
-                    }}
-                  >
-                    Open Leaderboard →
-                  </Link>
-                </div>
-              </section>
-            )}
-          </aside>
-        </div>
-      </div>
-
-      <style jsx global>{`
-  @media (max-width: 820px) {
-    .sv-create-layout {
-      grid-template-columns: 1fr !important;
-    }
-
-    .sv-create-layout aside {
-      position: static !important;
-    }
-
-    .sv-show-details-grid {
-      grid-template-columns: 1fr !important;
-    }
-  }
-`}</style>
     </main>
-  );
-}
-
-type SectionHeadingProps = {
-  icon: React.ElementType;
-  eyebrow: string;
-  title: string;
-  description: string;
-};
-
-function SectionHeading({
-  icon: Icon,
-  eyebrow,
-  title,
-  description,
-}: SectionHeadingProps) {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns:
-          'auto minmax(0, 1fr)',
-        gap: 13,
-        alignItems: 'start',
-      }}
-    >
-      <span
-        style={{
-          width: 42,
-          height: 42,
-          display: 'grid',
-          placeItems: 'center',
-          borderRadius: 14,
-          color: '#38bdf8',
-          background:
-            'rgba(56,189,248,0.1)',
-          border:
-            '1px solid rgba(56,189,248,0.16)',
-        }}
-      >
-        <Icon size={20} />
-      </span>
-
-      <div>
-        <div
-          style={{
-            color: '#38bdf8',
-            fontSize: 10,
-            fontWeight: 950,
-            letterSpacing: '0.14em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {eyebrow}
-        </div>
-
-        <h2
-          style={{
-            margin: '4px 0 5px',
-            fontSize: 20,
-          }}
-        >
-          {title}
-        </h2>
-
-        <p
-          style={{
-            margin: 0,
-            color: '#94a3b8',
-            fontSize: 13,
-            lineHeight: 1.5,
-          }}
-        >
-          {description}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-type PreviewActionProps = {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  accent: string;
-};
-
-function PreviewAction({
-  icon: Icon,
-  title,
-  description,
-  accent,
-}: PreviewActionProps) {
-  return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns:
-          'auto minmax(0, 1fr) auto',
-        alignItems: 'center',
-        gap: 11,
-        padding: 13,
-        borderRadius: 16,
-        border:
-          '1px solid rgba(148,163,184,0.12)',
-        background:
-          'rgba(255,255,255,0.04)',
-      }}
-    >
-      <span
-        style={{
-          width: 38,
-          height: 38,
-          display: 'grid',
-          placeItems: 'center',
-          borderRadius: 13,
-          color: accent,
-          background: `${accent}18`,
-          border: `1px solid ${accent}35`,
-        }}
-      >
-        <Icon size={18} />
-      </span>
-
-      <span
-        style={{
-          minWidth: 0,
-        }}
-      >
-        <strong
-          style={{
-            display: 'block',
-            fontSize: 13,
-          }}
-        >
-          {title}
-        </strong>
-
-        <span
-          style={{
-            display: 'block',
-            marginTop: 2,
-            color: '#94a3b8',
-            fontSize: 11,
-            lineHeight: 1.35,
-          }}
-        >
-          {description}
-        </span>
-      </span>
-
-      <ChevronRight
-        size={16}
-        color="#64748b"
-      />
-    </div>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent:
-          'space-between',
-        alignItems: 'center',
-        gap: 12,
-        padding: '11px 0',
-        borderBottom:
-          '1px solid rgba(148,163,184,0.1)',
-      }}
-    >
-      <span
-        style={{
-          color: '#94a3b8',
-          fontSize: 13,
-        }}
-      >
-        {label}
-      </span>
-
-      <strong
-        style={{
-          maxWidth: '58%',
-          color: '#f8fafc',
-          fontSize: 13,
-          textAlign: 'right',
-        }}
-      >
-        {value}
-      </strong>
-    </div>
   );
 }

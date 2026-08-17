@@ -54,7 +54,7 @@ const navigationItems =
       className="sv-singer-navigation"
       aria-label="Singer navigation"
     >
-      {navigationItems.map((item) => {
+      {navigationItems.map((item, index) => {
         const Icon = item.icon;
 
         const active =
@@ -70,7 +70,7 @@ const navigationItems =
 
         return (
           <Link
-            key={item.href}
+            key={`${item.href}-${index}`}
             href={item.href}
             className={[
               'sv-singer-navigation-item',

@@ -14,7 +14,7 @@ export default function ExploreGrid() {
       icon: '📖',
       title: 'Song History',
       description: 'See every song you have performed.',
-      href: '/singer-history',
+      href: '/song-history',
     },
    {
   icon: '📍',

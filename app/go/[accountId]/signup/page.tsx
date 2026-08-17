@@ -15,20 +15,37 @@ export default function StaticSignupRedirect() {
   async function loadCurrentEvent() {
     const accountId = params.accountId as string;
 
-    const { data: event } = await supabase
-      .from('events')
-      .select('id')
-      .eq('account_id', accountId)
-      .eq('is_show_ended', false)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+  const { data: venue, error } = await supabase
+  .from('venues')
+  .select('current_event_id')
+  .eq('account_id', accountId)
+  .not('current_event_id', 'is', null)
+  .limit(1)
+  .maybeSingle();
 
-    if (!event) {
-      return;
-    }
+if (error) {
+  console.error(
+    'Unable to resolve static signup event:',
+    error
+  );
+  return;
+}
 
-    router.replace(`/signup/${event.id}`);
+if (!venue?.current_event_id) {
+  return;
+}
+
+router.replace(
+  `/signup/${venue.current_event_id}`
+);
+
+   if (!venue?.current_event_id) {
+  return;
+}
+
+   router.replace(
+  `/signup/${venue.current_event_id}`
+);
   }
 
   return (

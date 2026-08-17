@@ -23,6 +23,8 @@ import SVHostQueue, {
 } from '@/components/dashboard/SVHostQueue';
 import SVHostIQ from '@/components/dashboard/SVHostIQ';
 import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
+import SVEmptyQueueState from '@/components/dashboard/SVEmptyQueueState';
+import SVFinishedQueueState from '@/components/dashboard/SVFinishedQueueState';
 
 import {
   DndContext,
@@ -61,6 +63,11 @@ export default function HostPage() {
 
 const [pickerLoading, setPickerLoading] =
   useState(false);
+
+const [
+  showEditSongPicker,
+  setShowEditSongPicker,
+] = useState(false);
 
 const [
   showManualSongFields,
@@ -113,6 +120,11 @@ const [welcomeSingerAdded, setWelcomeSingerAdded] =
 
 const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
   useState(false);
+
+ const [
+  expectedTournamentJudges,
+  setExpectedTournamentJudges,
+] = useState<number | null>(null);
   
  const voteUrl =
   typeof window !== 'undefined'
@@ -194,7 +206,17 @@ useEffect(() => {
   welcomeSingerAdded,
 ]);
 
-  useEffect(() => {
+ useEffect(() => {
+  if (
+    (event as any)?.tournament_event_id
+  ) {
+    loadTournamentJudgeCount();
+  }
+}, [
+  (event as any)?.tournament_event_id,
+]); 
+
+useEffect(() => {
 
     async function checkAuth() {
   const { data } = await supabase.auth.getUser();
@@ -290,7 +312,8 @@ const interval = setInterval(() => {
   loadPeoplesChoice(),
   loadVotes(),
   loadCategories(),
-loadCheckins()
+  loadCheckins(),
+  loadTournamentJudgeCount(),
 ]);
   }
 
@@ -593,11 +616,20 @@ if (processingError) {
     'Completed event processing:',
     processingResult
   );
+
 }
 
   await loadAll();
 
-  router.push(`/leaderboard/${eventId}`);
+const isTournament =
+  (event as any)?.competition_mode ===
+  'tournament';
+
+router.push(
+  isTournament
+    ? `/tournament-results/${eventId}`
+    : `/leaderboard/${eventId}`
+);
 }
   
  async function loadPerformances() {
@@ -893,13 +925,49 @@ async function newShow() {
   window.location.href = '/';
 }
   
-  async function startShow() {
-  const firstSinger = rotatedQueue.find((p) => p.status !== 'completed');
+function isTournamentPerformanceReady(
+  performance: any
+) {
+  const isTournament =
+    (event as any)?.competition_mode ===
+    'tournament';
 
-  if (!firstSinger) {
-    alert('No singers in the queue yet.');
-    return;
+  if (!isTournament) {
+    return true;
   }
+
+  return Boolean(
+    performance.checked_in_at &&
+    performance.song_title?.trim()
+  );
+}
+
+  async function startShow() {
+  const firstSinger =
+  rotatedQueue.find(
+    (performance) =>
+      performance.status !==
+        'completed' &&
+      performance.status !==
+        'skipped' &&
+      isTournamentPerformanceReady(
+        performance
+      )
+  );
+
+ if (!firstSinger) {
+  const isTournament =
+    (event as any)?.competition_mode ===
+    'tournament';
+
+  alert(
+    isTournament
+      ? 'No competitors are ready yet. Check that at least one singer is checked in and has selected a song.'
+      : 'No singers in the queue yet.'
+  );
+
+  return;
+}
 
   const { error } = await supabase
     .from('events')
@@ -1076,13 +1144,102 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
 
   await loadAll();
 }
-  async function nextSinger() {
+
+async function checkInSinger(
+  performanceId: string
+) {
+  const accountId =
+    await getMyAccountId();
+
+  if (!accountId) return;
+
+  const { error } = await supabase
+    .from('performances')
+    .update({
+      checked_in_at:
+        new Date().toISOString(),
+      checked_in_by: 'host',
+    })
+    .eq(
+      'id',
+      performanceId
+    )
+    .eq(
+      'account_id',
+      accountId
+    );
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await loadAll();
+}
+
+async function loadTournamentJudgeCount() {
+  const tournamentEventId =
+    (event as any)?.tournament_event_id;
+
+  if (!tournamentEventId) {
+    setExpectedTournamentJudges(null);
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('tournament_events')
+    .select('expected_judges')
+    .eq('id', tournamentEventId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      'Unable to load tournament judge count:',
+      error
+    );
+    return;
+  }
+
+  setExpectedTournamentJudges(
+    data?.expected_judges || null
+  );
+}
+
+async function nextSinger() {
   if (advancingSinger) return;
 
   setAdvancingSinger(true);
 
   try {
     const completedId = event?.current_performance_id;
+
+    const isTournament =
+  (event as any)?.competition_mode ===
+  'tournament';
+
+if (
+  isTournament &&
+  completedId &&
+  expectedTournamentJudges &&
+  !currentScoringComplete
+) {
+  const remaining =
+    expectedTournamentJudges -
+    currentJudgeBallotCount;
+
+  const shouldAdvance =
+    window.confirm(
+      `${current?.singer_name || 'This competitor'} has only received ${currentJudgeBallotCount} of ${expectedTournamentJudges} judge ballots. ${
+        remaining > 0
+          ? `${remaining} ${remaining === 1 ? 'judge is' : 'judges are'} still outstanding.`
+          : ''
+      }\n\nAdvance anyway?`
+    );
+
+  if (!shouldAdvance) {
+    return;
+  }
+}
 
     if (completedId) {
       const { error: completeError } =
@@ -1099,16 +1256,33 @@ async function moveSinger(performanceId: string, direction: 'up' | 'down') {
       }
     }
 
-    const next = rotatedQueue.find(
-      (p) =>
-        p.id !== completedId &&
-        p.status !== 'completed'
-    );
+    const next =
+  rotatedQueue.find(
+    (performance) =>
+      performance.id !==
+        completedId &&
+      performance.status !==
+        'completed' &&
+      performance.status !==
+        'skipped' &&
+      isTournamentPerformanceReady(
+        performance
+      )
+  );
 
     if (!next) {
-      alert('No more singers in the queue.');
-      return;
-    }
+  const isTournament =
+    (event as any)?.competition_mode ===
+    'tournament';
+
+  alert(
+    isTournament
+      ? 'No other competitors are ready. Check in the remaining singers and make sure they have selected songs.'
+      : 'No more singers in the queue.'
+  );
+
+  return;
+}
 
     const { error } = await supabase
       .from('events')
@@ -1176,6 +1350,18 @@ async function toggleQrSetting(
     });
 }, [performances]);
 
+const completedPerformanceCount = performances.filter(
+  (performance) => performance.status === 'completed'
+).length;
+
+const isBrandNewEmptyShow =
+  rotatedQueue.length === 0 &&
+  completedPerformanceCount === 0;
+
+const isFinishedEmptyShow =
+  rotatedQueue.length === 0 &&
+  completedPerformanceCount > 0;
+
 const hostQueueItems: SVHostQueueItem[] =
   rotatedQueue.map((performance, index) => {
     const isCurrent =
@@ -1183,30 +1369,70 @@ const hostQueueItems: SVHostQueueItem[] =
       event?.current_performance_id;
 
     const firstWaitingIndex =
-      rotatedQueue.findIndex(
-        (item) =>
-          item.id !==
-          event?.current_performance_id
-      );
+  rotatedQueue.findIndex(
+    (item) =>
+      item.id !==
+        event?.current_performance_id &&
+      item.status !== 'completed' &&
+      item.status !== 'skipped' &&
+      isTournamentPerformanceReady(item)
+  );
 
     const isNext =
       !isCurrent &&
       index === firstWaitingIndex;
 
-return {
-  id: performance.id,
-  singerName: performance.singer_name,
-  songTitle: performance.song_title,
-  artist: performance.artist || undefined,
-  photoUrl: performance.singer_profiles?.photo_url || null,
-  round: 1,
-  status: isCurrent
-    ? 'current'
-    : isNext
-    ? 'next'
-    : 'waiting',
-  performance,
-};
+    const needsSong =
+      !performance.song_title?.trim();
+
+    const isTournament =
+  (event as any)?.competition_mode ===
+  'tournament';
+
+    const checkedInAt =
+      (performance as any)
+        .checked_in_at || null;
+
+    const tournamentReadiness =
+      !isTournament
+        ? null
+        : checkedInAt &&
+          !needsSong
+        ? 'ready'
+        : checkedInAt
+        ? 'song_needed'
+        : 'not_checked_in';
+
+    return {
+      id: performance.id,
+      singerName:
+        performance.singer_name,
+
+      songTitle: needsSong
+        ? 'Song Needed'
+        : performance.song_title,
+
+      artist: needsSong
+        ? undefined
+        : performance.artist ||
+          undefined,
+
+      photoUrl:
+        performance.singer_profiles
+          ?.photo_url || null,
+
+      round: 1,
+
+      status: isCurrent
+        ? 'current'
+        : isNext
+        ? 'next'
+        : 'waiting',
+
+      tournamentReadiness,
+
+      performance,
+    };
   });
 
 const fairQueue = useMemo(() => {
@@ -1331,7 +1557,49 @@ if (tiebreakerVotes.length > 0) {
 const judgeBallotCount = new Set(
   votes.map((v: any) => `${v.performance_id}-${v.device_id}`)
 ).size;
+
+const currentJudgeBallotCount =
+  current
+    ? new Set(
+        votes
+          .filter(
+            (vote: any) =>
+              vote.performance_id ===
+              current.id
+          )
+          .map(
+            (vote: any) =>
+              vote.device_id
+          )
+      ).size
+    : 0;
+
+const currentScoringComplete =
+  Boolean(
+    expectedTournamentJudges &&
+    currentJudgeBallotCount >=
+      expectedTournamentJudges
+  );
   
+const currentPerformanceVotes =
+  current
+    ? votes.filter(
+        (vote: any) =>
+          vote.performance_id ===
+          current.id
+      )
+    : [];
+
+const currentAverageScore =
+  currentPerformanceVotes.length > 0
+    ? currentPerformanceVotes.reduce(
+        (sum, vote: any) =>
+          sum + Number(vote.score || 0),
+        0
+      ) /
+      currentPerformanceVotes.length
+    : null;
+
 const singerGroups = activeQueue.reduce((groups, p) => {
   const singer = p.singer_name.trim();
 
@@ -1521,6 +1789,96 @@ account?.subscription_status &&
   }
 />
 
+{(event as any)?.competition_mode ===
+  'tournament' &&
+  current &&
+  expectedTournamentJudges && (
+    <div className="sv-card sv-tournament-scoring-status">
+      <div>
+        <div className="sv-mobile-kicker">
+          Competition Scoring
+        </div>
+
+        <strong>
+          {current.singer_name}
+        </strong>
+
+        <div
+          style={{
+            marginTop: 4,
+            color: '#94a3b8',
+            fontSize: 13,
+          }}
+        >
+          Judge ballots received
+        </div>
+      </div>
+
+      <div
+        style={{
+          textAlign: 'right',
+        }}
+      >
+        <div
+  style={{
+    fontSize: 26,
+    fontWeight: 900,
+  }}
+>
+  {currentJudgeBallotCount}
+  {' / '}
+  {expectedTournamentJudges}
+</div>
+
+<div
+  style={{
+    marginTop: 4,
+    color: '#94a3b8',
+    fontSize: 13,
+  }}
+>
+  Judges submitted
+</div>
+
+{currentAverageScore !== null && (
+  <div
+    style={{
+      marginTop: 10,
+      fontSize: 16,
+      fontWeight: 800,
+    }}
+  >
+    {currentScoringComplete
+      ? 'Final Score'
+      : 'Current Average'}
+    {': '}
+    {currentAverageScore.toFixed(2)} / 5
+  </div>
+)}
+
+<div
+  style={{
+    marginTop: 6,
+    fontWeight: 800,
+  }}
+>
+  {currentScoringComplete
+    ? '✓ Scoring Complete'
+    : `Waiting for ${
+        expectedTournamentJudges -
+        currentJudgeBallotCount
+      } ${
+        expectedTournamentJudges -
+          currentJudgeBallotCount ===
+        1
+          ? 'judge'
+          : 'judges'
+      }`}
+</div>
+      </div>
+    </div>
+)}
+
 {showFirstWelcome && (
   <SVFirstShowWelcome
     onDismiss={dismissFirstWelcome}
@@ -1587,34 +1945,148 @@ account?.subscription_status &&
   <SVHostIQ items={hostIQ} />
 )}
 
-<SVHostQueue
-  items={hostQueueItems}
-  completedCount={
-    performances.filter(
-      (performance) =>
-        performance.status === 'completed'
-    ).length
-  }
-  singerView={singerView}
-  editingId={editingId}
-  editSingerName={editSingerName}
-  editSongTitle={editSongTitle}
-  editArtist={editArtist}
-  onToggleSingerView={() =>
-    setSingerView((current) => !current)
-  }
-  onEditSingerName={setEditSingerName}
-  onEditSongTitle={setEditSongTitle}
-  onEditArtist={setEditArtist}
-  onStartEdit={(item) =>
-  startEditing(item.performance)
-}
-  onSaveEdit={saveEdit}
-  onCancelEdit={cancelEditing}
-  onSkip={skipSinger}
-  onRemove={removeSinger}
-  onReorder={handleQueueReorder}
-/>
+{isBrandNewEmptyShow ? (
+  <SVEmptyQueueState
+    onAudienceAccess={() =>
+      window.open(
+        `/audience/${eventId}`,
+        '_blank'
+      )
+    }
+    onAddSinger={() =>
+      setShowSingerSignup(true)
+    }
+  />
+) : isFinishedEmptyShow ? (
+  <SVFinishedQueueState
+    onAddSinger={() =>
+      setShowSingerSignup(true)
+    }
+    onOpenAwards={() =>
+      window.open(
+        `/awards/${eventId}`,
+        '_blank'
+      )
+    }
+    onEndShow={endShow}
+  />
+) : (
+  <SVHostQueue
+    items={hostQueueItems}
+    completedCount={completedPerformanceCount}
+    singerView={singerView}
+    editingId={editingId}
+    editSingerName={editSingerName}
+    editSongTitle={editSongTitle}
+    editArtist={editArtist}
+    onToggleSingerView={() =>
+      setSingerView((current) => !current)
+    }
+    onEditSingerName={setEditSingerName}
+    onEditSongTitle={setEditSongTitle}
+    onEditArtist={setEditArtist}
+    onStartEdit={(item) =>
+      startEditing(item.performance)
+    }
+    onSaveEdit={saveEdit}
+    onCancelEdit={cancelEditing}
+    onChooseEditSong={() => {
+  setPickerSongs([]);
+  setShowEditSongPicker(true);
+}}
+    onSkip={skipSinger}
+    onRemove={removeSinger}
+    onCheckIn={checkInSinger}
+    onReorder={handleQueueReorder}
+  />
+)}
+
+
+{showEditSongPicker && (
+  <div
+    role="dialog"
+    aria-modal="true"
+    onClick={() =>
+      setShowEditSongPicker(false)
+    }
+    style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 1200,
+      display: 'grid',
+      placeItems: 'center',
+      padding: 20,
+      background:
+        'rgba(2, 6, 23, 0.78)',
+      backdropFilter: 'blur(8px)',
+    }}
+  >
+    <section
+      className="sv-card"
+      onClick={(event) =>
+        event.stopPropagation()
+      }
+      style={{
+        width: 'min(100%, 700px)',
+        maxHeight:
+          'calc(100vh - 40px)',
+        overflowY: 'auto',
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent:
+            'space-between',
+          alignItems: 'center',
+          marginBottom: 20,
+        }}
+      >
+        <div>
+          <div className="sv-mobile-kicker">
+            Competition Song
+          </div>
+
+          <h2
+            style={{
+              margin: '4px 0 0',
+            }}
+          >
+            Choose Song
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            setShowEditSongPicker(false)
+          }
+        >
+          ×
+        </button>
+      </div>
+
+      <SVSongPicker
+        songs={pickerSongs}
+        loading={pickerLoading}
+        onSearch={searchPickerSongs}
+        onSelect={(selected) => {
+          setEditSongTitle(
+            selected.title
+          );
+
+          setEditArtist(
+            selected.artist || ''
+          );
+
+          setPickerSongs([]);
+          setShowEditSongPicker(false);
+        }}
+      />
+    </section>
+  </div>
+)}
 
 <h2 style={{ color: '#38bdf8', marginTop: 24 }}>
   📊 Show Summary

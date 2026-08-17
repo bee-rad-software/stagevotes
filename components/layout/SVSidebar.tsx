@@ -55,20 +55,24 @@ const href =
 
               return (
                 <Link
-                  key={item.label}
-                  href={href}
-                  className={
-  pathname === href
-    ? 'sv-nav-item sv-nav-item-active'
-    : 'sv-nav-item'
-}
-                >
-                  <Icon size={20} strokeWidth={2.25} />
+  key={item.label}
+  href={href}
+  className={
+    pathname === href ||
+    (
+      item.label === 'Tournaments' &&
+      pathname.startsWith('/tournament-director')
+    )
+      ? 'sv-nav-item sv-nav-item-active'
+      : 'sv-nav-item'
+  }
+>
+  <Icon size={18} />
 
-                  <span className="sv-nav-label">
-                    {item.label}
-                  </span>
-                </Link>
+  <span className="sv-nav-label">
+    {item.label}
+  </span>
+</Link>
               );
             })}
           </div>

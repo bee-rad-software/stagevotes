@@ -60,6 +60,9 @@ type QueueSinger = {
   id: string;
   singer_name: string;
   song_title: string;
+  queue_order?: number | null;
+  round?: number | null;
+  status?: string | null;
 };
 
 type LeaderboardEntry = {
@@ -580,22 +583,41 @@ if (activeEventData?.current_performance_id) {
 }
 
 if (activeEventData) {
-  const { data: queueData } = await supabase
+ const { data: queueData, error: queueError } =
+  await supabase
     .from('performances')
     .select(`
       id,
       singer_name,
-      song_title
+      song_title,
+      queue_order,
+      round,
+      status
     `)
-.eq('event_id', activeEventData.id)
-.neq(
-  'id',
-  activeEventData.current_performance_id ||
-    '00000000-0000-0000-0000-000000000000'
-)
+    .eq('event_id', activeEventData.id)
+    .neq(
+      'id',
+      activeEventData.current_performance_id ||
+        '00000000-0000-0000-0000-000000000000'
+    )
+    .neq('status', 'completed')
+    .neq('status', 'skipped')
+    .order('round', { ascending: true })
+    .order('queue_order', { ascending: true })
+    .limit(3);
 
-.order('queue_order', { ascending: true })
-.limit(3);
+if (queueError) {
+  console.error(
+    'Unable to load venue live queue:',
+    queueError
+  );
+
+  setUpNext([]);
+} else {
+  setUpNext(
+    (queueData || []) as QueueSinger[]
+  );
+}
 
   setUpNext((queueData || []) as QueueSinger[]);
 }

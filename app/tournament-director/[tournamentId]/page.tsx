@@ -8,6 +8,8 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { createStageVotesEvent } from '@/lib/events/createStageVotesEvent';
+import SVShell from '@/components/ui/SVShell';
 
 type Tournament = {
   id: string;
@@ -45,6 +47,7 @@ type RoundType = TournamentRound['round_type'];
 
 type VenueOption = {
   id: string;
+  account_id: string | null;
   name: string;
   city: string | null;
   state: string | null;
@@ -65,6 +68,7 @@ type TournamentEvent = {
     | 'cancelled';
   starts_at: string | null;
   advancement_count: number | null;
+  expected_judges: number | null;
   venues:
     | {
         id: string;
@@ -153,6 +157,30 @@ function toDateTimeLocalValue(value: string) {
     .slice(0, 16);
 }
 
+function getTournamentEventStatusLabel(
+  status: TournamentEvent['status']
+) {
+  switch (status) {
+    case 'scheduled':
+      return 'Scheduled';
+
+    case 'registration_open':
+      return 'Ready';
+
+    case 'live':
+      return 'In Progress';
+
+    case 'completed':
+      return 'Completed';
+
+    case 'cancelled':
+      return 'Cancelled';
+
+    default:
+      return status;
+  }
+}
+
 export default function TournamentDirectorDetailPage() {
   const params = useParams<{
     tournamentId: string;
@@ -238,8 +266,16 @@ const [
   setEventAdvancementCount,
 ] = useState('3');
 
+const [
+  eventExpectedJudges,
+  setEventExpectedJudges,
+] = useState('3');
+
 const [savingEvent, setSavingEvent] =
   useState(false);
+
+const [editingRoundId, setEditingRoundId] =
+  useState<string | null>(null);
 
   useEffect(() => {
     if (!tournamentId) return;
@@ -345,11 +381,12 @@ const [savingEvent, setSavingEvent] =
 } = await supabase
   .from('venues')
   .select(`
-    id,
-    name,
-    city,
-    state
-  `)
+  id,
+  account_id,
+  name,
+  city,
+  state
+`)
   .order('name');
 
 if (venueError) {
@@ -380,6 +417,7 @@ const {
     status,
     starts_at,
     advancement_count,
+    expected_judges,
     venues (
       id,
       name,
@@ -578,22 +616,92 @@ if (eventEntryError) {
     setLoading(false);
   }
 
-  async function handleAddRound(
-    event: FormEvent<HTMLFormElement>
-  ) {
-    event.preventDefault();
+ async function handleAddRound(
+  event: FormEvent
+) {
+  event.preventDefault();
 
-    if (
-      !roundName.trim() ||
-      !tournamentId ||
-      savingRound
-    ) {
+  if (
+    !roundName.trim() ||
+    !tournamentId ||
+    savingRound
+  ) {
+    return;
+  }
+
+  setSavingRound(true);
+  setMessage('');
+
+  const advancementNumber =
+    defaultAdvancementCount.trim()
+      ? Number(
+          defaultAdvancementCount
+        )
+      : null;
+
+  const roundPayload = {
+    name: roundName.trim(),
+    round_type: roundType,
+    default_advancement_count:
+      advancementNumber &&
+      advancementNumber > 0
+        ? advancementNumber
+        : null,
+    starts_at:
+      roundStartsAt || null,
+    ends_at:
+      roundEndsAt || null,
+  };
+
+  if (editingRoundId) {
+    const {
+      data: updatedRound,
+      error,
+    } = await supabase
+      .from('tournament_rounds')
+      .update(roundPayload)
+      .eq('id', editingRoundId)
+      .eq(
+        'tournament_id',
+        tournamentId
+      )
+      .select(`
+        id,
+        tournament_id,
+        name,
+        round_type,
+        round_order,
+        default_advancement_count,
+        starts_at,
+        ends_at
+      `)
+      .single();
+
+    if (error) {
+      console.error(
+        'Unable to update tournament round:',
+        error
+      );
+
+      setMessage(error.message);
+      setSavingRound(false);
       return;
     }
 
-    setSavingRound(true);
-    setMessage('');
-
+    setRounds((current) =>
+      current
+        .map((round) =>
+          round.id === editingRoundId
+            ? (updatedRound as TournamentRound)
+            : round
+        )
+        .sort(
+          (a, b) =>
+            a.round_order -
+            b.round_order
+        )
+    );
+  } else {
     const nextRoundOrder =
       rounds.length > 0
         ? Math.max(
@@ -604,32 +712,17 @@ if (eventEntryError) {
           ) + 1
         : 1;
 
-    const advancementNumber =
-      defaultAdvancementCount.trim()
-        ? Number(
-            defaultAdvancementCount
-          )
-        : null;
-
     const {
       data: createdRound,
       error,
     } = await supabase
       .from('tournament_rounds')
       .insert({
-        tournament_id: tournamentId,
-        name: roundName.trim(),
-        round_type: roundType,
-        round_order: nextRoundOrder,
-        default_advancement_count:
-          advancementNumber &&
-          advancementNumber > 0
-            ? advancementNumber
-            : null,
-        starts_at:
-          roundStartsAt || null,
-        ends_at:
-          roundEndsAt || null,
+        tournament_id:
+          tournamentId,
+        ...roundPayload,
+        round_order:
+          nextRoundOrder,
       })
       .select(`
         id,
@@ -664,15 +757,17 @@ if (eventEntryError) {
           b.round_order
       )
     );
-
-    setRoundName('');
-    setRoundType('local');
-    setDefaultAdvancementCount('3');
-    setRoundStartsAt('');
-    setRoundEndsAt('');
-    setShowRoundForm(false);
-    setSavingRound(false);
   }
+
+  setEditingRoundId(null);
+  setRoundName('');
+  setRoundType('local');
+  setDefaultAdvancementCount('3');
+  setRoundStartsAt('');
+  setRoundEndsAt('');
+  setShowRoundForm(false);
+  setSavingRound(false);
+}
 
 function openEventForm(
   round: TournamentRound,
@@ -709,6 +804,14 @@ function openEventForm(
         : ''
     );
 
+    setEventExpectedJudges(
+  tournamentEvent.expected_judges
+    ? String(
+        tournamentEvent.expected_judges
+      )
+    : '3'
+);
+
     return;
   }
 
@@ -724,6 +827,29 @@ function openEventForm(
         )
       : ''
   );
+
+  setEventExpectedJudges('3');
+}
+
+function openEditRound(round: TournamentRound) {
+  setEditingRoundId(round.id);
+  setRoundName(round.name);
+  setRoundType(round.round_type);
+  setDefaultAdvancementCount(
+    String(round.default_advancement_count || 3)
+  );
+  setRoundStartsAt(
+    round.starts_at
+      ? round.starts_at.slice(0, 16)
+      : ''
+  );
+  setRoundEndsAt(
+    round.ends_at
+      ? round.ends_at.slice(0, 16)
+      : ''
+  );
+
+  setShowRoundForm(true);
 }
 
 function openPathForm(
@@ -852,10 +978,25 @@ async function handleAddEvent(
       ? Number(eventAdvancementCount)
       : null;
 
+  const selectedVenue =
+  venueOptions.find(
+    (venue) =>
+      venue.id === eventVenueId
+  );
+
+const hostAccountId =
+  selectedVenue?.account_id || null;
+
+  const expectedJudgesNumber =
+  eventExpectedJudges.trim()
+    ? Number(eventExpectedJudges)
+    : 3;
+  
   const eventValues = {
   tournament_id: tournamentId,
   round_id: eventRound.id,
   venue_id: eventVenueId || null,
+  host_account_id: hostAccountId,
   name: eventName.trim(),
   status:
     editingTournamentEvent?.status ||
@@ -871,6 +1012,11 @@ async function handleAddEvent(
       ? advancementNumber
       : eventRound
           .default_advancement_count,
+
+  expected_judges:
+  expectedJudgesNumber > 0
+    ? expectedJudgesNumber
+    : 3,
 };
 
 const query =
@@ -900,6 +1046,7 @@ const {
     status,
     starts_at,
     advancement_count,
+    expected_judges,
     venues (
       id,
       name,
@@ -1034,6 +1181,10 @@ async function deleteTournamentEvent(
   }
 
   return (
+    <SVShell
+  title="Tournament Director"
+  subtitle="Manage tournament"
+>
     <main className="sv-director-detail-page">
       <header className="sv-tournament-builder-hero">
         <div>
@@ -1068,7 +1219,9 @@ async function deleteTournamentEvent(
             }
             className="sv-director-create"
           >
-            + Add Round
+            {rounds.length === 0
+  ? '+ Add Qualifier'
+  : '+ Add Round'}
           </button>
         </div>
       </header>
@@ -1143,26 +1296,35 @@ async function deleteTournamentEvent(
                         </p>
                       </div>
 
-                      <div className="sv-tournament-round-actions">
-                        <button
-  type="button"
-  onClick={() =>
-    openEventForm(round)
-  }
->
-  + Add Event
-</button>
+                     <div className="sv-tournament-round-actions">
+  <button
+    type="button"
+    onClick={() =>
+      openEventForm(round)
+    }
+  >
+    + Add Event
+  </button>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            deleteRound(round)
-                          }
-                          className="sv-tournament-round-delete"
-                        >
-                          Delete
-                        </button>
-                      </div>
+  <button
+    type="button"
+    onClick={() =>
+      openEditRound(round)
+    }
+  >
+    Edit
+  </button>
+
+  <button
+    type="button"
+    onClick={() =>
+      deleteRound(round)
+    }
+    className="sv-tournament-round-delete"
+  >
+    Delete
+  </button>
+</div>
 
                     <div className="sv-tournament-round-events">
   {tournamentEvents
@@ -1175,9 +1337,11 @@ async function deleteTournamentEvent(
         key={tournamentEvent.id}
         className="sv-tournament-event-card"
       >
-        <div className="sv-tournament-event-status">
-          {tournamentEvent.status}
-        </div>
+       <div className="sv-tournament-event-status">
+  {getTournamentEventStatusLabel(
+    tournamentEvent.status
+  )}
+</div>
 
         <strong>
           {tournamentEvent.name}
@@ -1249,6 +1413,20 @@ async function deleteTournamentEvent(
     );
   })}
 
+{!tournamentEvent.event_id &&
+  tournamentEvent.venue_id && (
+    <div className="sv-tournament-event-status sv-tournament-event-status-assigned">
+      ✓ Assigned to Host
+    </div>
+  )}
+
+{!tournamentEvent.event_id &&
+  !tournamentEvent.venue_id && (
+    <div className="sv-tournament-event-status sv-tournament-event-status-unassigned">
+      Venue / Host Needed
+    </div>
+  )}
+
 <button
   type="button"
   className="sv-tournament-event-connect"
@@ -1256,7 +1434,7 @@ async function deleteTournamentEvent(
     openPathForm(tournamentEvent)
   }
 >
-  Connect
+  Set Advancement
 </button>
 
 {qualifiedSingers.filter(
@@ -1330,8 +1508,8 @@ async function deleteTournamentEvent(
             </div>
 
             <div className="sv-tournament-qualified-status">
-              Eligible
-            </div>
+  Qualified
+</div>
           </div>
         );
       })}
@@ -1382,17 +1560,29 @@ async function deleteTournamentEvent(
             </div>
           ) : (
             <div className="sv-director-empty sv-tournament-builder-empty">
+             
+             <div
+  style={{
+    color: '#38bdf8',
+    fontSize: 11,
+    fontWeight: 900,
+    letterSpacing: '0.14em',
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  }}
+>
+  STEP 2 OF 4 · QUALIFIERS
+</div>
+             
               <div>🏆</div>
 
-              <h2>
-                Add the tournament’s first round
-              </h2>
+              <h2>Where does the road to the championship begin?</h2>
 
-              <p>
-                Start with Local Qualifiers,
-                then add Regionals, State, and
-                the Championship Final.
-              </p>
+             <p>
+  Add the venues hosting qualifying events.
+  Each qualifier can advance its top singers
+  to the next stage.
+</p>
 
               <button
                 type="button"
@@ -1400,7 +1590,7 @@ async function deleteTournamentEvent(
                   setShowRoundForm(true)
                 }
               >
-                Add First Round
+                + Add First Qualifier
               </button>
             </div>
           )}
@@ -1415,39 +1605,161 @@ async function deleteTournamentEvent(
           </div>
 
           {rounds.length > 0 ? (
-            <div className="sv-tournament-path-preview">
-              {rounds.map(
-                (round, index) => (
-                  <div
-                    key={round.id}
-                    className="sv-tournament-path-step"
-                  >
-                    <div>
+  <div className="sv-tournament-path-preview">
+    {rounds.map((round, roundIndex) => {
+      const roundEvents =
+        tournamentEvents.filter(
+          (item) =>
+            item.round_id === round.id
+        );
+
+      return (
+        <div
+          key={round.id}
+          className="sv-tournament-path-round"
+        >
+          <div className="sv-tournament-path-round-header">
+            <span>
+              {round.round_type}
+            </span>
+
+            <strong>
+              {round.name}
+            </strong>
+          </div>
+
+          {roundEvents.length > 0 ? (
+            <div className="sv-tournament-path-events">
+              {roundEvents.map(
+                (tournamentEvent) => {
+                  const outgoingPaths =
+                    eventPaths.filter(
+                      (path) =>
+                        path.from_tournament_event_id ===
+                        tournamentEvent.id
+                    );
+
+                  const incomingPaths =
+  eventPaths.filter(
+    (path) =>
+      path.to_tournament_event_id ===
+      tournamentEvent.id
+  );
+
+const incomingCount =
+  incomingPaths.length;
+
+const incomingSingerCount =
+  incomingPaths.reduce(
+    (total, path) => {
+      const sourceEvent =
+        tournamentEvents.find(
+          (item) =>
+            item.id ===
+            path.from_tournament_event_id
+        );
+
+      return (
+        total +
+        Number(
+          sourceEvent?.advancement_count || 0
+        )
+      );
+    },
+    0
+  );
+
+                  const destinationNames =
+                    outgoingPaths
+                      .map((path) => {
+                        const destination =
+                          tournamentEvents.find(
+                            (item) =>
+                              item.id ===
+                              path.to_tournament_event_id
+                          );
+
+                        return destination?.name || null;
+                      })
+                      .filter(Boolean);
+
+                  const venueName =
+                    tournamentEvent.venues?.name ||
+                    'Venue not assigned';
+
+                  return (
+                    <div
+                      key={tournamentEvent.id}
+                      className="sv-tournament-path-event"
+                    >
                       <strong>
-                        {round.name}
+                        {tournamentEvent.name}
                       </strong>
 
                       <span>
-                        {round.round_type}
+                        📍 {venueName}
                       </span>
-                    </div>
 
-                    {index <
-                      rounds.length - 1 && (
-                      <div className="sv-tournament-path-arrow">
-                        ↓
-                      </div>
-                    )}
-                  </div>
-                )
+                      {tournamentEvent.advancement_count && (
+                        <span>
+                          🏆 Top{' '}
+                          {tournamentEvent.advancement_count}{' '}
+                          advance
+                        </span>
+                      )}
+
+                      {incomingCount > 0 && (
+  <span className="sv-tournament-path-incoming">
+    {incomingCount}{' '}
+    {incomingCount === 1
+      ? 'qualifier feeds here'
+      : 'qualifiers feed here'}
+
+    {incomingSingerCount > 0 && (
+      <>
+        {' · '}
+        {incomingSingerCount}{' '}
+        {incomingSingerCount === 1
+          ? 'singer incoming'
+          : 'singers incoming'}
+      </>
+    )}
+  </span>
+)}
+
+                      {destinationNames.length > 0 && (
+                        <div className="sv-tournament-path-feeds">
+                          Feeds into →
+                          {' '}
+                          {destinationNames.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
               )}
             </div>
           ) : (
-            <p className="sv-league-sidebar-empty">
-              Your bracket path will appear as
-              rounds are added.
-            </p>
+            <div className="sv-tournament-path-empty">
+              No events added yet.
+            </div>
           )}
+
+          {roundIndex < rounds.length - 1 && (
+            <div className="sv-tournament-path-arrow">
+              ↓
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+) : (
+  <p className="sv-league-sidebar-empty">
+    Your bracket path will appear as
+    rounds are added.
+  </p>
+)}
         </aside>
       </section>
 
@@ -1546,6 +1858,36 @@ async function deleteTournamentEvent(
         />
       </label>
 
+      <label>
+  Number of judges
+
+  <input
+    type="number"
+    min="1"
+    max="20"
+    value={eventExpectedJudges}
+    onChange={(event) =>
+      setEventExpectedJudges(
+        event.target.value
+      )
+    }
+  />
+
+  <span
+    style={{
+      display: 'block',
+      marginTop: 6,
+      color: '#94a3b8',
+      fontSize: 12,
+      lineHeight: 1.4,
+    }}
+  >
+    StageVotes will use this to track
+    when scoring is complete for each
+    competitor.
+  </span>
+</label>
+
       <div className="sv-director-form-actions">
         <button
           type="button"
@@ -1575,14 +1917,16 @@ async function deleteTournamentEvent(
             onSubmit={handleAddRound}
             className="sv-tournament-modal"
           >
-            <div className="sv-director-eyebrow">
-              Add Tournament Round
-            </div>
+            <div className="sv-director-modal-eyebrow">
+  {editingRoundId
+  ? 'EDIT TOURNAMENT STAGE'
+  : 'STEP 2 OF 4 · QUALIFIERS'}
+</div>
 
-            <h2>Create the next stage</h2>
+<h2>Set up your qualifiers</h2>
 
             <label>
-              Round name
+              Qualifier stage name
 
               <input
                 value={roundName}
@@ -1598,7 +1942,7 @@ async function deleteTournamentEvent(
             </label>
 
             <label>
-              Round type
+              Stage type
 
               <select
                 value={roundType}
@@ -1624,7 +1968,7 @@ async function deleteTournamentEvent(
             </label>
 
             <label>
-              Default number advancing
+              Singers advancing per qualifier
 
               <input
                 type="number"
@@ -1639,6 +1983,24 @@ async function deleteTournamentEvent(
                 }
               />
             </label>
+
+            <p
+  style={{
+    margin: '8px 0 0',
+    color: '#94a3b8',
+    fontSize: 12,
+    lineHeight: 1.5,
+  }}
+>
+  The top{' '}
+  <strong style={{ color: '#f8fafc' }}>
+    {defaultAdvancementCount || 0}
+  </strong>{' '}
+  {Number(defaultAdvancementCount) === 1
+    ? 'singer'
+    : 'singers'}{' '}
+  from each qualifier will advance to the next stage.
+</p>
 
             <div className="sv-director-form-grid">
               <label>
@@ -1673,9 +2035,10 @@ async function deleteTournamentEvent(
             <div className="sv-director-form-actions">
               <button
                 type="button"
-                onClick={() =>
-                  setShowRoundForm(false)
-                }
+               onClick={() => {
+  setEditingRoundId(null);
+  setShowRoundForm(false);
+}}
               >
                 Cancel
               </button>
@@ -1685,8 +2048,10 @@ async function deleteTournamentEvent(
                 disabled={savingRound}
               >
                 {savingRound
-                  ? 'Adding...'
-                  : 'Add Round'}
+  ? 'Saving...'
+  : editingRoundId
+  ? 'Save Changes'
+  : 'Create Qualifier Stage →'}
               </button>
             </div>
           </form>
@@ -1781,6 +2146,7 @@ async function deleteTournamentEvent(
   </div>
 )}
 
-    </main>
-  );
+       </main>
+  </SVShell>
+);
 }

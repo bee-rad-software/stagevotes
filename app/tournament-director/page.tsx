@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import SVShell from '@/components/ui/SVShell';
 
 type Tournament = {
   id: string;
@@ -126,6 +127,10 @@ export default function TournamentDirectorPage() {
   }, []);
 
   return (
+  <SVShell
+    title="Tournament Director"
+    subtitle="Championship management"
+  >
     <main className="sv-director-page">
       <header className="sv-director-header">
         <div>
@@ -216,7 +221,8 @@ export default function TournamentDirectorPage() {
             Create Tournament
           </button>
         </div>
-      )}
-    </main>
-  );
+           )}
+         </main>
+  </SVShell>
+);
 }
