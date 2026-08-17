@@ -19,6 +19,7 @@ import {
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams  } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
@@ -139,11 +140,35 @@ function AudienceToggle({
 }
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={<CreatePageLoading />}>
+      <CreatePageContent />
+    </Suspense>
+  );
+}
+
+function CreatePageLoading() {
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: '#07111f',
+        color: '#ffffff',
+      }}
+    >
+      Loading...
+    </main>
+  );
+}
+
+function CreatePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-const recurringShowId =
-  searchParams.get('recurringShow');
+  const recurringShowId =
+    searchParams.get('recurringShow');
 
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');

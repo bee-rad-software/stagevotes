@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   ArrowRight,
@@ -12,6 +13,30 @@ import {
 import { supabase } from '@/lib/supabase';
 
 export default function SingerLoginPage() {
+  return (
+    <Suspense fallback={<SingerLoginLoading />}>
+      <SingerLoginContent />
+    </Suspense>
+  );
+}
+
+function SingerLoginLoading() {
+  return (
+    <main
+      style={{
+        minHeight: '100vh',
+        display: 'grid',
+        placeItems: 'center',
+        background: '#07111f',
+        color: '#ffffff',
+      }}
+    >
+      Loading...
+    </main>
+  );
+}
+
+function SingerLoginContent() {
   const searchParams = useSearchParams();
   const eventId = searchParams.get('event');
 
