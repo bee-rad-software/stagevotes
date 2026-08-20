@@ -47,7 +47,6 @@ function MyStageContent() {
   const searchParams = useSearchParams();
 
   const eventId = searchParams.get('event');
-  const liveEvent = useLiveEvent(eventId);
 
   const {
   profile,
@@ -57,12 +56,23 @@ function MyStageContent() {
   performerLevel,
   timeline,
   championshipData,
+  nextTournamentPerformance,
   loading,
   message,
   handlePhotoUpload,
 } = useMyStage();
 
 const activeChampionship =
+  championshipData.find((entry: any) => {
+    const eventEntries =
+      entry.tournament_event_entries || [];
+
+    return eventEntries.some(
+      (eventEntry: any) =>
+        eventEntry.status === 'eligible' ||
+        eventEntry.status === 'confirmed'
+    );
+  }) ||
   championshipData.find((entry: any) => {
     const tournament =
       Array.isArray(entry.tournaments)
@@ -73,7 +83,8 @@ const activeChampionship =
       tournament?.status === 'active' ||
       tournament?.status === 'open'
     );
-  }) || championshipData[0];
+  }) ||
+  championshipData[0];
 
 const latestAdvancement = (() => {
   if (!activeChampionship) {
@@ -125,11 +136,26 @@ const latestAdvancement = (() => {
   }
 
   const nextEntry =
-    eventEntries.find(
-      (entry: any) =>
-        entry.status === 'eligible' ||
-        entry.status === 'confirmed'
+  eventEntries.find((entry: any) => {
+    if (
+      entry.status !== 'eligible' &&
+      entry.status !== 'confirmed'
+    ) {
+      return false;
+    }
+
+    const tournamentEvent =
+      Array.isArray(
+        entry.tournament_events
+      )
+        ? entry.tournament_events[0] || null
+        : entry.tournament_events || null;
+
+    return (
+      tournamentEvent?.status !== 'completed' &&
+      tournamentEvent?.status !== 'cancelled'
     );
+  });
 
   if (!nextEntry) {
     return null;
@@ -198,19 +224,167 @@ const latestAdvancement = (() => {
   };
 })();
 
-const advancementStatus = (() => {
+  const liveEventId =
+  eventId ||
+  latestAdvancement?.eventId ||
+  null;
+
+const liveEvent =
+  useLiveEvent(liveEventId);
+
+const latestTournamentResult = (() => {
+  const completedEntries =
+    championshipData
+      .flatMap((championship: any) =>
+        (
+          championship.tournament_event_entries ||
+          []
+        ).map((entry: any) => ({
+          ...entry,
+          tournament:
+            Array.isArray(
+              championship.tournaments
+            )
+              ? championship.tournaments[0] ||
+                null
+              : championship.tournaments ||
+                null,
+        }))
+      )
+      .filter(
+        (entry: any) =>
+          entry.status === 'advanced' ||
+          entry.status === 'eliminated' ||
+          entry.status === 'competed'
+      );
+
+  if (!completedEntries.length) {
+    return null;
+  }
+
+  const entry =
+    completedEntries[
+      completedEntries.length - 1
+    ];
+
+  const tournamentEvent =
+    Array.isArray(entry.tournament_events)
+      ? entry.tournament_events[0] || null
+      : entry.tournament_events || null;
+
+  return {
+    status: entry.status,
+
+    placement:
+      entry.placement ?? null,
+
+    score:
+      entry.average_score ?? null,
+
+    eventName:
+      tournamentEvent?.name ||
+      'Tournament Event',
+
+    tournamentName:
+      entry.tournament?.name || null,
+  };
+})();
+
+const tournamentOutcome = (() => {
+  if (!latestTournamentResult) {
+    return null;
+  }
+
+  /*
+   * If the result has not been finalized into
+   * one of our post-event statuses, keep showing
+   * Results Pending.
+   */
+  if (
+    latestTournamentResult.status !== 'advanced' &&
+    latestTournamentResult.status !== 'eliminated'
+  ) {
+    return {
+      type: 'pending',
+      icon: '✓',
+      label: 'Performance Complete',
+      message:
+        'Your performance is complete. Results are pending.',
+    };
+  }
+
+  if (
+    latestTournamentResult.status === 'advanced'
+  ) {
+    return {
+      type: 'advanced',
+      icon: '🏆',
+      label: 'You’re Moving On!',
+      message:
+        `You finished ${
+          latestTournamentResult.placement
+            ? `#${latestTournamentResult.placement}`
+            : 'high enough to advance'
+        } at ${
+          latestTournamentResult.eventName
+        }${
+          latestTournamentResult.score !== null
+            ? ` with a score of ${Number(
+                latestTournamentResult.score
+              ).toFixed(2)}.`
+            : '.'
+        }`,
+    };
+  }
+
+  return {
+    type: 'eliminated',
+    icon: '👏',
+    label: 'Championship Run Complete',
+    message:
+      `You finished ${
+        latestTournamentResult.placement
+          ? `#${latestTournamentResult.placement}`
+          : 'this round'
+      } at ${
+        latestTournamentResult.eventName
+      }${
+        latestTournamentResult.score !== null
+          ? ` with a score of ${Number(
+              latestTournamentResult.score
+            ).toFixed(2)}.`
+          : '.'
+      }`,
+  };
+})();
+
+  const advancementStatus = (() => {
   if (!latestAdvancement) {
     return null;
   }
 
-  const status =
+  const tournamentStatus =
     latestAdvancement.nextEventStatus;
 
-  /*
-   * The tournament event exists,
-   * but the venue has not launched
-   * the live StageVotes event yet.
-   */
+  const performance =
+    nextTournamentPerformance;
+
+  const isCurrentSinger =
+  liveEvent.currentPerformance?.id ===
+  performance?.id;
+
+const isNextSinger =
+  !isCurrentSinger &&
+  liveEvent.myPosition === 1;
+
+  const hasCheckedIn =
+    Boolean(performance?.checked_in_at);
+
+  const hasSong =
+    Boolean(
+      performance?.song_title?.trim()
+    );
+
   if (!latestAdvancement.eventId) {
     return {
       step: 'qualified',
@@ -222,52 +396,121 @@ const advancementStatus = (() => {
     };
   }
 
-  /*
-   * The venue has launched the event
-   * and registration/check-in is open.
-   */
-  if (
-    status === 'registration_open' ||
-    status === 'check_in_open'
-  ) {
+  if (!hasCheckedIn) {
     return {
       step: 'checkin',
       icon: '📍',
       label: 'Check-In Open',
       message:
-        'Your next tournament event is ready.',
+        'Check in for your next tournament event.',
       actionLabel: 'Check In',
     };
   }
 
+  if (hasCheckedIn && !hasSong) {
+    return {
+      step: 'song',
+      icon: '🎵',
+      label: 'Song Needed',
+      message:
+        'You’re checked in. Choose your competition song.',
+      actionLabel: 'Choose Competition Song',
+    };
+  }
+
+  if (hasCheckedIn && hasSong) {
+
+  if (isCurrentSinger) {
+  return {
+    step: 'performing',
+    icon: '🎤',
+    label: 'You’re On Stage',
+    message:
+      `Now performing “${performance.song_title}”.`,
+    actionLabel: 'Open Event',
+  };
+}
+
+if (isNextSinger) {
+  return {
+    step: 'ready',
+    icon: '🔥',
+    label: 'You’re Next',
+    message:
+      `Get ready — “${performance.song_title}” is coming up next.`,
+    actionLabel: 'Open Event',
+  };
+}
   /*
-   * Singer has already confirmed
-   * their spot for this event.
+   * Singer is currently performing.
    */
   if (
-    status === 'in_progress' ||
-    status === 'live'
+    performance?.status === 'current' ||
+    performance?.status === 'performing'
+  ) {
+    return {
+      step: 'performing',
+      icon: '🎤',
+      label: 'You’re On Stage',
+      message:
+        `Now performing “${performance.song_title}”.`,
+      actionLabel: 'Open Event',
+    };
+  }
+
+  /*
+   * Singer has finished performing.
+   */
+ if (
+  performance?.status === 'completed'
+) {
+  return {
+    step: 'finished',
+    icon:
+      tournamentOutcome?.icon || '✓',
+    label:
+      tournamentOutcome?.label ||
+      'Performance Complete',
+    message:
+      tournamentOutcome?.message ||
+      'Your performance is complete. Results are pending.',
+    actionLabel: 'Open Event',
+  };
+}
+
+  /*
+   * Singer is checked in and has
+   * selected their competition song.
+   */
+  return {
+    step: 'ready',
+    icon: '✅',
+    label: 'Ready to Compete',
+    message:
+      `You’re checked in with “${performance.song_title}”.`,
+    actionLabel: 'Open Event',
+  };
+}
+
+  if (
+    tournamentStatus === 'live'
   ) {
     return {
       step: 'ready',
       icon: '🎤',
-      label: 'Ready to Compete',
+      label: 'Event Live',
       message:
         'Your tournament event is underway.',
       actionLabel: 'Open Event',
     };
   }
 
-  /*
-   * Event exists, but isn't ready
-   * for singer activity yet.
-   */
   return {
     step: 'upcoming',
     icon: '📅',
     label: 'Upcoming',
     message:
-      'You’re qualified. We’ll see you at the next round.',
+      'You’re qualified for the next round.',
     actionLabel: null,
   };
 })();
@@ -341,6 +584,100 @@ const championshipStory = (() => {
   }.`;
 })();
 
+const championshipWin = (() => {
+  for (const championship of championshipData) {
+    const tournament =
+      Array.isArray(championship.tournaments)
+        ? championship.tournaments[0] || null
+        : championship.tournaments || null;
+
+    const eventEntries =
+      championship.tournament_event_entries || [];
+
+    /*
+     * Find every completed tournament event
+     * this singer participated in.
+     */
+    const completedEntries = eventEntries.filter(
+      (entry: any) => {
+        const tournamentEvent =
+          Array.isArray(entry.tournament_events)
+            ? entry.tournament_events[0] || null
+            : entry.tournament_events || null;
+
+        return (
+          tournamentEvent?.status === 'completed' &&
+          entry.placement !== null
+        );
+      }
+    );
+
+    if (!completedEntries.length) {
+      continue;
+    }
+
+    /*
+     * Find the final/highest tournament stage.
+     *
+     * A championship winner is the singer who
+     * finished #1 in the completed final event
+     * and has nowhere else to advance.
+     */
+    const winningEntry = completedEntries.find(
+      (entry: any) => {
+        if (entry.placement !== 1) {
+          return false;
+        }
+
+        const tournamentEvent =
+          Array.isArray(entry.tournament_events)
+            ? entry.tournament_events[0] || null
+            : entry.tournament_events || null;
+
+        /*
+         * If this event is complete and there is
+         * no later eligible/confirmed event,
+         * treat it as the championship result.
+         */
+        const hasNextStage = eventEntries.some(
+          (otherEntry: any) =>
+            otherEntry.status === 'eligible' ||
+            otherEntry.status === 'confirmed'
+        );
+
+        return (
+          tournamentEvent?.status === 'completed' &&
+          !hasNextStage
+        );
+      }
+    );
+
+    if (!winningEntry) {
+      continue;
+    }
+
+    const winningEvent =
+      Array.isArray(winningEntry.tournament_events)
+        ? winningEntry.tournament_events[0] || null
+        : winningEntry.tournament_events || null;
+
+    return {
+      tournamentName:
+        tournament?.name || 'Tournament',
+
+      eventName:
+        winningEvent?.name || 'Championship Final',
+
+      score:
+        winningEntry.average_score ?? null,
+
+      placement:
+        winningEntry.placement,
+    };
+  }
+
+  return null;
+})();
 
   if (loading) {
     return <MyStageLoading />;
@@ -448,6 +785,157 @@ const championshipStory = (() => {
             onPhotoUpload={handlePhotoUpload}
           />
         )}
+
+    {championshipWin && (
+  <section
+    style={{
+      marginTop: 18,
+      padding: '28px 22px',
+      borderRadius: 24,
+      border:
+        '1px solid rgba(250,204,21,0.45)',
+      background:
+        'radial-gradient(circle at top right, rgba(250,204,21,0.16), transparent 20rem), linear-gradient(135deg, rgba(120,53,15,0.34), rgba(15,23,42,0.96))',
+      boxShadow:
+        '0 20px 60px rgba(0,0,0,0.24)',
+    }}
+  >
+    <div
+      style={{
+        color: '#facc15',
+        fontSize: 12,
+        fontWeight: 900,
+        letterSpacing: '0.14em',
+        textTransform: 'uppercase',
+      }}
+    >
+      🏆 Tournament Champion
+    </div>
+
+    <h2
+      style={{
+        margin: '8px 0 6px',
+        fontSize:
+          'clamp(2rem, 7vw, 3.4rem)',
+        lineHeight: 1,
+        letterSpacing: '-0.04em',
+      }}
+    >
+      You Did It!
+    </h2>
+
+    <p
+      style={{
+        margin: 0,
+        color: '#f8fafc',
+        fontSize: 18,
+        fontWeight: 800,
+      }}
+    >
+      {profile?.stage_name ||
+  profile?.display_name ||
+  'You'}{' '}
+{profile?.stage_name || profile?.display_name
+  ? 'is'
+  : 'are'}{' '}
+the {championshipWin.tournamentName} Champion.
+    </p>
+
+    <div
+      style={{
+        marginTop: 20,
+        display: 'grid',
+        gridTemplateColumns:
+          'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          padding: 16,
+          borderRadius: 16,
+          background:
+            'rgba(15,23,42,0.62)',
+          border:
+            '1px solid rgba(250,204,21,0.22)',
+        }}
+      >
+        <div
+          style={{
+            color: '#94a3b8',
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Championship
+        </div>
+
+        <strong
+          style={{
+            display: 'block',
+            marginTop: 6,
+            fontSize: 18,
+          }}
+        >
+          {championshipWin.tournamentName}
+        </strong>
+      </div>
+
+      <div
+        style={{
+          padding: 16,
+          borderRadius: 16,
+          background:
+            'rgba(15,23,42,0.62)',
+          border:
+            '1px solid rgba(250,204,21,0.22)',
+        }}
+      >
+        <div
+          style={{
+            color: '#94a3b8',
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Final Score
+        </div>
+
+        <strong
+          style={{
+            display: 'block',
+            marginTop: 6,
+            fontSize: 22,
+            color: '#fde68a',
+          }}
+        >
+          {championshipWin.score !== null
+            ? `${Number(
+                championshipWin.score
+              ).toFixed(2)} / 5`
+            : 'Champion'}
+        </strong>
+      </div>
+    </div>
+
+    <div
+      style={{
+        marginTop: 18,
+        paddingTop: 16,
+        borderTop:
+          '1px solid rgba(250,204,21,0.18)',
+        color: '#cbd5e1',
+        fontSize: 14,
+      }}
+    >
+      🥇 Won {championshipWin.eventName}
+    </div>
+  </section>
+)}
 
     {latestAdvancement && (
   <section
@@ -592,8 +1080,8 @@ const championshipStory = (() => {
     style={{
       marginTop: 16,
       display: 'grid',
-      gridTemplateColumns:
-        'repeat(4, minmax(0, 1fr))',
+     gridTemplateColumns:
+  'repeat(5, minmax(0, 1fr))',
       gap: 8,
     }}
   >
@@ -614,28 +1102,46 @@ const championshipStory = (() => {
         label: 'Check In',
       },
       {
-        key: 'ready',
-        icon: '🎤',
-        label: 'Compete',
-      },
+  key: 'song',
+  icon: '🎵',
+  label: 'Song',
+},
+{
+  key: 'ready',
+  icon:
+    advancementStatus?.step === 'ready'
+      ? '✓'
+      : '🎤',
+  label:
+    advancementStatus?.step === 'ready'
+      ? 'Ready'
+      : 'Compete',
+},
     ].map((item, index) => {
       const order = [
-        'qualified',
-        'upcoming',
-        'checkin',
-        'ready',
-      ];
+  'qualified',
+  'upcoming',
+  'checkin',
+  'song',
+  'ready',
+];
 
       const currentIndex =
         order.indexOf(
           advancementStatus.step
         );
 
-      const complete =
-        index < currentIndex;
+      const isReadyComplete =
+  item.key === 'ready' &&
+  advancementStatus.step === 'ready';
 
-      const active =
-        index === currentIndex;
+const complete =
+  index < currentIndex ||
+  isReadyComplete;
+
+const active =
+  index === currentIndex &&
+  !isReadyComplete;
 
       return (
         <div
@@ -746,7 +1252,11 @@ const championshipStory = (() => {
   performances={stats.performances}
   venues={stats.venues}
   averageScore={stats.averageScore}
-  championshipStory={championshipStory}
+  championshipStory={
+  championshipWin
+    ? `You conquered the road to the title and became the ${championshipWin.tournamentName} Champion.`
+    : championshipStory
+}
 />
 
         <PersonalBests bests={personalBests} />

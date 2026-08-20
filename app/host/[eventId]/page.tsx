@@ -305,17 +305,16 @@ const interval = setInterval(() => {
     };
   }, [eventId, router, showSingerSignup]);
 
-  async function loadAll() {
-   await Promise.all([
-  loadEvent(),
-  loadPerformances(),
-  loadPeoplesChoice(),
-  loadVotes(),
-  loadCategories(),
-  loadCheckins(),
-  loadTournamentJudgeCount(),
-]);
-  }
+async function loadAll() {
+  await Promise.all([
+    loadEvent(),
+    loadPerformances(),
+    loadPeoplesChoice(),
+    loadVotes(),
+    loadCategories(),
+    loadCheckins(),
+  ]);
+}
 
 async function loadCheckins() {
   const { count, error } = await supabase
@@ -542,16 +541,45 @@ async function endShow() {
     return;
   }
 
+  const finalPerformanceId =
+  event?.current_performance_id;
+
+if (finalPerformanceId) {
+  const { error: finalPerformanceError } =
+    await supabase
+      .from('performances')
+      .update({
+        status: 'completed',
+      })
+      .eq('id', finalPerformanceId)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (finalPerformanceError) {
+    console.error(
+      'Unable to complete final performance:',
+      finalPerformanceError
+    );
+
+    alert(
+      `The final singer could not be completed: ${finalPerformanceError.message}`
+    );
+
+    return;
+  }
+}
+
   const {
     data: endedEvent,
     error: endError,
   } = await supabase
     .from('events')
     .update({
-      is_voting_open: false,
-      is_show_ended: true,
-      current_performance_id: null,
-    })
+  is_voting_open: false,
+  is_show_ended: true,
+  current_performance_id: null,
+  current_performance_started_at: null,
+})
     .eq('id', eventId)
     .eq('account_id', accountId)
     .select('id, is_show_ended')
@@ -1216,6 +1244,27 @@ async function nextSinger() {
     const isTournament =
   (event as any)?.competition_mode ===
   'tournament';
+
+if (
+  isTournament &&
+  completedId &&
+  !expectedTournamentJudges
+) {
+  alert(
+    'This tournament does not have an expected judge count configured. Set the judge count before advancing competitors.'
+  );
+
+  return;
+}
+
+if (
+  isTournament &&
+  completedId &&
+  expectedTournamentJudges &&
+  !currentScoringComplete
+) {
+  // your existing incomplete-ballot warning / override logic
+}
 
 if (
   isTournament &&

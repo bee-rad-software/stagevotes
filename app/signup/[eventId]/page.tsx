@@ -61,6 +61,7 @@ type EventData = {
   venue_name?: string | null;
   current_performance_id?: string | null;
   competition_mode?: string | null;
+tournament_event_id?: string | null;
 };
 
 const CURRENT_SHOW_KEY =
@@ -1028,6 +1029,24 @@ if (!nameAvailable) {
 
     try {
       const {
+  data: { user },
+} = await supabase.auth.getUser();
+
+let singerProfileId =
+  singerProfile?.id || null;
+
+if (!singerProfileId && user) {
+  const { data: profileRow } =
+    await supabase
+      .from('singer_profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+  singerProfileId =
+    profileRow?.id || null;
+}
+      const {
         activeRound,
         nextQueueOrder,
       } = await getNextQueueDetails();
@@ -1046,13 +1065,140 @@ if (!nameAvailable) {
             myPerformances.length,
           device_id: getDeviceId(),
           singer_profile_id:
-            singerProfile?.id || null,
+  singerProfileId,
         });
 
       if (error) {
         setMessage(error.message);
         return;
       }
+
+      if (
+  event.competition_mode === 'tournament' &&
+  event.tournament_event_id &&
+  singerProfileId
+) {
+  const {
+    data: tournamentEventData,
+    error: tournamentEventError,
+  } = await supabase
+    .from('tournament_events')
+    .select(`
+      id,
+      tournament_id
+    `)
+    .eq(
+      'id',
+      event.tournament_event_id
+    )
+    .single();
+
+  if (tournamentEventError) {
+    console.error(
+      'Unable to load tournament event:',
+      tournamentEventError
+    );
+  } else {
+    const {
+      data: existingTournamentEntry,
+      error: tournamentEntryLookupError,
+    } = await supabase
+      .from('tournament_entries')
+      .select('id')
+      .eq(
+        'tournament_id',
+        tournamentEventData.tournament_id
+      )
+     .eq(
+  'singer_profile_id',
+  singerProfileId
+)
+      .maybeSingle();
+
+    if (tournamentEntryLookupError) {
+      console.error(
+        'Unable to find tournament entry:',
+        tournamentEntryLookupError
+      );
+    } else {
+      let tournamentEntryId =
+        existingTournamentEntry?.id || null;
+
+      if (!tournamentEntryId) {
+        const {
+          data: createdTournamentEntry,
+          error: createTournamentEntryError,
+        } = await supabase
+          .from('tournament_entries')
+          .insert({
+            tournament_id:
+              tournamentEventData.tournament_id,
+            singer_profile_id:
+  singerProfileId,
+            status: 'active',
+          })
+          .select('id')
+          .single();
+
+        if (createTournamentEntryError) {
+          console.error(
+            'Unable to create tournament entry:',
+            createTournamentEntryError
+          );
+        } else {
+          tournamentEntryId =
+            createdTournamentEntry.id;
+        }
+      }
+
+      if (tournamentEntryId) {
+        const {
+          data: existingEventEntry,
+          error: eventEntryLookupError,
+        } = await supabase
+          .from('tournament_event_entries')
+          .select('id')
+          .eq(
+            'tournament_entry_id',
+            tournamentEntryId
+          )
+          .eq(
+            'tournament_event_id',
+            event.tournament_event_id
+          )
+          .maybeSingle();
+
+        if (eventEntryLookupError) {
+          console.error(
+            'Unable to find tournament event entry:',
+            eventEntryLookupError
+          );
+        } else if (!existingEventEntry) {
+          const {
+            error: createEventEntryError,
+          } = await supabase
+            .from(
+              'tournament_event_entries'
+            )
+            .insert({
+              tournament_entry_id:
+                tournamentEntryId,
+              tournament_event_id:
+                event.tournament_event_id,
+              status: 'confirmed',
+            });
+
+          if (createEventEntryError) {
+            console.error(
+              'Unable to create tournament event entry:',
+              createEventEntryError
+            );
+          }
+        }
+      }
+    }
+  }
+}
 
       const cleanName =
         singerName.trim();

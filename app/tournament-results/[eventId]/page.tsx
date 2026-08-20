@@ -15,7 +15,15 @@ import SVShell from '@/components/ui/SVShell';
 type ResultRow = {
   tournament_entry_id: string;
   placement: number | null;
+
   average_score: number | null;
+  judge_score: number | null;
+
+  peoples_choice_votes: number;
+  peoples_choice_score: number | null;
+
+  official_score: number | null;
+
   status: string;
   singerName: string;
   photoUrl: string | null;
@@ -65,6 +73,16 @@ export default function TournamentResultsPage() {
     advancementCount,
     setAdvancementCount,
   ] = useState<number | null>(null);
+
+  const [
+  isFinalRound,
+  setIsFinalRound,
+] = useState(false);
+
+const [
+  tournamentName,
+  setTournamentName,
+] = useState('Tournament');
 
   const [
     results,
@@ -149,7 +167,13 @@ export default function TournamentResultsPage() {
   tournament_id,
   name,
   advancement_count,
-  results_reveal_step
+  results_reveal_step,
+  tournaments (
+    name
+  ),
+  tournament_rounds (
+    round_type
+  )
 `)
       .eq(
         'id',
@@ -183,6 +207,33 @@ export default function TournamentResultsPage() {
   tournamentEvent.results_reveal_step || 0
 );
 
+const tournament =
+  Array.isArray(
+    (tournamentEvent as any).tournaments
+  )
+    ? (tournamentEvent as any)
+        .tournaments[0] || null
+    : (tournamentEvent as any)
+        .tournaments || null;
+
+const round =
+  Array.isArray(
+    (tournamentEvent as any)
+      .tournament_rounds
+  )
+    ? (tournamentEvent as any)
+        .tournament_rounds[0] || null
+    : (tournamentEvent as any)
+        .tournament_rounds || null;
+
+setTournamentName(
+  tournament?.name || 'Tournament'
+);
+
+setIsFinalRound(
+  round?.round_type === 'final'
+);
+
     /*
      * Step 3:
      * Load final placements.
@@ -193,11 +244,15 @@ export default function TournamentResultsPage() {
     } = await supabase
       .from('tournament_event_entries')
       .select(`
-        tournament_entry_id,
-        placement,
-        average_score,
-        status,
-        tournament_entries!inner (
+  tournament_entry_id,
+  placement,
+  average_score,
+  judge_score,
+  peoples_choice_votes,
+  peoples_choice_score,
+  official_score,
+  status,
+  tournament_entries!inner (
           singer_profile_id,
           singer_profiles (
             display_name,
@@ -340,10 +395,22 @@ export default function TournamentResultsPage() {
               entry.placement,
 
             average_score:
-              entry.average_score,
+  entry.average_score,
 
-            status:
-              entry.status,
+judge_score:
+  entry.judge_score,
+
+peoples_choice_votes:
+  entry.peoples_choice_votes ?? 0,
+
+peoples_choice_score:
+  entry.peoples_choice_score,
+
+official_score:
+  entry.official_score,
+
+status:
+  entry.status,
 
             singerName,
 
@@ -411,8 +478,10 @@ export default function TournamentResultsPage() {
       <main className="sv-tournament-results-page">
   <section className="sv-tournament-results-hero">
     <div className="sv-tournament-results-badge">
-      🏆 Qualifier Complete
-    </div>
+  {isFinalRound
+    ? '🏆 Championship Complete'
+    : '🏆 Qualifier Complete'}
+</div>
 
     <h1>{eventName}</h1>
 
@@ -428,13 +497,17 @@ export default function TournamentResultsPage() {
       <span>•</span>
 
       <strong>
-        {
-          results.filter(
-            (result) => result.advanced
-          ).length
-        }{' '}
-        Advance
-      </strong>
+  {isFinalRound
+    ? `${
+        results[0]?.singerName ||
+        'Champion'
+      } Wins`
+    : `${
+        results.filter(
+          (result) => result.advanced
+        ).length
+      } Advance`}
+</strong>
     </div>
   </section>
 
@@ -497,83 +570,142 @@ export default function TournamentResultsPage() {
   </strong>
 
   <span>
-    {result.advanced
+  {isFinalRound &&
+  result.placement === 1
+    ? `${tournamentName} Champion`
+    : result.advanced
       ? 'Moving on to the next round'
       : 'Final placement'}
+</span>
+</div>
+
+<div className="sv-tournament-result-breakdown">
+  <span>
+    Judges{' '}
+    <strong>
+      {result.judge_score !== null
+        ? `${Number(
+            result.judge_score
+          ).toFixed(2)} / 5`
+        : '—'}
+    </strong>
+  </span>
+
+  <span>
+    People&apos;s Choice{' '}
+    <strong>
+      {result.peoples_choice_votes}{' '}
+      {result.peoples_choice_votes === 1
+        ? 'vote'
+        : 'votes'}
+    </strong>
   </span>
 </div>
 
 <div className="sv-tournament-result-score">
   <strong>
-    {result.average_score !== null
+    {result.official_score !== null
       ? Number(
-          result.average_score
+          result.official_score
         ).toFixed(2)
       : '—'}
   </strong>
 
-  <span>/ 5</span>
+  <span>Official</span>
 </div>
 
-{result.advanced && (
+{isFinalRound &&
+result.placement === 1 ? (
+  <div className="sv-tournament-result-advanced">
+    🏆 CHAMPION
+  </div>
+) : result.advanced ? (
   <div className="sv-tournament-result-advanced">
     ✓ ADVANCES
   </div>
-)}
+) : null}
             </div>
           ))}
         </div>
       </section>
 
-      {results.some(
-        (result) => result.advanced
-      ) && (
-        <section className="sv-tournament-advance-card">
-          <div className="sv-mobile-kicker">
-            Moving On
-          </div>
+      {isFinalRound && results[0] ? (
+  <section className="sv-tournament-advance-card">
+    <div className="sv-mobile-kicker">
+      🏆 Tournament Champion
+    </div>
 
-         <h2>
-  {
-    results.filter(
-      (result) => result.advanced
-    ).length
-  }{' '}
-  {results.filter(
+    <h2>
+      {results[0].singerName}
+    </h2>
+
+    <div className="sv-tournament-advancers">
+      <div className="sv-tournament-advancer-chip">
+        🏆 {tournamentName} Champion
+      </div>
+    </div>
+
+    <div className="sv-tournament-next-event">
+      <span>OFFICIAL</span>
+
+<strong>
+  {results[0].official_score !== null
+    ? `${Number(
+        results[0].official_score
+      ).toFixed(2)} / 100`
+    : 'Champion'}
+</strong>
+    </div>
+  </section>
+) : results.some(
     (result) => result.advanced
-  ).length === 1
-    ? 'Singer Is Moving On'
-    : 'Singers Are Moving On'}
-</h2>
+  ) ? (
+  <section className="sv-tournament-advance-card">
+    <div className="sv-mobile-kicker">
+      Moving On
+    </div>
 
-          <div className="sv-tournament-advancers">
-            {results
-              .filter(
-                (result) => result.advanced
-              )
-              .map((result) => (
-                <div
-                  key={
-                    result.tournament_entry_id
-                  }
-                  className="sv-tournament-advancer-chip"
-                >
-                  🏆 {result.singerName}
-                </div>
-              ))}
+    <h2>
+      {
+        results.filter(
+          (result) => result.advanced
+        ).length
+      }{' '}
+      {results.filter(
+        (result) => result.advanced
+      ).length === 1
+        ? 'Singer Is Moving On'
+        : 'Singers Are Moving On'}
+    </h2>
+
+    <div className="sv-tournament-advancers">
+      {results
+        .filter(
+          (result) => result.advanced
+        )
+        .map((result) => (
+          <div
+            key={
+              result.tournament_entry_id
+            }
+            className="sv-tournament-advancer-chip"
+          >
+            🏆 {result.singerName}
           </div>
+        ))}
+    </div>
 
-          {destinationName && (
-            <div className="sv-tournament-next-event">
-              <span>ADVANCING TO</span>
+    {destinationName && (
+      <div className="sv-tournament-next-event">
+        <span>ADVANCING TO</span>
 
-              <strong>
-                {destinationName}
-              </strong>
-            </div>
-          )}
-        </section>
-      )}
+        <strong>
+          {destinationName}
+        </strong>
+      </div>
+    )}
+  </section>
+) : null}
 
       <div className="sv-tournament-results-actions">
   <button
@@ -627,16 +759,18 @@ export default function TournamentResultsPage() {
   )}
 
   {revealStep === 3 && (
-    <button
-      type="button"
-      className="primary"
-      onClick={() =>
-        updateRevealStep(4)
-      }
-    >
-      Reveal Who's Moving On
-    </button>
-  )}
+  <button
+    type="button"
+    className="primary"
+    onClick={() =>
+      updateRevealStep(4)
+    }
+  >
+    {isFinalRound
+      ? '🏆 Crown Champion'
+      : "Reveal Who's Moving On"}
+  </button>
+)}
 
   {revealStep === 4 && (
     <button

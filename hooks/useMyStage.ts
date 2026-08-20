@@ -61,6 +61,11 @@ export default function useMyStage() {
   const [championshipData, setChampionshipData] =
   useState<any[]>([]);
 
+  const [
+  nextTournamentPerformance,
+  setNextTournamentPerformance,
+] = useState<any | null>(null);
+
   const loadMyStage = useCallback(async () => {
     setLoading(true);
     setMessage('');
@@ -228,6 +233,71 @@ export default function useMyStage() {
   setChampionshipData(
     normalizedChampionships
   );
+
+  const upcomingEventEntry =
+  normalizedChampionships
+    .flatMap(
+      (entry: any) =>
+        entry.tournament_event_entries || []
+    )
+    .find(
+      (entry: any) =>
+        entry.status === 'eligible' ||
+        entry.status === 'confirmed'
+    );
+
+const upcomingTournamentEvent =
+  upcomingEventEntry?.tournament_events || null;
+
+const upcomingStageVotesEventId =
+  upcomingTournamentEvent?.event_id || null;
+
+if (upcomingStageVotesEventId) {
+  const {
+    data: performanceData,
+    error: performanceError,
+  } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      event_id,
+      singer_profile_id,
+      singer_name,
+      song_title,
+      artist,
+      status,
+      checked_in_at,
+      queue_order
+    `)
+    .eq(
+      'event_id',
+      upcomingStageVotesEventId
+    )
+    .eq(
+  'singer_profile_id',
+  profileData.id
+)
+.order('created_at', {
+  ascending: false,
+})
+.limit(1)
+.maybeSingle();
+
+  if (performanceError) {
+    console.error(
+      'Unable to load next tournament performance:',
+      performanceError
+    );
+
+    setNextTournamentPerformance(null);
+  } else {
+    setNextTournamentPerformance(
+      performanceData || null
+    );
+  }
+} else {
+  setNextTournamentPerformance(null);
+}
 }
 
     let completedPerformanceCount = 0;
@@ -695,6 +765,7 @@ return {
   performerLevel,
   timeline,
   championshipData,
+  nextTournamentPerformance,
   loading,
   message,
   reload: loadMyStage,

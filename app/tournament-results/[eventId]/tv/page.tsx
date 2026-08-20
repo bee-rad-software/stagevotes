@@ -11,7 +11,15 @@ import { supabase } from '@/lib/supabase';
 type ResultRow = {
   tournament_entry_id: string;
   placement: number | null;
+
   average_score: number | null;
+  judge_score: number | null;
+
+  peoples_choice_votes: number;
+  peoples_choice_score: number | null;
+
+  official_score: number | null;
+
   singerName: string;
   photoUrl: string | null;
   advanced: boolean;
@@ -37,6 +45,16 @@ export default function TournamentResultsTvPage() {
     destinationName,
     setDestinationName,
   ] = useState<string | null>(null);
+
+  const [
+  isFinalRound,
+  setIsFinalRound,
+] = useState(false);
+
+const [
+  tournamentName,
+  setTournamentName,
+] = useState('Tournament');
 
   const [results, setResults] =
     useState<ResultRow[]>([]);
@@ -130,16 +148,51 @@ export default function TournamentResultsTvPage() {
     const tournamentEventId =
       stageEvent.tournament_event_id;
 
-    const {
+   const {
   data: tournamentEvent,
 } = await supabase
   .from('tournament_events')
-  .select('results_reveal_step')
+  .select(`
+    results_reveal_step,
+    tournaments (
+      name
+    ),
+    tournament_rounds (
+      round_type
+    )
+  `)
   .eq('id', tournamentEventId)
   .maybeSingle();
 
 setRevealStep(
   tournamentEvent?.results_reveal_step || 0
+);
+
+const tournament =
+  Array.isArray(
+    (tournamentEvent as any)?.tournaments
+  )
+    ? (tournamentEvent as any)
+        .tournaments[0] || null
+    : (tournamentEvent as any)
+        ?.tournaments || null;
+
+const round =
+  Array.isArray(
+    (tournamentEvent as any)
+      ?.tournament_rounds
+  )
+    ? (tournamentEvent as any)
+        .tournament_rounds[0] || null
+    : (tournamentEvent as any)
+        ?.tournament_rounds || null;
+
+setTournamentName(
+  tournament?.name || 'Tournament'
+);
+
+setIsFinalRound(
+  round?.round_type === 'final'
 );
 
     const {
@@ -148,8 +201,12 @@ setRevealStep(
       .from('tournament_event_entries')
       .select(`
         tournament_entry_id,
-        placement,
-        average_score,
+placement,
+average_score,
+judge_score,
+peoples_choice_votes,
+peoples_choice_score,
+official_score,
         tournament_entries!inner (
           singer_profile_id,
           singer_profiles (
@@ -252,26 +309,37 @@ setRevealStep(
             'Tournament Singer';
 
           return {
-            tournament_entry_id:
-              entry.tournament_entry_id,
+  tournament_entry_id:
+    entry.tournament_entry_id,
 
-            placement:
-              entry.placement,
+  placement:
+    entry.placement,
 
-            average_score:
-              entry.average_score,
+  average_score:
+    entry.average_score,
 
-            singerName,
+  judge_score:
+    entry.judge_score,
 
-            photoUrl:
-              singerProfile
-                ?.photo_url || null,
+  peoples_choice_votes:
+    entry.peoples_choice_votes ?? 0,
 
-            advanced:
-              advancementIds.has(
-                entry.tournament_entry_id
-              ),
-          };
+  peoples_choice_score:
+    entry.peoples_choice_score,
+
+  official_score:
+    entry.official_score,
+
+  singerName,
+
+  photoUrl:
+    singerProfile?.photo_url || null,
+
+  advanced:
+    advancementIds.has(
+      entry.tournament_entry_id
+    ),
+};
         }
       );
 
@@ -293,8 +361,10 @@ setRevealStep(
     <main className="sv-tournament-tv-page">
       <section className="sv-tournament-tv-header">
         <div className="sv-tournament-tv-kicker">
-          🏆 QUALIFIER COMPLETE
-        </div>
+  {isFinalRound
+    ? '🏆 CHAMPIONSHIP FINAL'
+    : '🏆 QUALIFIER COMPLETE'}
+</div>
 
         <h1>{eventName}</h1>
 
@@ -360,38 +430,97 @@ setRevealStep(
             </h2>
 
             <div className="sv-tournament-tv-score">
-              {result.average_score !== null
-                ? Number(
-                    result.average_score
-                  ).toFixed(2)
-                : '—'}
-            </div>
+  {result.official_score !== null
+    ? Number(
+        result.official_score
+      ).toFixed(2)
+    : '—'}
 
-            {result.advanced && (
-              <div className="sv-tournament-tv-advances">
-                ✓ ADVANCES
-              </div>
-            )}
+  <span>OFFICIAL</span>
+</div>
+
+<div className="sv-tournament-tv-score-breakdown">
+  <span>
+    JUDGES
+    <strong>
+      {result.judge_score !== null
+        ? `${Number(
+            result.judge_score
+          ).toFixed(2)} / 5`
+        : '—'}
+    </strong>
+  </span>
+
+  <span>
+    PEOPLE&apos;S CHOICE
+    <strong>
+      {result.peoples_choice_votes}{' '}
+      {result.peoples_choice_votes === 1
+        ? 'vote'
+        : 'votes'}
+    </strong>
+  </span>
+</div>
+
+            {isFinalRound &&
+result.placement === 1 ? (
+  <div className="sv-tournament-tv-advances">
+    🏆 CHAMPION
+  </div>
+) : result.advanced ? (
+  <div className="sv-tournament-tv-advances">
+    ✓ ADVANCES
+  </div>
+) : null}
           </div>
         ))}
       </section>
 
-      {revealStep >= 4 && (
-  <section className="sv-tournament-tv-moving-on">
+     {revealStep >= 4 && (
+  <>
+    {isFinalRound && results[0] ? (
+      <section className="sv-tournament-tv-moving-on">
+        <span>
+          🏆 TOURNAMENT CHAMPION
+        </span>
+
+        <h2>
+          {results[0].singerName}
+        </h2>
+
+        <div className="sv-tournament-tv-advancer-list">
+          <strong>
+            🏆 {tournamentName} Champion
+          </strong>
+        </div>
+
+        <div className="sv-tournament-tv-next-stop">
+          OFFICIAL SCORE
+<strong>
+  {results[0].official_score !== null
+    ? Number(
+        results[0].official_score
+      ).toFixed(2)
+    : 'Champion'}
+</strong>
+        </div>
+      </section>
+    ) : (
+      <section className="sv-tournament-tv-moving-on">
         <span>MOVING ON</span>
 
         <h2>
-  {
-    results.filter(
-      (result) => result.advanced
-    ).length
-  }{' '}
-  {results.filter(
-    (result) => result.advanced
-  ).length === 1
-    ? 'Singer Is Moving On'
-    : 'Singers Are Moving On'}
-</h2>
+          {
+            results.filter(
+              (result) => result.advanced
+            ).length
+          }{' '}
+          {results.filter(
+            (result) => result.advanced
+          ).length === 1
+            ? 'Singer Is Moving On'
+            : 'Singers Are Moving On'}
+        </h2>
 
         <div className="sv-tournament-tv-advancer-list">
           {results
@@ -413,12 +542,15 @@ setRevealStep(
         {destinationName && (
           <div className="sv-tournament-tv-next-stop">
             NEXT STOP
+
             <strong>
               {destinationName}
             </strong>
           </div>
         )}
-        </section>
+      </section>
+    )}
+  </>
 )}
     </main>
   );

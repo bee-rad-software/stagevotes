@@ -102,6 +102,20 @@ export default function ChampionshipJourneyCard({
   const nextEvent =
     nextEntry?.tournament_events || null;
 
+  const finalEntry =
+  normalizedEvents[
+    normalizedEvents.length - 1
+  ] || null;
+
+const isChampion =
+  !nextEvent &&
+  finalEntry?.placement === 1 &&
+  (
+    finalEntry?.status === 'advanced' ||
+    finalEntry?.status === 'competed' ||
+    finalEntry?.status === 'eliminated'
+  );
+
   return (
     <section className="sv-my-stage-championship">
       <div className="sv-my-stage-championship-top">
@@ -110,12 +124,24 @@ export default function ChampionshipJourneyCard({
 
           <h2>{tournament.name}</h2>
 
-          <p>
+         <p>
   {nextEvent
-    ? `You have completed ${completedEvents.length} stages and qualified for ${nextEvent.name}.`
-    : activeChampionship.status === 'champion'
-      ? 'You completed this championship as the champion.'
-      : 'Your road to the title is still being written.'}
+    ? `You have completed ${
+        completedEvents.length
+      } ${
+        completedEvents.length === 1
+          ? 'stage'
+          : 'stages'
+      } and qualified for ${nextEvent.name}.`
+    : isChampion
+      ? `You conquered the road to the title and became the ${tournament.name} Champion.`
+      : `Your championship journey ended after ${
+          completedEvents.length
+        } ${
+          completedEvents.length === 1
+            ? 'stage'
+            : 'stages'
+        }.`}
 </p>
         </div>
 

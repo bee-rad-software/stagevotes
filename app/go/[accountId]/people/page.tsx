@@ -26,7 +26,7 @@ export default function StaticPeopleRedirect() {
 
     if (!event) return;
 
-    router.replace(`/peoples-choice/${event.id}`);
+    router.replace(`/peopleschoice/${event.id}`);
   }
 
   return (

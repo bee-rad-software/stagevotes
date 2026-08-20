@@ -2,17 +2,17 @@
   min-height: 100vh;
   position: relative;
   overflow: hidden;
-  padding: 2rem 1rem 5rem;
+  padding: 2rem 1rem 6rem;
   color: #f8fafc;
   background:
     radial-gradient(
       circle at top left,
-      rgba(56, 189, 248, 0.12),
+      rgba(56, 189, 248, 0.14),
       transparent 34rem
     ),
     radial-gradient(
       circle at top right,
-      rgba(249, 115, 22, 0.11),
+      rgba(249, 115, 22, 0.13),
       transparent 32rem
     ),
     #07111f;
@@ -48,19 +48,21 @@
   margin: 0 auto;
 }
 
+/* HEADER */
+
 .header {
   text-align: center;
   margin-bottom: 1.5rem;
 }
 
 .brandRow {
-  min-height: 112px;
+  min-height: 100px;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem;
 }
 
 .stageVotesLogo {
@@ -71,12 +73,12 @@
 }
 
 .venueLogoWrap {
-  width: 104px;
-  height: 104px;
+  width: 88px;
+  height: 88px;
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 26px;
+  border-radius: 22px;
   background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(148, 163, 184, 0.16);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.25);
@@ -92,101 +94,196 @@
 .eyebrow,
 .sectionLabel {
   display: block;
-  color: #7dd3fc;
-  font-size: 0.76rem;
-  font-weight: 850;
-  letter-spacing: 0.14em;
+  color: #38bdf8;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .header h1 {
-  margin: 0.4rem 0 0;
-  font-size: clamp(2.3rem, 7vw, 4.5rem);
+  margin: 0.35rem 0 0;
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
   line-height: 0.98;
   letter-spacing: -0.055em;
 }
 
 .eventName {
-  margin: 0.8rem 0 0;
+  margin: 0.75rem 0 0;
   color: #94a3b8;
   font-size: 1rem;
 }
 
-.performerCard,
-.progressCard,
-.categoryCard,
-.submitCard,
-.waitingCard {
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(15, 28, 47, 0.92);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(18px);
+/* PERFORMER HERO */
+
+.performerHero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1.4rem, 4vw, 2rem);
+  border-radius: 30px;
+  border: 1px solid rgba(249, 115, 22, 0.32);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(10, 30, 50, 0.98),
+      rgba(30, 22, 43, 0.98)
+    );
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.performerCard {
+.performerHeroGlow {
+  position: absolute;
+  width: 20rem;
+  height: 20rem;
+  right: -8rem;
+  top: -10rem;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.16);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.performerHeroTop {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1.5rem;
-  padding: clamp(1.4rem, 4vw, 2rem);
-  border-radius: 28px;
+  gap: 1rem;
 }
 
-.performerCard h2 {
-  margin: 0.4rem 0 0;
-  font-size: clamp(2rem, 6vw, 3.5rem);
-  line-height: 1;
-  letter-spacing: -0.045em;
+.liveIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #fb923c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
 }
 
-.song {
-  margin: 0.7rem 0 0;
-  color: #e2e8f0;
-  font-size: 1.05rem;
-  line-height: 1.5;
-}
-
-.song span {
-  color: #94a3b8;
+.liveDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.8);
 }
 
 .votingStatus {
-  min-width: 148px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.75rem 1rem;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: 0.78rem;
+  font-weight: 900;
   white-space: nowrap;
 }
 
 .votingOpen {
   color: #86efac;
   background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.24);
+  border: 1px solid rgba(34, 197, 94, 0.28);
 }
 
 .votingClosed {
   color: #fecaca;
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.24);
+  border: 1px solid rgba(239, 68, 68, 0.28);
 }
 
 .statusDot {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 16px currentColor;
+  box-shadow: 0 0 14px currentColor;
 }
+
+.performerHeroContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 1.35rem;
+  margin-top: 1.7rem;
+}
+
+.performerIcon {
+  flex: 0 0 auto;
+  width: 82px;
+  height: 82px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.28);
+}
+
+.performerCopy {
+  min-width: 0;
+}
+
+.performerCopy h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(2.3rem, 7vw, 4.3rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.songTitle {
+  margin: 0.75rem 0 0;
+  color: #f8fafc;
+  font-size: clamp(1.05rem, 3vw, 1.35rem);
+  font-weight: 800;
+}
+
+.artistName {
+  margin: 0.2rem 0 0;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+.judgePrompt {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.7rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.13);
+}
+
+.judgePrompt span {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.judgePrompt strong {
+  color: #cbd5e1;
+  font-size: 0.9rem;
+}
+
+/* PROGRESS */
 
 .progressCard {
   margin-top: 1rem;
   padding: 1.25rem 1.35rem;
   border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 28, 47, 0.92);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(18px);
 }
 
 .progressTop {
@@ -203,13 +300,13 @@
 }
 
 .progressPercent {
-  color: #7dd3fc;
+  color: #38bdf8;
   font-size: 1.15rem;
   font-weight: 900;
 }
 
 .progressTrack {
-  height: 10px;
+  height: 9px;
   margin-top: 1rem;
   overflow: hidden;
   border-radius: 999px;
@@ -223,6 +320,34 @@
   transition: width 220ms ease;
 }
 
+.progressSteps {
+  display: flex;
+  justify-content: center;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.progressSteps span {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #64748b;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.progressSteps .progressStepComplete {
+  color: #052e16;
+  background: #4ade80;
+  border-color: #4ade80;
+}
+
+/* CATEGORY CARDS */
+
 .categoryList {
   display: grid;
   gap: 1rem;
@@ -230,8 +355,11 @@
 }
 
 .categoryCard {
-  padding: clamp(1.2rem, 4vw, 1.65rem);
-  border-radius: 24px;
+  padding: clamp(1.3rem, 4vw, 1.8rem);
+  border-radius: 26px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 28, 47, 0.94);
+  box-shadow: 0 22px 55px rgba(0, 0, 0, 0.18);
   transition:
     border-color 180ms ease,
     background 180ms ease,
@@ -239,12 +367,12 @@
 }
 
 .categoryCompleted {
-  border-color: rgba(250, 204, 21, 0.28);
+  border-color: rgba(74, 222, 128, 0.3);
   background:
     linear-gradient(
       135deg,
-      rgba(250, 204, 21, 0.08),
-      rgba(15, 28, 47, 0.94)
+      rgba(34, 197, 94, 0.055),
+      rgba(15, 28, 47, 0.96)
     );
 }
 
@@ -252,56 +380,71 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .categoryNumber {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 15px;
   color: #bae6fd;
   background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   font-weight: 900;
 }
 
+.categoryNumber span {
+  font-size: 1rem;
+}
+
 .categoryHeading h3 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.3rem, 4vw, 1.65rem);
+  letter-spacing: -0.02em;
+}
+
+.categoryInstruction {
   margin: 0.3rem 0 0;
-  font-size: clamp(1.2rem, 4vw, 1.55rem);
+  color: #64748b;
+  font-size: 0.8rem;
 }
 
 .completedBadge {
-  padding: 0.45rem 0.65rem;
+  padding: 0.45rem 0.7rem;
   border-radius: 999px;
-  color: #fde68a;
-  background: rgba(250, 204, 21, 0.1);
-  border: 1px solid rgba(250, 204, 21, 0.2);
-  font-size: 0.76rem;
-  font-weight: 850;
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  font-size: 0.72rem;
+  font-weight: 900;
   white-space: nowrap;
 }
+
+/* SCORE BUTTONS */
 
 .scoreButtons {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 1.25rem;
+  gap: 0.7rem;
+  margin-top: 1.35rem;
 }
 
 .scoreButton {
-  min-height: 76px;
-  display: grid;
-  place-items: center;
-  gap: 0.2rem;
-  border-radius: 18px;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.65rem 0.35rem;
+  border-radius: 19px;
   border: 1px solid rgba(148, 163, 184, 0.18);
   color: #cbd5e1;
-  background: rgba(7, 17, 31, 0.7);
+  background: rgba(7, 17, 31, 0.72);
   cursor: pointer;
   font: inherit;
-  font-weight: 900;
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -310,8 +453,9 @@
 }
 
 .scoreButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.5);
+  transform: translateY(-3px);
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(12, 30, 50, 0.95);
 }
 
 .scoreButton:disabled {
@@ -319,62 +463,93 @@
   opacity: 0.45;
 }
 
-.scoreButtonFilled {
-  color: #111827;
-  background: #facc15;
-  border-color: #facc15;
-}
-
-.scoreButtonSelected {
-  border-color: #f97316;
-  box-shadow:
-    0 0 0 3px rgba(249, 115, 22, 0.26),
-    0 12px 26px rgba(249, 115, 22, 0.14);
+.scoreValue {
+  font-size: 1.45rem;
+  line-height: 1;
+  font-weight: 950;
 }
 
 .star {
-  font-size: 1.35rem;
+  color: #64748b;
+  font-size: 1.05rem;
   line-height: 1;
 }
 
-.scoreGuide {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 0.85rem;
+.scoreWord {
+  margin-top: 0.2rem;
   color: #64748b;
-  font-size: 0.74rem;
+  font-size: 0.64rem;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
+.scoreButtonFilled {
+  color: #111827;
+  background: linear-gradient(180deg, #fde047, #facc15);
+  border-color: #facc15;
+}
+
+.scoreButtonFilled .star,
+.scoreButtonFilled .scoreWord {
+  color: #713f12;
+}
+
+.scoreButtonSelected {
+  transform: translateY(-3px);
+  border-color: #f97316;
+  box-shadow:
+    0 0 0 3px rgba(249, 115, 22, 0.28),
+    0 15px 32px rgba(249, 115, 22, 0.18);
+}
+
+/* SUBMIT */
+
 .submitCard {
+  position: sticky;
+  bottom: 1rem;
+  z-index: 10;
   margin-top: 1rem;
-  padding: clamp(1.25rem, 4vw, 1.7rem);
+  padding: 1rem;
   text-align: center;
   border-radius: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(8, 18, 32, 0.94);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
 }
 
 .incompleteMessage {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   color: #fcd34d;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 800;
 }
 
 .submitButton {
   width: 100%;
-  min-height: 56px;
+  min-height: 62px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 17px;
   color: white;
   background: linear-gradient(135deg, #f97316, #ea580c);
-  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.24);
+  box-shadow: 0 14px 32px rgba(249, 115, 22, 0.25);
   cursor: pointer;
   font: inherit;
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 1.05rem;
+  font-weight: 950;
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(249, 115, 22, 0.34);
 }
 
 .submitButton:disabled {
@@ -385,17 +560,17 @@
 }
 
 .ballotNote {
-  margin: 0.85rem 0 0;
+  margin: 0.75rem 0 0;
   color: #64748b;
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .message {
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   padding: 0.9rem 1rem;
   border-radius: 14px;
-  font-weight: 800;
+  font-weight: 850;
 }
 
 .successMessage {
@@ -410,10 +585,15 @@
   border: 1px solid rgba(239, 68, 68, 0.22);
 }
 
+/* WAITING STATE */
+
 .waitingCard {
   padding: 3rem 1.5rem;
   text-align: center;
   border-radius: 28px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 28, 47, 0.92);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
 }
 
 .waitingIcon {
@@ -432,18 +612,36 @@
   line-height: 1.65;
 }
 
+/* MOBILE */
+
 @media (max-width: 680px) {
   .page {
-    padding-top: 1rem;
+    padding: 1rem 0.75rem 5rem;
   }
 
-  .performerCard {
+  .performerHero {
+    border-radius: 24px;
+  }
+
+  .performerHeroContent {
+    gap: 1rem;
+  }
+
+  .performerIcon {
+    width: 68px;
+    height: 68px;
+    border-radius: 20px;
+    font-size: 1.8rem;
+  }
+
+  .performerCopy h2 {
+    font-size: clamp(2rem, 10vw, 3rem);
+  }
+
+  .judgePrompt {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .votingStatus {
-    min-width: 0;
+    gap: 0.35rem;
   }
 
   .categoryHeading {
@@ -456,30 +654,194 @@
   }
 
   .scoreButtons {
-    gap: 0.45rem;
+    gap: 0.4rem;
   }
 
   .scoreButton {
-    min-height: 68px;
+    min-height: 88px;
     border-radius: 15px;
+    padding-inline: 0.2rem;
   }
 
-  .scoreGuide {
-    display: none;
+  .scoreValue {
+    font-size: 1.25rem;
+  }
+
+  .scoreWord {
+    font-size: 0.55rem;
+  }
+
+  .submitCard {
+    bottom: 0.5rem;
   }
 }
 
 @media (max-width: 430px) {
   .brandRow {
+    min-height: auto;
     flex-direction: column;
   }
 
-  .scoreButton {
-    min-height: 62px;
-    padding: 0.4rem;
+  .venueLogoWrap {
+    width: 72px;
+    height: 72px;
   }
 
-  .star {
-    font-size: 1.1rem;
+  .performerHeroTop {
+    align-items: flex-start;
   }
+
+  .liveIndicator {
+    font-size: 0.62rem;
+  }
+
+  .votingStatus {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.68rem;
+  }
+
+  .performerIcon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .scoreButtons {
+    gap: 0.3rem;
+  }
+
+  .scoreButton {
+    min-height: 82px;
+    border-radius: 13px;
+  }
+
+  .scoreWord {
+    font-size: 0.5rem;
+  }
+}
+
+.performerPhoto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+.ballotCompleteCard {
+  padding: clamp(1.4rem, 4vw, 1.9rem);
+  border-radius: 26px;
+  border: 1px solid rgba(34, 197, 94, 0.28);
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(34, 197, 94, 0.12),
+      transparent 18rem
+    ),
+    rgba(15, 28, 47, 0.96);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+}
+
+.ballotCompleteHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ballotCompleteIcon {
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #052e16;
+  background: #4ade80;
+  font-size: 1.5rem;
+  font-weight: 950;
+  box-shadow: 0 0 28px rgba(74, 222, 128, 0.22);
+}
+
+.ballotCompleteHeader h2 {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.6rem, 5vw, 2.2rem);
+  letter-spacing: -0.03em;
+}
+
+.ballotCompleteHeader p {
+  margin: 0.35rem 0 0;
+  color: #94a3b8;
+}
+
+.ballotReview {
+  margin-top: 1.4rem;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.13);
+  background: rgba(7, 17, 31, 0.52);
+}
+
+.ballotReviewRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.ballotReviewRow:last-child {
+  border-bottom: 0;
+}
+
+.ballotReviewRow span {
+  color: #cbd5e1;
+  font-weight: 750;
+}
+
+.ballotReviewRow strong {
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+.ballotAverage {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem 1.05rem;
+  border-radius: 16px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.1),
+      rgba(249, 115, 22, 0.1)
+    );
+  border: 1px solid rgba(56, 189, 248, 0.18);
+}
+
+.ballotAverage span {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ballotAverage strong {
+  color: #f8fafc;
+  font-size: 1.25rem;
+}
+
+.ballotCompleteHeader {
+  align-items: flex-start;
+}
+
+.ballotReviewRow {
+  padding: 0.85rem 0.9rem;
+}
+
+.ballotAverage {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.3rem;
 }

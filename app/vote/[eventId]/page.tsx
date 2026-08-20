@@ -42,6 +42,8 @@ export default function VotePage() {
   const [categories, setCategories] = useState<VoteCategory[]>([]);
 const [scores, setScores] = useState<Record<string, number>>({});
   const [logoUrl, setLogoUrl] = useState('');
+ const [currentCategoryIndex, setCurrentCategoryIndex] =
+  useState(0); 
 
   useEffect(() => {
   load();
@@ -58,6 +60,7 @@ const [scores, setScores] = useState<Record<string, number>>({});
 useEffect(() => {
   setScores({});
   setMessage('');
+  setCurrentCategoryIndex(0);
 }, [current?.id]);
 
   async function load() {
@@ -86,10 +89,15 @@ setCategories(cats || []);
     
     if (ev?.current_performance_id) {
       const { data: perf } = await supabase
-        .from('performances')
-.select('*')
-.eq('id', ev.current_performance_id)
-.maybeSingle();
+  .from('performances')
+  .select(`
+    *,
+    singer_profiles (
+      photo_url
+    )
+  `)
+  .eq('id', ev.current_performance_id)
+  .maybeSingle();
       console.log('Performance lookup:', perf);
       setCurrent(perf);
     } else {
@@ -187,6 +195,18 @@ async function submitCategoryVotes() {
   setMessage('Thanks. Your votes were counted.');
 }
 
+const singerProfile = Array.isArray(
+  (current as any)?.singer_profiles
+)
+  ? (current as any)?.singer_profiles[0] || null
+  : (current as any)?.singer_profiles || null;
+
+const singerPhotoUrl =
+  singerProfile?.photo_url || null;
+
+const activeCategory =
+  categories[currentCategoryIndex] || null;
+
 const completed = Object.keys(scores).length;
 const allCategoriesScored = completed === categories.length;
   
@@ -237,33 +257,70 @@ const allCategoriesScored = completed === categories.length;
         </section>
       ) : (
         <>
-          <section className={styles.performerCard}>
-            <div>
-              <span className={styles.sectionLabel}>
-                Now Performing
-              </span>
+         <section className={styles.performerHero}>
+  <div className={styles.performerHeroGlow} />
 
-              <h2>{current.singer_name}</h2>
+  <div className={styles.performerHeroTop}>
+    <div className={styles.liveIndicator}>
+      <span className={styles.liveDot} />
+      LIVE PERFORMANCE
+    </div>
 
-              <p className={styles.song}>
-                {current.song_title}
-                {current.artist ? (
-                  <span> by {current.artist}</span>
-                ) : null}
-              </p>
-            </div>
+    <div
+      className={`${styles.votingStatus} ${
+        event?.is_voting_open
+          ? styles.votingOpen
+          : styles.votingClosed
+      }`}
+    >
+      <span className={styles.statusDot} />
 
-            <div
-              className={`${styles.votingStatus} ${
-                event?.is_voting_open
-                  ? styles.votingOpen
-                  : styles.votingClosed
-              }`}
-            >
-              <span className={styles.statusDot} />
-              Voting {event?.is_voting_open ? 'Open' : 'Closed'}
-            </div>
-          </section>
+      {event?.is_voting_open
+        ? 'Ballot Open'
+        : 'Voting Closed'}
+    </div>
+  </div>
+
+  <div className={styles.performerHeroContent}>
+    <div className={styles.performerIcon}>
+  {singerPhotoUrl ? (
+    <img
+      src={singerPhotoUrl}
+      alt={current.singer_name}
+      className={styles.performerPhoto}
+    />
+  ) : (
+    <span>🎤</span>
+  )}
+</div>
+
+    <div className={styles.performerCopy}>
+      <span className={styles.sectionLabel}>
+        Now Performing
+      </span>
+
+      <h2>{current.singer_name}</h2>
+
+      <p className={styles.songTitle}>
+        {current.song_title}
+      </p>
+
+      {current.artist && (
+        <p className={styles.artistName}>
+          {current.artist}
+        </p>
+      )}
+    </div>
+  </div>
+
+  <div className={styles.judgePrompt}>
+    <span>Official Judge Ballot</span>
+
+    <strong>
+      Score the performance below
+    </strong>
+  </div>
+</section>
 
           <section className={styles.progressCard}>
             <div className={styles.progressTop}>
@@ -272,9 +329,11 @@ const allCategoriesScored = completed === categories.length;
                   Ballot Progress
                 </span>
 
-                <strong>
-                  {completed} of {categories.length} categories
-                </strong>
+               <strong>
+  {allCategoriesScored
+    ? 'Ballot Complete'
+    : `${completed} of ${categories.length} scored`}
+</strong>
               </div>
 
               <span className={styles.progressPercent}>
@@ -299,90 +358,175 @@ const allCategoriesScored = completed === categories.length;
                 }}
               />
             </div>
+
+            <div className={styles.progressSteps}>
+  {categories.map((category) => (
+    <span
+      key={category.id}
+      className={
+        scores[category.id]
+          ? styles.progressStepComplete
+          : ''
+      }
+    >
+      {scores[category.id] ? '✓' : '•'}
+    </span>
+  ))}
+</div>
           </section>
 
-          <section className={styles.categoryList}>
-            {categories.map((category, categoryIndex) => {
-              const selectedScore = scores[category.id];
+         <section className={styles.categoryList}>
+  {activeCategory && !allCategoriesScored && (
+    <article
+      className={styles.categoryCard}
+    >
+      <div className={styles.categoryHeading}>
+        <div className={styles.categoryNumber}>
+          <span>
+            {currentCategoryIndex + 1}
+          </span>
+        </div>
 
-              return (
-                <article
-                  key={category.id}
-                  className={`${styles.categoryCard} ${
-                    selectedScore
-                      ? styles.categoryCompleted
-                      : ''
-                  }`}
-                >
-                  <div className={styles.categoryHeading}>
-                    <div className={styles.categoryNumber}>
-                      {categoryIndex + 1}
-                    </div>
+        <div>
+          <span className={styles.sectionLabel}>
+            Category {currentCategoryIndex + 1} of{' '}
+            {categories.length}
+          </span>
 
-                    <div>
-                      <span className={styles.sectionLabel}>
-                        Judging Category
-                      </span>
+          <h3>
+            {activeCategory.category_name}
+          </h3>
 
-                      <h3>{category.category_name}</h3>
-                    </div>
+          <p className={styles.categoryInstruction}>
+            Score this part of the performance.
+          </p>
+        </div>
+      </div>
 
-                    {selectedScore && (
-                      <span className={styles.completedBadge}>
-                        ✓ Scored
-                      </span>
-                    )}
-                  </div>
+      <div className={styles.scoreButtons}>
+        {[1, 2, 3, 4, 5].map((score) => (
+          <button
+            type="button"
+            key={score}
+            className={styles.scoreButton}
+            disabled={!event?.is_voting_open}
+            onClick={() => {
+              setScores((currentScores) => ({
+                ...currentScores,
+                [activeCategory.id]: score,
+              }));
 
-                  <div className={styles.scoreButtons}>
-                    {[1, 2, 3, 4, 5].map((score) => {
-                      const isSelected =
-                        selectedScore === score;
+              if (
+                currentCategoryIndex <
+                categories.length - 1
+              ) {
+                setTimeout(() => {
+                  setCurrentCategoryIndex(
+                    (currentIndex) =>
+                      currentIndex + 1
+                  );
+                }, 220);
+              }
+            }}
+            aria-label={`${score} stars for ${activeCategory.category_name}`}
+          >
+            <span className={styles.scoreValue}>
+              {score}
+            </span>
 
-                      const isFilled =
-                        selectedScore &&
-                        selectedScore >= score;
+            <span className={styles.star}>
+              ★
+            </span>
 
-                      return (
-                        <button
-                          type="button"
-                          key={score}
-                          className={`${styles.scoreButton} ${
-                            isFilled
-                              ? styles.scoreButtonFilled
-                              : ''
-                          } ${
-                            isSelected
-                              ? styles.scoreButtonSelected
-                              : ''
-                          }`}
-                          disabled={!event?.is_voting_open}
-                          onClick={() =>
-                            setScores((currentScores) => ({
-                              ...currentScores,
-                              [category.id]: score,
-                            }))
-                          }
-                          aria-label={`${score} stars for ${category.category_name}`}
-                        >
-                          <span className={styles.star}>★</span>
-                          <span>{score}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
+            <span className={styles.scoreWord}>
+              {score === 1
+                ? 'Needs Work'
+                : score === 2
+                  ? 'Fair'
+                  : score === 3
+                    ? 'Solid'
+                    : score === 4
+                      ? 'Great'
+                      : 'Legend'}
+            </span>
+          </button>
+        ))}
+      </div>
 
-                  <div className={styles.scoreGuide}>
-                    <span>1 — Needs work</span>
-                    <span>3 — Solid performance</span>
-                    <span>5 — Karaoke legend</span>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
+      {currentCategoryIndex > 0 && (
+        <button
+          type="button"
+          className={styles.backCategoryButton}
+          onClick={() =>
+            setCurrentCategoryIndex(
+              (currentIndex) =>
+                Math.max(0, currentIndex - 1)
+            )
+          }
+        >
+          ← Previous Category
+        </button>
+      )}
+    </article>
+  )}
 
-          <section className={styles.submitCard}>
+  {allCategoriesScored && (
+  <article className={styles.ballotCompleteCard}>
+    <div className={styles.ballotCompleteHeader}>
+      <div className={styles.ballotCompleteIcon}>
+        ✓
+      </div>
+
+      <div>
+        <span className={styles.sectionLabel}>
+          Ballot Complete
+        </span>
+
+        <h2>Ready to submit</h2>
+
+        <p>
+          Review your scores for{' '}
+          <strong>{current.singer_name}</strong>.
+        </p>
+      </div>
+    </div>
+
+    <div className={styles.ballotReview}>
+      {categories.map((category) => (
+        <div
+          key={category.id}
+          className={styles.ballotReviewRow}
+        >
+          <span>
+            {category.category_name}
+          </span>
+
+          <strong>
+            ★ {scores[category.id]} / 5
+          </strong>
+        </div>
+      ))}
+    </div>
+
+    <div className={styles.ballotAverage}>
+      <span>Judge Average</span>
+
+      <strong>
+        {(
+          Object.values(scores).reduce(
+            (sum, score) => sum + score,
+            0
+          ) / categories.length
+        ).toFixed(2)}
+        {' / 5'}
+      </strong>
+    </div>
+  </article>
+)}
+</section>
+
+          {allCategoriesScored && (
+  <section className={styles.submitCard}>
             {!allCategoriesScored && (
               <div className={styles.incompleteMessage}>
                 <span>⚠️</span>
@@ -400,17 +544,17 @@ const allCategoriesScored = completed === categories.length;
               className={styles.submitButton}
             >
               {allCategoriesScored
-                ? 'Submit Official Ballot'
-                : `${categories.length - completed} ${
-                    categories.length - completed === 1
-                      ? 'Category'
-                      : 'Categories'
-                  } Remaining`}
+  ? '✓ Submit Official Ballot'
+  : `${categories.length - completed} ${
+      categories.length - completed === 1
+        ? 'Score Remaining'
+        : 'Scores Remaining'
+    }`}
             </button>
 
             <p className={styles.ballotNote}>
-              Your completed ballot counts as one judge vote for
-              this performance.
+              Once submitted, this ballot is locked and counts as
+one official judge score for {current.singer_name}.
             </p>
 
             {message && (
@@ -425,6 +569,7 @@ const allCategoriesScored = completed === categories.length;
               </div>
             )}
           </section>
+          )}
         </>
       )}
     </div>

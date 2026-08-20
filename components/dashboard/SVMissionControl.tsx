@@ -48,6 +48,16 @@ export default function SVMissionControl({
   nextSingerName,
 }: Props) {
 
+  const [mounted, setMounted] =
+    useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const votingDisabled =
+    !mounted || !hasCurrentSinger;
+
   const getBadge = (
   type:
     | 'next'
@@ -124,6 +134,7 @@ const StatusBadge = ({
     | 'end';
 }) => {
   const badge = getBadge(type);
+
 
   return (
     <span
@@ -221,8 +232,8 @@ Add singer directly to tonight's queue
               : ''
           }`}
           onClick={onToggleVoting}
-          disabled={!hasCurrentSinger}
-          aria-disabled={!hasCurrentSinger}
+          disabled={votingDisabled}
+aria-disabled={votingDisabled}
         >
 
           <StatusBadge type="voting" />

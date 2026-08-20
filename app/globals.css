@@ -8913,13 +8913,6 @@ a.atlas-live-venue-logo {
   font-weight: 900;
 }
 
-.sv-tournament-tv-score::after {
-  content: " / 5";
-  margin-left: 4px;
-  color: #64748b;
-  font-size: 16px;
-}
-
 .sv-tournament-tv-advances {
   display: inline-flex;
   margin-top: 14px;
@@ -8983,5 +8976,225 @@ a.atlas-live-venue-logo {
 .sv-tournament-tv-next-stop strong {
   color: white;
   font-size: 24px;
+  letter-spacing: normal;
+}
+
+/* =========================================
+   TOURNAMENT RESULTS — SCORE BREAKDOWN
+   ========================================= */
+
+.sv-tournament-result-row {
+  display: grid;
+  grid-template-columns:
+    auto
+    auto
+    minmax(170px, 1fr)
+    minmax(290px, 1.35fr)
+    auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.sv-tournament-result-breakdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.sv-tournament-result-breakdown > span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  padding: 10px 12px;
+
+  color: #94a3b8;
+  background: rgba(2, 8, 23, 0.34);
+
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 12px;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sv-tournament-result-breakdown strong {
+  color: #f8fafc;
+
+  font-size: 14px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.sv-tournament-result-score {
+  min-width: 105px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  line-height: 1;
+}
+
+.sv-tournament-result-score strong {
+  color: #f8fafc;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.sv-tournament-result-score span {
+  margin-top: 5px;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sv-tournament-result-advanced {
+  grid-column: 3 / -1;
+  justify-self: end;
+}
+
+
+/* Tablet / smaller desktop */
+
+@media (max-width: 900px) {
+  .sv-tournament-result-row {
+    grid-template-columns:
+      auto
+      auto
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .sv-tournament-result-breakdown {
+    grid-column: 3 / -1;
+    width: 100%;
+  }
+
+  .sv-tournament-result-score {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .sv-tournament-result-advanced {
+    grid-column: 3 / -1;
+  }
+}
+
+
+/* Phone */
+
+@media (max-width: 600px) {
+  .sv-tournament-result-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .sv-tournament-result-breakdown {
+    grid-column: 1 / -1;
+
+    grid-template-columns: 1fr 1fr;
+
+    margin-top: 4px;
+  }
+
+  .sv-tournament-result-score {
+    grid-column: 1 / -1;
+
+    width: 100%;
+
+    padding-top: 12px;
+
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+  }
+
+  .sv-tournament-result-score span {
+    margin-top: 0;
+  }
+
+  .sv-tournament-result-advanced {
+    grid-column: 1 / -1;
+    justify-self: flex-start;
+  }
+}
+
+/* =========================================
+   TOURNAMENT TV — WEIGHTED SCORE
+   ========================================= */
+
+.sv-tournament-tv-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin-top: 10px;
+
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 950;
+  line-height: 1;
+}
+
+.sv-tournament-tv-score > span {
+  margin-top: 6px;
+
+  color: #64748b;
+
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.sv-tournament-tv-score-breakdown {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+
+  margin-top: 16px;
+}
+
+.sv-tournament-tv-score-breakdown > span {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+
+  padding: 10px 8px;
+
+  border-radius: 12px;
+
+  color: #64748b;
+
+  background:
+    rgba(2, 8, 23, 0.38);
+
+  border:
+    1px solid
+    rgba(148, 163, 184, 0.12);
+
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+
+  text-align: center;
+}
+
+.sv-tournament-tv-score-breakdown strong {
+  color: #f8fafc;
+
+  font-size: 0.85rem;
   letter-spacing: normal;
 }

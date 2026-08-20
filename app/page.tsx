@@ -205,6 +205,16 @@ const [
 ] = useState(true);
 
 const [
+  tournamentJudgeWeight,
+  setTournamentJudgeWeight,
+] = useState(75);
+
+const [
+  tournamentPeopleWeight,
+  setTournamentPeopleWeight,
+] = useState(25);
+
+const [
   launchingTournament,
   setLaunchingTournament,
 ] = useState(false);
@@ -557,16 +567,30 @@ async function launchAssignedTournament() {
   error: eventLinkError,
 } = await supabase
   .from('events')
-  .update({
-    tournament_event_id:
-      setupTournamentEvent.id,
+.update({
+  tournament_event_id:
+    setupTournamentEvent.id,
 
-    venue_id:
-      assignedEvent.venue_id,
+  venue_id:
+    assignedEvent.venue_id,
 
-    competition_mode:
-      'tournament',
-  })
+  competition_mode:
+    'tournament',
+
+  judge_weight:
+    !tournamentJudgingEnabled
+      ? 0
+      : !tournamentPeoplesChoice
+        ? 100
+        : tournamentJudgeWeight,
+
+  peoples_choice_weight:
+    !tournamentPeoplesChoice
+      ? 0
+      : !tournamentJudgingEnabled
+        ? 100
+        : tournamentPeopleWeight,
+})
   .eq(
     'id',
     newEventId
@@ -1609,6 +1633,169 @@ setTournamentExpectedJudges(
           }
         />
       </label>
+
+      {tournamentJudgingEnabled &&
+  tournamentPeoplesChoice && (
+    <div className="sv-host-home-modal-section">
+      <label>
+        Winner Selection
+      </label>
+
+      <p
+        style={{
+          margin: '4px 0 14px',
+          color: '#94a3b8',
+          fontSize: 13,
+          lineHeight: 1.45,
+        }}
+      >
+        Choose how much judges and
+        People&apos;s Choice contribute to
+        the final result.
+      </p>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(2, minmax(0, 1fr))',
+          gap: 10,
+        }}
+      >
+        {[
+          {
+            label: 'Judges Only',
+            judge: 100,
+            people: 0,
+          },
+          {
+            label: '75 / 25',
+            judge: 75,
+            people: 25,
+          },
+          {
+            label: '50 / 50',
+            judge: 50,
+            people: 50,
+          },
+          {
+            label: "People's Choice Only",
+            judge: 0,
+            people: 100,
+          },
+        ].map((option) => {
+          const selected =
+            tournamentJudgeWeight ===
+              option.judge &&
+            tournamentPeopleWeight ===
+              option.people;
+
+          return (
+            <button
+              key={option.label}
+              type="button"
+              onClick={() => {
+                setTournamentJudgeWeight(
+                  option.judge
+                );
+
+                setTournamentPeopleWeight(
+                  option.people
+                );
+              }}
+              style={{
+                padding: '12px 10px',
+                borderRadius: 12,
+                border: selected
+                  ? '2px solid #f97316'
+                  : '1px solid rgba(148,163,184,0.18)',
+                background: selected
+                  ? 'rgba(249,115,22,0.12)'
+                  : 'rgba(15,23,42,0.55)',
+                color: '#fff',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns:
+            'repeat(2, minmax(0, 1fr))',
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            background:
+              'rgba(56,189,248,0.08)',
+            border:
+              '1px solid rgba(56,189,248,0.16)',
+          }}
+        >
+          <div
+            style={{
+              color: '#94a3b8',
+              fontSize: 11,
+              fontWeight: 800,
+            }}
+          >
+            JUDGES
+          </div>
+
+          <strong
+            style={{
+              display: 'block',
+              marginTop: 4,
+              fontSize: 22,
+            }}
+          >
+            {tournamentJudgeWeight}%
+          </strong>
+        </div>
+
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            background:
+              'rgba(249,115,22,0.08)',
+            border:
+              '1px solid rgba(249,115,22,0.16)',
+          }}
+        >
+          <div
+            style={{
+              color: '#94a3b8',
+              fontSize: 11,
+              fontWeight: 800,
+            }}
+          >
+            PEOPLE&apos;S CHOICE
+          </div>
+
+          <strong
+            style={{
+              display: 'block',
+              marginTop: 4,
+              fontSize: 22,
+            }}
+          >
+            {tournamentPeopleWeight}%
+          </strong>
+        </div>
+      </div>
+    </div>
+  )}
 
       <div className="sv-host-home-modal-actions">
         <button
