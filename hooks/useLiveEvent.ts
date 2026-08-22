@@ -358,30 +358,48 @@ export default function useLiveEvent(
   [queue, performanceBelongsToSinger]
 );
 
-// The event's current_performance_id is the source of truth
-// for who is actually singing.
+// Match the Host Dashboard's queue ordering exactly:
+// round first, then queue_order.
+const liveQueue = useMemo(
+  () =>
+    [...queue].sort((a, b) => {
+      const roundDiff =
+        (a.round || 1) - (b.round || 1);
+
+      if (roundDiff !== 0) {
+        return roundDiff;
+      }
+
+      return (
+        (a.queue_order || 0) -
+        (b.queue_order || 0)
+      );
+    }),
+  [queue]
+);
+
+// The event is the source of truth for
+// who is actually singing.
 const currentPerformance =
-  queue.find(
+  liveQueue.find(
     (performance) =>
       performance.id ===
       event?.current_performance_id
   ) || null;
 
-// Remove the current singer before calculating
-// who's next and everyone's queue position.
-const upcomingQueue = queue.filter(
-  (performance) =>
-    performance.id !==
-    event?.current_performance_id
-);
-
+// Same "Up Next" logic as the Host Dashboard:
+// first active performance that isn't current.
 const onDeckPerformance =
-  upcomingQueue[0] || null;
+  liveQueue.find(
+    (performance) =>
+      performance.id !==
+      event?.current_performance_id
+  ) || null;
 
-// Find this singer's position in the UPCOMING queue,
-// not including whoever is currently performing.
+// Use the SAME visible position number
+// that appears on the Host Dashboard.
 const myPositionIndex =
-  upcomingQueue.findIndex(
+  liveQueue.findIndex(
     performanceBelongsToSinger
   );
 
