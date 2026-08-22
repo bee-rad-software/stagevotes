@@ -330,11 +330,14 @@ const [songConflictWarning, setSongConflictWarning] =
       .from('performances')
       .select('*')
       .eq('event_id', eventId)
-      .neq('status', 'completed')
-      .neq('status', 'skipped')
-      .order('queue_order', {
-        ascending: true,
-      });
+.neq('status', 'completed')
+.neq('status', 'skipped')
+.order('round', {
+  ascending: true,
+})
+.order('queue_order', {
+  ascending: true,
+});
 
     if (error) {
       console.error(
@@ -842,6 +845,35 @@ const needsCompetitionSong =
   };
 }
 
+  async function getCurrentRound() {
+  const { data, error } = await supabase
+    .from('performances')
+    .select('round, status')
+    .eq('event_id', eventId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const activePerformances =
+    (data || []).filter(
+      (performance) =>
+        performance.status !== 'completed' &&
+        performance.status !== 'skipped'
+    );
+
+  if (activePerformances.length === 0) {
+    return 1;
+  }
+
+  return Math.min(
+    ...activePerformances.map(
+      (performance) =>
+        performance.round || 1
+    )
+  );
+}
+
   async function getNextQueueDetails() {
     const { data, error } = await supabase
       .from('performances')
@@ -1046,10 +1078,40 @@ if (!singerProfileId && user) {
   singerProfileId =
     profileRow?.id || null;
 }
-      const {
-        activeRound,
-        nextQueueOrder,
-      } = await getNextQueueDetails();
+     const {
+  nextQueueOrder,
+} = await getNextQueueDetails();
+
+const currentRound =
+  await getCurrentRound();
+
+const singerHighestRound =
+  myPerformances.length > 0
+    ? Math.max(
+        ...myPerformances.map(
+          (performance) =>
+            performance.round || 1
+        )
+      )
+    : null;
+
+const singerOriginalOrder =
+  myPerformances.length > 0
+    ? Math.min(
+        ...myPerformances.map(
+          (performance) =>
+            performance.queue_order || 0
+        )
+      )
+    : null;
+
+const assignedRound =
+  singerHighestRound === null
+    ? currentRound
+    : Math.max(
+        currentRound,
+        singerHighestRound + 1
+      );
 
       const { error } = await supabase
         .from('performances')
@@ -1059,11 +1121,13 @@ if (!singerProfileId && user) {
           singer_name: singerName.trim(),
           song_title: song.title.trim(),
           artist: song.artist.trim(),
-          queue_order: nextQueueOrder,
-          round:
-            activeRound +
-            myPerformances.length,
-          device_id: getDeviceId(),
+          queue_order:
+  singerOriginalOrder !== null
+    ? singerOriginalOrder
+    : nextQueueOrder,
+
+round: assignedRound,
+device_id: getDeviceId(),
           singer_profile_id:
   singerProfileId,
         });

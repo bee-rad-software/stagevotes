@@ -6,6 +6,7 @@ import {
   GripVertical,
   List,
   Music2,
+  Radio,
   SkipForward,
   Trash2,
   UserRound,
@@ -70,6 +71,7 @@ type Props = {
   editSingerName?: string;
   editSongTitle?: string;
   editArtist?: string;
+  
 
   onToggleSingerView?: () => void;
 
@@ -94,6 +96,14 @@ type Props = {
     draggedId: string,
     targetId: string
   ) => void;
+
+    onSendToKaraFun?: (
+    item: SVHostQueueItem
+  ) => void;
+
+  karafunSentPerformanceIds?: Set<string>;
+
+  karafunConnected?: boolean;
 };
 
 type SortableRowProps = {
@@ -101,10 +111,20 @@ type SortableRowProps = {
   index: number;
   editing: boolean;
 
-  onStartEdit?: (performance: SVHostQueueItem) => void;
+  onStartEdit?: (
+    performance: SVHostQueueItem
+  ) => void;
+
   onSkip?: (id: string) => void;
   onRemove?: (id: string) => void;
   onCheckIn?: (id: string) => void;
+
+  karafunSentPerformanceIds?: Set<string>;
+  onSendToKaraFun?: (
+    item: SVHostQueueItem
+  ) => void;
+
+  karafunConnected?: boolean;
 };
 
 function getInitials(name: string) {
@@ -125,9 +145,15 @@ function SortableQueueRow({
   onSkip,
   onRemove,
   onCheckIn,
+  onSendToKaraFun,
+  karafunSentPerformanceIds,
+  karafunConnected = false,
 }: SortableRowProps) {
   const isCurrent = item.status === 'current';
   const isNext = item.status === 'next';
+
+  const sentToKaraFun =
+  karafunSentPerformanceIds?.has(item.id) ?? false;
 
   const isWaitingForReadiness =
   item.tournamentReadiness ===
@@ -277,6 +303,39 @@ const rowStyle: React.CSSProperties = {
 
         <div className="sv-host-queue-actions">
 
+     <button
+  type="button"
+  title={
+    sentToKaraFun
+      ? 'Sent to KaraFun'
+      : karafunConnected
+      ? 'Send to KaraFun'
+      : 'Connect KaraFun first'
+  }
+  aria-label={
+    sentToKaraFun
+      ? `${item.songTitle} has been sent to KaraFun`
+      : `Send ${item.songTitle} by ${formatSingerName(
+          item.singerName
+        )} to KaraFun`
+  }
+  disabled={
+    sentToKaraFun ||
+    !karafunConnected ||
+    !item.songTitle ||
+    item.songTitle === 'Song Needed'
+  }
+  onClick={(event) => {
+    event.stopPropagation();
+
+    if (!sentToKaraFun) {
+      onSendToKaraFun?.(item);
+    }
+  }}
+>
+  {sentToKaraFun ? '✓' : <Radio size={18} />}
+</button>
+
       <button
   type="button"
   title={
@@ -359,9 +418,12 @@ export default function SVHostQueue({
   onSaveEdit,
   onCancelEdit,
   onSkip,
-  onRemove,
+    onRemove,
   onCheckIn,
   onReorder,
+  onSendToKaraFun,
+  karafunSentPerformanceIds,
+  karafunConnected = false,
 }: Props) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -653,17 +715,22 @@ const uniqueSingerCount = singerGroups.length;
             <div className="sv-host-queue-list">
               {items.map((item, index) => (
                 <SortableQueueRow
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  editing={
-                    editingId === item.id
-                  }
-                  onStartEdit={onStartEdit}
-                  onSkip={onSkip}
-                  onRemove={onRemove}
-                  onCheckIn={onCheckIn}
-                />
+  key={item.id}
+  item={item}
+  index={index}
+  editing={
+    editingId === item.id
+  }
+  onStartEdit={onStartEdit}
+  onSkip={onSkip}
+  onRemove={onRemove}
+  onCheckIn={onCheckIn}
+  onSendToKaraFun={onSendToKaraFun}
+  karafunSentPerformanceIds={
+  karafunSentPerformanceIds
+}
+  karafunConnected={karafunConnected}
+/>
               ))}
             </div>
           </SortableContext>

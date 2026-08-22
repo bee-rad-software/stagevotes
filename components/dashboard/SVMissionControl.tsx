@@ -8,6 +8,7 @@ import {
   Vote,
   Monitor,
   Trophy,
+  Radio,
 } from 'lucide-react';
 
 import { useEffect, useState } from 'react';
@@ -20,11 +21,17 @@ type Props = {
   onToggleVoting?: () => void;
   onOpenDisplay?: () => void;
   onAwards?: () => void;
+  onConnectKaraFun?: () => void;
+  onOpenKaraFunDisplay?: () => void;
+  karafunConnecting?: boolean;
+karafunConnectionError?: string;
+karafunPlayerOnline?: boolean;
 
   votingOpen?: boolean;
   hasCurrentSinger?: boolean;
   showStarted?: boolean;
   advancingSinger?: boolean;
+  karafunConnected?: boolean;
 
   currentSingerName?: string;
   nextSingerName?: string;
@@ -38,11 +45,17 @@ export default function SVMissionControl({
   onToggleVoting,
   onOpenDisplay,
   onAwards,
+  onConnectKaraFun,
+  onOpenKaraFunDisplay,
 
   votingOpen = false,
   hasCurrentSinger = false,
   showStarted = false,
   advancingSinger = false,
+  karafunConnected = false,
+  karafunConnecting = false,
+karafunConnectionError = '',
+karafunPlayerOnline = false,
 
   currentSingerName,
   nextSingerName,
@@ -64,8 +77,10 @@ export default function SVMissionControl({
     | 'walkup'
     | 'voting'
     | 'display'
-    | 'awards'
-    | 'end'
+    | 'karafunDisplay'
+   | 'awards'
+| 'karafun'
+| 'end'
 ) => {
   switch (type) {
     case 'next':
@@ -94,11 +109,29 @@ export default function SVMissionControl({
           : 'neutral',
       };
 
+    case 'karafun':
+  return {
+    label:
+  karafunConnected && karafunPlayerOnline
+    ? 'CONNECTED'
+    : 'OFFLINE',
+    className:
+  karafunConnected && karafunPlayerOnline
+    ? 'success'
+    : 'neutral',
+  };
+
     case 'display':
       return {
         label: 'CONNECTED',
         className: 'info',
       };
+
+    case 'karafunDisplay':
+  return {
+    label: 'READY',
+    className: 'info',
+  };
 
     case 'awards':
       return {
@@ -130,7 +163,9 @@ const StatusBadge = ({
     | 'walkup'
     | 'voting'
     | 'display'
+    | 'karafunDisplay'
     | 'awards'
+    | 'karafun'
     | 'end';
 }) => {
   const badge = getBadge(type);
@@ -271,6 +306,56 @@ aria-disabled={votingDisabled}
 Launch audience display
 </small>
         </button>
+
+        <button
+  type="button"
+  className="sv-mission-action"
+  onClick={onOpenKaraFunDisplay}
+>
+  <StatusBadge type="karafunDisplay" />
+
+  <Monitor size={26} />
+
+  <span>KaraFun Display</span>
+
+  <small>
+    Launch singer queue display
+  </small>
+</button>
+
+        <button
+  type="button"
+  className={`sv-mission-action ${
+    karafunConnected
+      ? 'sv-mission-active'
+      : ''
+  }`}
+  onClick={onConnectKaraFun}
+  disabled={karafunConnecting}
+>
+  <StatusBadge type="karafun" />
+
+  <Radio size={26} />
+
+ <span>
+  {karafunConnected && karafunPlayerOnline
+    ? 'KaraFun Connected'
+    : karafunConnecting
+    ? 'Connecting KaraFun...'
+    : 'Connect KaraFun'}
+</span>
+
+<small>
+  {karafunConnected && karafunPlayerOnline
+    ? 'StageVotes bridge is ready'
+    : karafunConnected && !karafunPlayerOnline
+    ? 'Start the KaraFun player'
+    : karafunConnecting
+    ? 'Opening KaraFun bridge'
+    : karafunConnectionError ||
+      'Connect tonight’s KaraFun session'}
+</small>
+</button>
 
         <button
           type="button"

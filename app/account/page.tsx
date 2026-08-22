@@ -15,12 +15,14 @@ import {
   LoaderCircle,
   LogOut,
   QrCode,
+  Radio,
   Save,
   Trash2,
 } from 'lucide-react';
 
 export default function AccountPage() {
   const [accountId, setAccountId] = useState('');
+  const [venueId, setVenueId] = useState('');
   const [name, setName] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [venmoUrl, setVenmoUrl] = useState('');
@@ -34,6 +36,7 @@ export default function AccountPage() {
   const [staticSignupQr, setStaticSignupQr] = useState(false);
   const [staticJudgeQr, setStaticJudgeQr] = useState(false);
   const [staticPeopleQr, setStaticPeopleQr] = useState(false);
+  const [karafunChannel, setKarafunChannel] = useState('');
 
   useEffect(() => {
     loadAccount();
@@ -60,8 +63,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-      .select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr')
-      .eq('id', accountUser.account_id)
+.select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, karafun_channel')      .eq('id', accountUser.account_id)
       .single();
 
     if (accountError || !account) {
@@ -70,6 +72,16 @@ export default function AccountPage() {
     }
 
     setAccountId(account.id);
+    const { data: venue } = await supabase
+  .from('venues')
+  .select('id')
+  .eq('account_id', account.id)
+  .limit(1)
+  .maybeSingle();
+
+if (venue?.id) {
+  setVenueId(venue.id);
+}
     setName(account.name || '');
     setSubscriptionStatus(account.subscription_status || '');
     setTipsEnabled(account.tips_enabled || false);
@@ -80,6 +92,7 @@ export default function AccountPage() {
     setStaticSignupQr(account.static_signup_qr || false);
     setStaticJudgeQr(account.static_judge_qr || false);
     setStaticPeopleQr(account.static_people_qr || false);
+    setKarafunChannel(account.karafun_channel || '');
   }
 
   async function saveSettings() {
@@ -96,6 +109,7 @@ export default function AccountPage() {
         static_signup_qr: staticSignupQr,
         static_judge_qr: staticJudgeQr,
         static_people_qr: staticPeopleQr,
+        karafun_channel: karafunChannel,
       })
       .eq('id', accountId);
 
@@ -206,6 +220,111 @@ return (
           gap: 20,
         }}
       >
+       
+       <section className="sv-card">
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 22,
+    }}
+  >
+    <div
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'rgba(56,189,248,0.12)',
+        color: '#38bdf8',
+      }}
+    >
+      <Radio size={22} />
+    </div>
+
+    <div>
+      <h2
+        style={{
+          margin: 0,
+          fontSize: 20,
+        }}
+      >
+        KaraFun Integration
+      </h2>
+
+      <p
+        style={{
+          margin: '5px 0 0',
+          opacity: 0.65,
+          fontSize: 13,
+        }}
+      >
+        Connect StageVotes to your KaraFun remote session.
+      </p>
+    </div>
+  </div>
+
+  <label
+    htmlFor="karafun-channel"
+    style={{
+      display: 'block',
+      marginBottom: 7,
+      fontSize: 13,
+      fontWeight: 700,
+    }}
+  >
+    KaraFun Remote Link or Channel
+  </label>
+
+  <input
+    id="karafun-channel"
+    value={karafunChannel}
+    onChange={(e) => {
+      const value = e.target.value.trim();
+
+      const match = value.match(
+        /karafun\.com\/(\d+)/i
+      );
+
+      setKarafunChannel(
+        match ? match[1] : value
+      );
+    }}
+    placeholder="https://www.karafun.com/111111/"
+  />
+
+  <p
+    style={{
+      margin: '9px 0 0',
+      fontSize: 12,
+      opacity: 0.6,
+      lineHeight: 1.5,
+    }}
+  >
+    Paste your static KaraFun remote link or enter the channel
+    number. StageVotes will use it to connect your show
+    queue to KaraFun.
+  </p>
+
+  {karafunChannel && (
+    <div
+      style={{
+        marginTop: 14,
+        padding: '11px 12px',
+        borderRadius: 10,
+        background: 'rgba(74,222,128,0.1)',
+        color: '#4ade80',
+        fontSize: 13,
+        fontWeight: 700,
+      }}
+    >
+      KaraFun channel: {karafunChannel}
+    </div>
+  )}
+</section>
+       
         <section className="sv-card">
           <div
             style={{
@@ -709,6 +828,94 @@ return (
           top: 20,
         }}
       >
+
+        <section className="sv-card">
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 18,
+    }}
+  >
+    <div
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        display: 'grid',
+        placeItems: 'center',
+        background: 'rgba(56,189,248,0.12)',
+        color: '#38bdf8',
+      }}
+    >
+      <Building2 size={22} />
+    </div>
+
+    <div>
+      <h2
+        style={{
+          margin: 0,
+          fontSize: 20,
+        }}
+      >
+        Venue Profile
+      </h2>
+
+      <p
+        style={{
+          margin: '5px 0 0',
+          opacity: 0.65,
+          fontSize: 13,
+        }}
+      >
+        Manage your Project Atlas venue page.
+      </p>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    className="secondary"
+    disabled={!venueId}
+    onClick={() => {
+      if (venueId) {
+        router.push(`/account/venues/${venueId}`);
+      }
+    }}
+    style={{
+      width: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      cursor: venueId ? 'pointer' : 'not-allowed',
+      opacity: venueId ? 1 : 0.55,
+    }}
+  >
+    <Building2 size={16} />
+    Manage Venue
+  </button>
+
+<button
+  type="button"
+  className="secondary"
+  onClick={() => router.push('/')}
+  style={{
+    width: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+  }}
+>
+  <Radio size={16} />
+  Recurring Shows
+</button>
+
+</section>
+
         <section className="sv-card">
           <div
             style={{
