@@ -15,6 +15,7 @@ type EventData = {
   venue?: string | null;
   venue_name?: string | null;
   is_show_ended?: boolean | null;
+  current_performance_id?: string | null;
 };
 
 export type LivePerformance = {
@@ -159,13 +160,14 @@ export default function useLiveEvent(
       await supabase
         .from('events')
         .select(
-          `
-          id,
-          name,
-          venue,
-          is_show_ended
-          `
-        )
+  `
+  id,
+  name,
+  venue,
+  is_show_ended,
+  current_performance_id
+  `
+)
         .eq('id', eventId)
         .maybeSingle();
 
@@ -349,27 +351,44 @@ export default function useLiveEvent(
     );
 
   const myPerformances = useMemo(
-    () =>
-      queue.filter(
-        performanceBelongsToSinger
-      ),
-    [queue, performanceBelongsToSinger]
-  );
+  () =>
+    queue.filter(
+      performanceBelongsToSinger
+    ),
+  [queue, performanceBelongsToSinger]
+);
 
-  const myPositionIndex = queue.findIndex(
+// The event's current_performance_id is the source of truth
+// for who is actually singing.
+const currentPerformance =
+  queue.find(
+    (performance) =>
+      performance.id ===
+      event?.current_performance_id
+  ) || null;
+
+// Remove the current singer before calculating
+// who's next and everyone's queue position.
+const upcomingQueue = queue.filter(
+  (performance) =>
+    performance.id !==
+    event?.current_performance_id
+);
+
+const onDeckPerformance =
+  upcomingQueue[0] || null;
+
+// Find this singer's position in the UPCOMING queue,
+// not including whoever is currently performing.
+const myPositionIndex =
+  upcomingQueue.findIndex(
     performanceBelongsToSinger
   );
 
-  const myPosition =
-    myPositionIndex >= 0
-      ? myPositionIndex + 1
-      : null;
-
-  const currentPerformance =
-    queue[0] || null;
-
-  const onDeckPerformance =
-    queue[1] || null;
+const myPosition =
+  myPositionIndex >= 0
+    ? myPositionIndex + 1
+    : null;
 
   const isCurrentSinger = Boolean(
     currentPerformance &&
