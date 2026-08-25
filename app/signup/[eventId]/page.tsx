@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useParams } from 'next/navigation';
 import {
   Bell,
@@ -21,6 +26,12 @@ import SVSongPicker, {
 } from '@/components/singer/SVSongPicker';
 import SVTipCard from '@/components/singer/SVTipCard';
 import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
+import {
+  getRotationIdentity,
+} from '@/lib/rotationIdentity';
+import {
+  buildRotationQueue,
+} from '@/lib/rotationQueue';
 
 type QueueState =
   | 'waiting'
@@ -116,6 +127,8 @@ export default function SignupPage() {
 
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const submitLockRef = useRef(false);
 
   const [songSheetOpen, setSongSheetOpen] =
     useState(false);
@@ -348,9 +361,8 @@ const [songConflictWarning, setSongConflictWarning] =
       return;
     }
 
-    const queueData = (data || []) as Performance[];
-
-   setQueue(queueData);
+   const queueData =
+  (data || []) as Performance[];
 
 const { data: currentEvent } = await supabase
   .from('events')
@@ -361,20 +373,31 @@ const { data: currentEvent } = await supabase
 const currentPerformanceId =
   currentEvent?.current_performance_id || null;
 
+const orderedQueue =
+  buildRotationQueue(
+    queueData,
+    currentPerformanceId
+  );
+
+setQueue(orderedQueue);
+
 const actualCurrentSinger =
-  queueData.find(
+  orderedQueue.find(
     (performance) =>
       performance.id === currentPerformanceId
   ) || null;
 
 setCurrentSinger(actualCurrentSinger);
 
-const waitingQueue = queueData.filter(
-  (performance) =>
-    performance.id !== currentPerformanceId
-);
+const waitingQueue =
+  orderedQueue.filter(
+    (performance) =>
+      performance.id !== currentPerformanceId
+  );
 
-setOnDeckSinger(waitingQueue[0] || null);
+setOnDeckSinger(
+  waitingQueue[0] || null
+);
   }
 
   useEffect(() => {
@@ -438,23 +461,36 @@ setOnDeckSinger(waitingQueue[0] || null);
     .trim()
     .toLowerCase();
 
-  function performanceBelongsToSinger(
-    performance: Performance
-  ) {
-    if (
-      singerProfile?.id &&
-      performance.singer_profile_id === singerProfile.id
-    ) {
-      return true;
-    }
+ function performanceBelongsToSinger(
+  performance: Performance
+) {
+  const deviceId = getDeviceId();
 
-    return Boolean(
-      singerKey &&
-        performance.singer_name
-          ?.trim()
-          .toLowerCase() === singerKey
-    );
+  // Best identity: logged-in singer profile
+  if (
+    singerProfile?.id &&
+    performance.singer_profile_id === singerProfile.id
+  ) {
+    return true;
   }
+
+  // Guest identity: same physical device
+  if (
+    deviceId &&
+    performance.device_id === deviceId
+  ) {
+    return true;
+  }
+
+  // Legacy fallback for older performances
+  // that may not have device/profile IDs
+  return Boolean(
+    singerKey &&
+      performance.singer_name
+        ?.trim()
+        .toLowerCase() === singerKey
+  );
+}
 
   const myPerformances = useMemo(
     () => queue.filter(performanceBelongsToSinger),
@@ -930,35 +966,47 @@ const needsCompetitionSong =
     const deviceId = getDeviceId();
 
     const {
-      data: existingSignup,
-      error,
-    } = await supabase
-      .from('performances')
-      .select('id, singer_name')
-      .eq('event_id', eventId)
-      .eq('device_id', deviceId)
-      .neq('status', 'completed')
-      .neq('status', 'skipped')
-      .limit(1)
-      .maybeSingle();
+  data: existingSignups,
+  error,
+} = await supabase
+  .from('performances')
+  .select(
+    `
+    id,
+    singer_name,
+    singer_profile_id,
+    device_id,
+    status
+    `
+  )
+  .eq('event_id', eventId)
+  .eq('device_id', deviceId)
+  .order('created_at', {
+    ascending: true,
+  });
 
     if (error) {
       throw new Error(error.message);
     }
 
-    if (
-      existingSignup &&
-      existingSignup.singer_name
-        .trim()
-        .toLowerCase() !==
-        singerName.trim().toLowerCase()
-    ) {
-      setMessage(
-        'This phone is already signed up under a different name. Ask the host if you need to make a change.'
-      );
+    const firstSignup =
+  existingSignups?.[0] || null;
 
-      return false;
-    }
+if (
+  firstSignup &&
+  firstSignup.singer_name
+    .trim()
+    .toLowerCase() !==
+    singerName.trim().toLowerCase()
+) {
+  closeSongSheet();
+
+  setMessage(
+  `You're already signed up tonight as "${firstSignup.singer_name}". To keep the rotation fair, changing your name won't create a new spot. If you're signing up someone else, please ask the host.`
+);
+
+  return false;
+}
 
     return true;
   }
@@ -1025,6 +1073,7 @@ async function verifySingerNameAvailable() {
   async function addSongToQueue(
     song: SVSongOption
   ) {
+
     if (!singerName.trim()) {
       setMessage(
         'Please enter your name before choosing a song.'
@@ -1056,10 +1105,18 @@ if (!nameAvailable) {
   return;
 }
 
-    setSubmitting(true);
-    setMessage('');
+   if (submitLockRef.current) {
+  return;
+}
 
-    try {
+submitLockRef.current = true;
+
+const submissionId = crypto.randomUUID();
+
+setSubmitting(true);
+setMessage('');
+
+try {
       const {
   data: { user },
 } = await supabase.auth.getUser();
@@ -1130,6 +1187,8 @@ round: assignedRound,
 device_id: getDeviceId(),
           singer_profile_id:
   singerProfileId,
+
+  submission_id: submissionId,
         });
 
       if (error) {
@@ -1292,8 +1351,9 @@ device_id: getDeviceId(),
           : 'Unable to add the song.'
       );
     } finally {
-      setSubmitting(false);
-    }
+  setSubmitting(false);
+  submitLockRef.current = false;
+}
   }
 
   async function changeQueuedSong(

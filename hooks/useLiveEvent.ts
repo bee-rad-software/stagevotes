@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import {
+  buildRotationQueue,
+  getQueuePosition,
+} from '@/lib/rotationQueue';
 
 export type LiveQueueState =
   | 'waiting'
@@ -362,24 +366,16 @@ export default function useLiveEvent(
 // round first, then queue_order.
 const liveQueue = useMemo(
   () =>
-    [...queue].sort((a, b) => {
-      const roundDiff =
-        (a.round || 1) - (b.round || 1);
-
-      if (roundDiff !== 0) {
-        return roundDiff;
-      }
-
-      return (
-        (a.queue_order || 0) -
-        (b.queue_order || 0)
-      );
-    }),
-  [queue]
+    buildRotationQueue(
+      queue,
+      event?.current_performance_id
+    ),
+  [
+    queue,
+    event?.current_performance_id,
+  ]
 );
 
-// The event is the source of truth for
-// who is actually singing.
 const currentPerformance =
   liveQueue.find(
     (performance) =>
@@ -387,8 +383,6 @@ const currentPerformance =
       event?.current_performance_id
   ) || null;
 
-// Same "Up Next" logic as the Host Dashboard:
-// first active performance that isn't current.
 const onDeckPerformance =
   liveQueue.find(
     (performance) =>
@@ -396,17 +390,11 @@ const onDeckPerformance =
       event?.current_performance_id
   ) || null;
 
-// Use the SAME visible position number
-// that appears on the Host Dashboard.
-const myPositionIndex =
-  liveQueue.findIndex(
+const myPosition =
+  getQueuePosition(
+    liveQueue,
     performanceBelongsToSinger
   );
-
-const myPosition =
-  myPositionIndex >= 0
-    ? myPositionIndex + 1
-    : null;
 
   const isCurrentSinger = Boolean(
     currentPerformance &&

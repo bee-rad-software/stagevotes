@@ -4,6 +4,9 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase, EventRow, PerformanceRow, VoteRow } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
+import {
+  buildRotationQueue,
+} from '@/lib/rotationQueue';
 
 
 export default function DisplayPage() {
@@ -164,41 +167,24 @@ async function loadPeoplesChoice() {
   
   const current = performances.find((p) => p.id === event?.current_performance_id);
 
- const rotatedQueue = useMemo(() => {
-  const singerFirstOrder = new Map<string, number>();
-  const singerSongCounts = new Map<string, number>();
-
-  const withRotation = performances
-    .slice()
-    .sort((a, b) => a.queue_order - b.queue_order)
-    .map((p) => {
-      const singerKey = p.singer_name.trim().toLowerCase();
-
-      if (!singerFirstOrder.has(singerKey)) {
-        singerFirstOrder.set(singerKey, p.queue_order);
-      }
-
-      const songNumber = (singerSongCounts.get(singerKey) || 0) + 1;
-      singerSongCounts.set(singerKey, songNumber);
-
-      return {
-        ...p,
-        singerFirstOrder: singerFirstOrder.get(singerKey) || p.queue_order,
-        songNumber
-      };
-    });
-
-  return withRotation.sort((a, b) => {
-    if (a.songNumber !== b.songNumber) {
-      return a.songNumber - b.songNumber;
-    }
-
-    return a.singerFirstOrder - b.singerFirstOrder;
-  });
-}, [performances]);
+const rotatedQueue = useMemo(
+  () =>
+    buildRotationQueue(
+      performances,
+      event?.current_performance_id
+    ),
+  [
+    performances,
+    event?.current_performance_id,
+  ]
+);
 
 const upcoming = rotatedQueue
-  .filter((p) => p.id !== event?.current_performance_id && p.status !== 'completed')
+  .filter(
+    (p) =>
+      p.id !==
+      event?.current_performance_id
+  )
   .slice(0, 5);
  const leaderboard = useMemo(() => {
   const singerScores = new Map<

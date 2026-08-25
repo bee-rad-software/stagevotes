@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
 import { motion, AnimatePresence } from "framer-motion";
 import AppQRCode from '@/components/AppQRCode';
+import {
+  buildRotationQueue,
+} from '@/lib/rotationQueue';
 
 export default function KaraFunDisplay() {
   const params = useParams();
@@ -110,16 +113,11 @@ export default function KaraFunDisplay() {
     (p) => p.id === event?.current_performance_id
   );
 
- const activeQueue = performances
-  .filter(
-    (p) => p.status !== "completed" && p.status !== "skipped"
-  )
-  .sort((a, b) => {
-    const roundDiff = (a.round || 1) - (b.round || 1);
-    if (roundDiff !== 0) return roundDiff;
-
-    return (a.queue_order || 0) - (b.queue_order || 0);
-  });
+const activeQueue =
+  buildRotationQueue(
+    performances,
+    event?.current_performance_id
+  );
 
 const upcoming = activeQueue
   .filter((p) => p.id !== event?.current_performance_id)

@@ -26,6 +26,12 @@ import SVHostIQ from '@/components/dashboard/SVHostIQ';
 import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
 import SVEmptyQueueState from '@/components/dashboard/SVEmptyQueueState';
 import SVFinishedQueueState from '@/components/dashboard/SVFinishedQueueState';
+import {
+  getRotationIdentity,
+} from '@/lib/rotationIdentity';
+import {
+  buildRotationQueue,
+} from '@/lib/rotationQueue';
 
 import {
   DndContext,
@@ -970,11 +976,17 @@ const searchPickerSongs = useCallback(
     return false;
   }
 
-const singerKey = singerName.trim().toLowerCase();
+const newPerformanceIdentity =
+  getRotationIdentity({
+    singer_name: singerName,
+    singer_profile_id: null,
+    device_id: null,
+  });
 
 const singerExistingSongs = performances.filter(
   (p: any) =>
-    p.singer_name.trim().toLowerCase() === singerKey
+    getRotationIdentity(p) ===
+    newPerformanceIdentity
 );
 
 const currentRound =
@@ -2304,17 +2316,17 @@ async function toggleQrSetting(
   
   const current = performances.find((p) => p.id === event?.current_performance_id);
 
-  const rotatedQueue = useMemo(() => {
-  return performances
-    .filter((p) => p.status !== 'completed' && p.status !== 'skipped')
-    .slice()
-    .sort((a: any, b: any) => {
-      const roundDiff = (a.round || 1) - (b.round || 1);
-      if (roundDiff !== 0) return roundDiff;
-
-      return (a.queue_order || 0) - (b.queue_order || 0);
-    });
-}, [performances]);
+ const rotatedQueue = useMemo(
+  () =>
+    buildRotationQueue(
+      performances,
+      event?.current_performance_id
+    ),
+  [
+    performances,
+    event?.current_performance_id,
+  ]
+);
 
 // useEffect(() => {
 //   if (
