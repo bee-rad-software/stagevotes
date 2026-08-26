@@ -251,6 +251,9 @@ onNextSinger={advanceQueue}
 
 <SVHostQueue
   items={hostQueue}
+  onMoveToNextRound={(id: string) => {
+  console.log("Design system: move to next round", id);
+}}
   onSkip={(id: string) => {
     const skippedSinger = hostQueue.find(
       (item) => item.id === id
