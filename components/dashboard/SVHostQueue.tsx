@@ -8,6 +8,7 @@ import {
   Music2,
   Radio,
   SkipForward,
+  RotateCcw,
   Trash2,
   UserRound,
 } from 'lucide-react';
@@ -85,6 +86,9 @@ type Props = {
   onCancelEdit?: () => void;
 
   onSkip?: (id: string) => void;
+  onMoveToNextRound: (
+  performanceId: string
+) => void;
   onRemove?: (id: string) => void;
 
   onCheckIn?: (
@@ -115,9 +119,10 @@ type SortableRowProps = {
     performance: SVHostQueueItem
   ) => void;
 
-  onSkip?: (id: string) => void;
-  onRemove?: (id: string) => void;
-  onCheckIn?: (id: string) => void;
+onSkip?: (id: string) => void;
+onMoveToNextRound?: (id: string) => void;
+onRemove?: (id: string) => void;
+onCheckIn?: (id: string) => void;
 
   karafunSentPerformanceIds?: Set<string>;
   onSendToKaraFun?: (
@@ -143,6 +148,7 @@ function SortableQueueRow({
   editing,
   onStartEdit,
   onSkip,
+  onMoveToNextRound,
   onRemove,
   onCheckIn,
   onSendToKaraFun,
@@ -384,6 +390,20 @@ const rowStyle: React.CSSProperties = {
           </button>
 
           <button
+  type="button"
+  title="Move to Next Round"
+  aria-label={`Move ${formatSingerName(
+    item.singerName
+  )} to next round`}
+  onClick={(event) => {
+    event.stopPropagation();
+    onMoveToNextRound?.(item.id);
+  }}
+>
+  <RotateCcw size={18} />
+</button>
+
+          <button
             type="button"
             title="Remove"
             aria-label={`Remove ${formatSingerName(item.singerName)}`}
@@ -418,6 +438,7 @@ export default function SVHostQueue({
   onSaveEdit,
   onCancelEdit,
   onSkip,
+  onMoveToNextRound,
     onRemove,
   onCheckIn,
   onReorder,
@@ -721,10 +742,11 @@ const uniqueSingerCount = singerGroups.length;
   editing={
     editingId === item.id
   }
-  onStartEdit={onStartEdit}
-  onSkip={onSkip}
-  onRemove={onRemove}
-  onCheckIn={onCheckIn}
+onStartEdit={onStartEdit}
+onSkip={onSkip}
+onMoveToNextRound={onMoveToNextRound}
+onRemove={onRemove}
+onCheckIn={onCheckIn}
   onSendToKaraFun={onSendToKaraFun}
   karafunSentPerformanceIds={
   karafunSentPerformanceIds

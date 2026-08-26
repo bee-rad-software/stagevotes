@@ -1652,12 +1652,16 @@ async function syncKaraFunQueueOrder() {
     return;
   }
 
-  const normalize = (
-    value?: string | null
-  ) =>
-    (value || '')
-      .trim()
-      .toLowerCase();
+const normalize = (
+  value?: string | null
+) =>
+  (value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[“”"']/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
   const desiredQueue = [
     ...(current ? [current] : []),
@@ -1748,13 +1752,13 @@ const desiredNext =
    * currently playing item.
    */
   const desiredNextKaraFunItem =
-    karafunQueueItems.find(
-      (item: any) =>
-        item.singer ===
-          desiredNextSinger &&
-        item.title ===
-          desiredNextTitle
-    );
+  karafunQueueItems.find(
+    (item: any) =>
+      normalize(item.singer) ===
+        desiredNextSinger &&
+      normalize(item.title) ===
+        desiredNextTitle
+  );
 
   /*
    * If the correct target already exists,
@@ -1834,14 +1838,14 @@ const karaFunNextItem =
     ? karafunQueueItems[currentIndex + 1]
     : karafunQueueItems[0];
 
-  const karaFunNextIsCorrect =
-    Boolean(
-      karaFunNextItem &&
-        karaFunNextItem.singer ===
-          desiredNextSinger &&
-        karaFunNextItem.title ===
-          desiredNextTitle
-    );
+ const karaFunNextIsCorrect =
+  Boolean(
+    karaFunNextItem &&
+      normalize(karaFunNextItem.singer) ===
+        desiredNextSinger &&
+      normalize(karaFunNextItem.title) ===
+        desiredNextTitle
+  );
 
   /*
    * The queue is finally correct.
@@ -2006,17 +2010,28 @@ finally {
   performance: PerformanceRow,
   position?: number
 ) {
-  const performanceAlreadyInKaraFun =
+  const normalizeKaraFunText = (
+  value?: string | null
+) =>
+  (value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[“”"']/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const performanceAlreadyInKaraFun =
   karafunQueueItems.some(
     (item: any) =>
-      item.singer ===
-        performance.singer_name
-          ?.trim()
-          .toLowerCase() &&
-      item.title ===
-        performance.song_title
-          ?.trim()
-          .toLowerCase()
+      normalizeKaraFunText(item.singer) ===
+        normalizeKaraFunText(
+          performance.singer_name
+        ) &&
+      normalizeKaraFunText(item.title) ===
+        normalizeKaraFunText(
+          performance.song_title
+        )
   );
 
 if (
@@ -3518,22 +3533,25 @@ karafunPlayerOnline={karafunPlayerOnline}
     onSaveEdit={saveEdit}
     onCancelEdit={cancelEditing}
     onChooseEditSong={() => {
-  setPickerSongs([]);
-  setShowEditSongPicker(true);
-}}
+    setPickerSongs([]);
+    setShowEditSongPicker(true);
+    }}
     onSkip={skipSinger}
-onRemove={removeSinger}
-onCheckIn={checkInSinger}
-onReorder={handleQueueReorder}
-onSendToKaraFun={(item) =>
-  sendPerformanceToKaraFun(item.performance)
-}
-karafunSentPerformanceIds={
-  karafunSentPerformanceIds
-}
-karafunConnected={
-  karafunConnected && karafunPlayerOnline
-}
+    onMoveToNextRound={
+    moveSingerToNextRound
+    }
+    onRemove={removeSinger}
+    onCheckIn={checkInSinger}
+    onReorder={handleQueueReorder}
+    onSendToKaraFun={(item) =>
+    sendPerformanceToKaraFun(item.performance)
+    }
+    karafunSentPerformanceIds={
+    karafunSentPerformanceIds
+    }
+    karafunConnected={
+    karafunConnected && karafunPlayerOnline
+    }
 />
 )}
 
