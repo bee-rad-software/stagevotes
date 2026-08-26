@@ -11,6 +11,7 @@ export type SVSongOption = {
   status: SVSongStatus;
   id?: string | number;
   note?: string;
+  karafunSongId?: number | null;
 };
 
 export type SVSongSection = {
@@ -80,12 +81,11 @@ return songs;
   function renderSong(song: SVSongOption) {
   return (
     <button
-      key={`${song.id ?? ''}-${song.title}-${song.artist}`}
-      className="sv-picker-song"
-      disabled={song.status === 'queued'}
-      onClick={() => onSelect(song)}
-      type="button"
-    >
+  key={`${song.id ?? ''}-${song.title}-${song.artist}`}
+  className="sv-picker-song"
+  onClick={() => onSelect(song)}
+  type="button"
+>
       <div>
         <div className="sv-picker-title">{song.title}</div>
         <div className="sv-picker-artist">{song.artist}</div>

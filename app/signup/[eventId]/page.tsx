@@ -142,6 +142,11 @@ export default function SignupPage() {
   const [pickerLoading, setPickerLoading] =
     useState(false);
 
+  const [
+  karafunChannel,
+  setKarafunChannel,
+] = useState('');
+
   const [surpriseSong, setSurpriseSong] =
     useState<SVSongOption | null>(null);
 
@@ -162,6 +167,19 @@ export default function SignupPage() {
 
 const [songConflictWarning, setSongConflictWarning] =
   useState('');
+
+  const [
+  pickerError,
+  setPickerError,
+] = useState('');
+
+  const [
+  claimableSinger,
+  setClaimableSinger,
+] = useState<{
+  name: string;
+  performanceIds: string[];
+} | null>(null);
 
   const [tipsEnabled, setTipsEnabled] =
     useState(false);
@@ -310,13 +328,14 @@ const [songConflictWarning, setSongConflictWarning] =
       await supabase
         .from('accounts')
         .select(
-          `
-          tips_enabled,
-          venmo_url,
-          cashapp_url,
-          apple_pay_url
-          `
-        )
+  `
+  tips_enabled,
+  venmo_url,
+  cashapp_url,
+  apple_pay_url,
+  karafun_channel
+  `
+)
         .eq('id', eventData.account_id)
         .maybeSingle();
 
@@ -336,6 +355,9 @@ const [songConflictWarning, setSongConflictWarning] =
     setVenmoUrl(accountData?.venmo_url || '');
     setCashappUrl(accountData?.cashapp_url || '');
     setApplePayUrl(accountData?.apple_pay_url || '');
+    setKarafunChannel(
+  accountData?.karafun_channel || ''
+);
   }
 
   async function loadQueue() {
@@ -482,14 +504,28 @@ setOnDeckSinger(
     return true;
   }
 
-  // Legacy fallback for older performances
-  // that may not have device/profile IDs
-  return Boolean(
-    singerKey &&
-      performance.singer_name
-        ?.trim()
-        .toLowerCase() === singerKey
-  );
+ /*
+ * Only use the old name-based fallback when
+ * neither side has a modern identity attached.
+ *
+ * A host-created walk-up with the same name
+ * must NOT automatically become this singer's
+ * performance.
+ */
+if (
+  performance.singer_profile_id ||
+  performance.device_id ||
+  singerProfile?.id
+) {
+  return false;
+}
+
+return Boolean(
+  singerKey &&
+    performance.singer_name
+      ?.trim()
+      .toLowerCase() === singerKey
+);
 }
 
   const myPerformances = useMemo(
@@ -642,21 +678,77 @@ const needsCompetitionSong =
   }
 
   async function searchPickerSongs(
-    searchText: string
-  ) {
-    const cleanedSearch =
-      searchText.trim();
+  searchText: string
+) {
+  const cleanedSearch =
+    searchText.trim();
 
-    setSurpriseSong(null);
+  setSurpriseSong(null);
 
-    if (cleanedSearch.length < 2) {
-      setPickerSongs([]);
-      setPickerLoading(false);
+  setPickerError('');
+
+  if (cleanedSearch.length < 2) {
+    setPickerSongs([]);
+    setPickerLoading(false);
+    return;
+  }
+
+  setPickerLoading(true);
+
+  try {
+    /*
+     * If this venue has KaraFun configured,
+     * search KaraFun's catalog directly.
+     */
+    if (karafunChannel) {
+      const response = await fetch(
+        `https://www.karafun.com/${karafunChannel}/` +
+          `?type=search` +
+          `&q=${encodeURIComponent(cleanedSearch)}` +
+          `&types=karaoke`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `KaraFun search failed: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      const queuedTitles = new Set(
+        queue.map((performance) =>
+          performance.song_title
+            ?.trim()
+            .toLowerCase()
+        )
+      );
+
+      const formattedSongs: SVSongOption[] =
+        (Array.isArray(data) ? data : [])
+          .slice(0, 25)
+          .map((song: any) => ({
+            title: song.title || '',
+            artist: song.artist || '',
+            karafunSongId:
+              Number(song.songId) || null,
+            status: queuedTitles.has(
+              String(song.title || '')
+                .trim()
+                .toLowerCase()
+            )
+              ? 'queued'
+              : 'available',
+          }));
+
+      setPickerSongs(formattedSongs);
       return;
     }
 
-    setPickerLoading(true);
-
+    /*
+     * No KaraFun configured:
+     * keep using the StageVotes catalog.
+     */
     const { data, error } = await supabase
       .from('songs')
       .select('id, title, artist')
@@ -666,14 +758,7 @@ const needsCompetitionSong =
       .limit(25);
 
     if (error) {
-      console.error(
-        'Song search failed:',
-        error.message
-      );
-
-      setPickerSongs([]);
-      setPickerLoading(false);
-      return;
+      throw error;
     }
 
     const queuedTitles = new Set(
@@ -691,7 +776,9 @@ const needsCompetitionSong =
           title: song.title,
           artist: song.artist || '',
           status: queuedTitles.has(
-            song.title.trim().toLowerCase()
+            song.title
+              .trim()
+              .toLowerCase()
           )
             ? 'queued'
             : 'available',
@@ -699,8 +786,21 @@ const needsCompetitionSong =
       );
 
     setPickerSongs(formattedSongs);
+  } catch (error) {
+  console.error(
+    'Song search failed:',
+    error
+  );
+
+  setPickerSongs([]);
+
+  setPickerError(
+    'We could not search the karaoke catalog. Please try again.'
+  );
+} finally {
     setPickerLoading(false);
   }
+}
 
   async function pickSurpriseSong() {
     setMessage('');
@@ -1011,7 +1111,93 @@ if (
     return true;
   }
 
-async function verifySingerNameAvailable() {
+async function claimExistingSinger() {
+  if (!claimableSinger) {
+    return;
+  }
+
+  const deviceId = getDeviceId();
+
+  if (!deviceId) {
+    setMessage(
+      'Unable to identify this device. Please try again.'
+    );
+    return;
+  }
+
+  setSubmitting(true);
+  setMessage('');
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    let singerProfileId =
+      singerProfile?.id || null;
+
+    if (!singerProfileId && user) {
+      const { data: profileRow } =
+        await supabase
+          .from('singer_profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      singerProfileId =
+        profileRow?.id || null;
+    }
+
+    const { error } = await supabase
+      .from('performances')
+      .update({
+        device_id: deviceId,
+        singer_profile_id:
+          singerProfileId,
+      })
+      .in(
+        'id',
+        claimableSinger.performanceIds
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    const claimedName =
+      claimableSinger.name;
+
+    localStorage.setItem(
+      'karavote_singer_name',
+      claimedName
+    );
+
+    setSingerName(claimedName);
+    setSavedSingerName(claimedName);
+    setClaimableSinger(null);
+
+    setMessage(
+      `Welcome back, ${claimedName}. Your existing spot is now connected to you.`
+    );
+
+    await loadQueue();
+  } catch (error) {
+    console.error(
+      'Unable to claim singer spot:',
+      error
+    );
+
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : 'Unable to claim this singer spot.'
+    );
+  } finally {
+    setSubmitting(false);
+  }
+}
+
+ async function verifySingerNameAvailable() {
   const cleanName = singerName
     .trim()
     .replace(/\s+/g, ' ');
@@ -1039,35 +1225,90 @@ async function verifySingerNameAvailable() {
     throw new Error(error.message);
   }
 
-  const matchingSinger = (data || []).find(
-    (performance) =>
-      performance.singer_name
-        ?.trim()
-        .replace(/\s+/g, ' ')
-        .toLowerCase() === normalizedName
-  );
+  const matchingPerformances =
+    (data || []).filter(
+      (performance) =>
+        performance.singer_name
+          ?.trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase() ===
+        normalizedName
+    );
 
-  if (!matchingSinger) {
+  if (matchingPerformances.length === 0) {
+    setClaimableSinger(null);
     return true;
   }
 
+  /*
+   * If any matching performance already belongs
+   * to this device/profile, this is already us.
+   */
   const belongsToSameSinger =
-    matchingSinger.device_id === deviceId ||
-    Boolean(
-      singerProfile?.id &&
-        matchingSinger.singer_profile_id ===
-          singerProfile.id
+    matchingPerformances.some(
+      (performance) =>
+        performance.device_id === deviceId ||
+        Boolean(
+          singerProfile?.id &&
+            performance.singer_profile_id ===
+              singerProfile.id
+        )
     );
 
   if (belongsToSameSinger) {
+    setClaimableSinger(null);
     return true;
   }
 
-  setMessage(
-    `"${cleanName}" is already signed up for this show. Please use a last initial or ask the host for help.`
-  );
+  /*
+   * A host-created walk-up has no device or
+   * singer profile attached. If ALL matching
+   * performances are unclaimed, offer to claim
+   * the existing singer instead of blocking.
+   */
+  const claimablePerformances =
+    matchingPerformances.filter(
+      (performance) =>
+        !performance.device_id &&
+        !performance.singer_profile_id
+    );
+
+  if (
+  claimablePerformances.length > 0 &&
+  claimablePerformances.length ===
+    matchingPerformances.length
+) {
+  setClaimableSinger({
+    name: cleanName,
+    performanceIds:
+      claimablePerformances.map(
+        (performance) =>
+          performance.id
+      ),
+  });
+
+  setMessage('');
+
+  // Close the picker so the singer can see
+  // the Claim My Spot prompt.
+  closeSongSheet();
 
   return false;
+}
+
+  /*
+   * Same name exists, but it already belongs
+   * to another identified singer.
+   */
+  setClaimableSinger(null);
+
+setMessage(
+  `"${cleanName}" is already signed up for this show. Please use another name or claim the existing singer if it belongs to you.`
+);
+
+closeSongSheet();
+
+return false;
 }
 
   async function addSongToQueue(
@@ -1178,6 +1419,18 @@ const assignedRound =
           singer_name: singerName.trim(),
           song_title: song.title.trim(),
           artist: song.artist.trim(),
+          karafun_song_id:
+  song.karafunSongId ?? null,
+
+karafun_title:
+  song.karafunSongId
+    ? song.title.trim()
+    : null,
+
+karafun_artist:
+  song.karafunSongId
+    ? song.artist.trim()
+    : null,
           queue_order:
   singerOriginalOrder !== null
     ? singerOriginalOrder
@@ -1191,10 +1444,13 @@ device_id: getDeviceId(),
   submission_id: submissionId,
         });
 
-      if (error) {
-        setMessage(error.message);
-        return;
-      }
+     if (error) {
+  setPickerError(
+    error.message ||
+      'We could not add this song. Please try again.'
+  );
+  return;
+}
 
       if (
   event.competition_mode === 'tournament' &&
@@ -1345,11 +1601,11 @@ device_id: getDeviceId(),
       closeSongSheet();
       await loadQueue();
     } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : 'Unable to add the song.'
-      );
+     setPickerError(
+  error instanceof Error
+    ? error.message
+    : 'Unable to add the song.'
+);
     } finally {
   setSubmitting(false);
   submitLockRef.current = false;
@@ -1366,17 +1622,33 @@ device_id: getDeviceId(),
     const { error } = await supabase
       .from('performances')
       .update({
-        song_title: song.title.trim(),
-        artist: song.artist.trim(),
-      })
+  song_title: song.title.trim(),
+  artist: song.artist.trim(),
+
+  karafun_song_id:
+    song.karafunSongId ?? null,
+
+  karafun_title:
+    song.karafunSongId
+      ? song.title.trim()
+      : null,
+
+  karafun_artist:
+    song.karafunSongId
+      ? song.artist.trim()
+      : null,
+})
       .eq('id', performanceId)
       .eq('event_id', eventId);
 
     if (error) {
-      setMessage(error.message);
-      setSubmitting(false);
-      return;
-    }
+  setPickerError(
+    error.message ||
+      'We could not change your song.'
+  );
+  setSubmitting(false);
+  return;
+}
 
     setMessage(
       `Your song was changed to "${song.title}".`
@@ -1390,6 +1662,7 @@ device_id: getDeviceId(),
   async function handleSongSelection(song: any) {
   setDuplicateWarning('');
   setSongConflictWarning('');
+  setPickerError('');
 
   const duplicateCheck =
     await checkDuplicateSong(song.title);
@@ -1485,6 +1758,7 @@ function openCompetitionSong() {
   setPickerSongs([]);
   setSurpriseSong(null);
   setDuplicateWarning('');
+  setPickerError('');
   setMessage('');
   setSongSheetOpen(true);
 }
@@ -1494,6 +1768,7 @@ function openCompetitionSong() {
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
+    setPickerError('');
     setMessage('');
     setSongSheetOpen(true);
   }
@@ -1508,6 +1783,7 @@ function openCompetitionSong() {
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
+    setPickerError('');
     setMessage('');
     setSongSheetOpen(true);
   }
@@ -1518,6 +1794,7 @@ function openCompetitionSong() {
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
+    setPickerError('');
   }
 
   const venueName =
@@ -1605,27 +1882,90 @@ currentArtist={
             </label>
 
             <input
-              id="singer-name"
-              value={singerName}
-              onChange={(inputEvent) =>
-                setSingerName(
-                  inputEvent.target.value
-                )
-              }
-              placeholder="Enter your name"
-              disabled={
-                Boolean(singerProfile)
-              }
-            />
+  id="singer-name"
+  value={singerName}
+  onChange={(inputEvent) =>
+    setSingerName(
+      inputEvent.target.value
+    )
+  }
+  placeholder="Enter your name"
+/>
 
             {singerProfile && (
-              <p className="sv-mobile-helper">
-                Using your My Stage profile
-              </p>
-            )}
+  <p className="sv-mobile-helper">
+    Using your My Stage profile. You can change
+    your name for tonight if needed.
+  </p>
+)}
           </div>
         </section>
-      )}
+ )}
+
+ {claimableSinger && (
+ <section
+  className="sv-mobile-card"
+  style={{
+    border: '1px solid rgba(249, 115, 22, 0.55)',
+    background:
+      'linear-gradient(180deg, rgba(249, 115, 22, 0.12) 0%, rgba(15, 23, 42, 1) 45%)',
+    boxShadow:
+      '0 0 0 1px rgba(249, 115, 22, 0.08), 0 12px 32px rgba(0, 0, 0, 0.22)',
+  }}
+>
+    <div
+  className="sv-mobile-kicker"
+  style={{
+    color: '#f97316',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  }}
+>
+  <span style={{ fontSize: 18 }}>⚠️</span>
+  Existing singer found
+</div>
+
+    <h3>
+  {claimableSinger.name}{' '}is already in tonight&apos;s queue.
+</h3>
+
+<p>
+  Did the host already add you? Claim this spot to connect
+  it to your StageVotes profile. If not, please use a unique name.
+</p>
+
+    <div
+      style={{
+        display: 'grid',
+        gap: 10,
+        marginTop: 16,
+      }}
+    >
+      <button
+        type="button"
+        className="sv-full-button"
+        disabled={submitting}
+        onClick={claimExistingSinger}
+      >
+        Claim My Spot
+      </button>
+
+      <button
+        type="button"
+        className="sv-change-song"
+        disabled={submitting}
+        onClick={() => {
+          setClaimableSinger(null);
+          setMessage('');
+          setSingerName('');
+        }}
+      >
+        No, use another name
+      </button>
+    </div>
+  </section>
+)}
 
       <section className="sv-mobile-card">
         <div className="sv-mobile-card-header">
@@ -1887,6 +2227,50 @@ currentArtist={
         }
         onClose={closeSongSheet}
       >
+       
+               {pickerError && (
+  <div
+    style={{
+      marginTop: 12,
+      padding: '12px 14px',
+      borderRadius: 12,
+      border: '1px solid rgba(249, 115, 22, 0.55)',
+      background: 'rgba(249, 115, 22, 0.12)',
+      color: '#fed7aa',
+      fontSize: 14,
+      fontWeight: 600,
+      lineHeight: 1.45,
+    }}
+  >
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 9,
+      }}
+    >
+      <span aria-hidden="true">⚠️</span>
+
+      <div>
+        <div
+          style={{
+            color: '#f97316',
+            fontSize: 12,
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+            marginBottom: 3,
+          }}
+        >
+          Something went wrong
+        </div>
+
+        {pickerError}
+      </div>
+    </div>
+  </div>
+)}
+       
         <SVSongPicker
           songs={pickerSongs}
           onSearch={searchPickerSongs}

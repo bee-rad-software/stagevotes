@@ -68,6 +68,21 @@ export default function HostPage() {
   const [pickerSongs, setPickerSongs] =
   useState<SVSongOption[]>([]);
 
+  const [
+  selectedKaraFunSongId,
+  setSelectedKaraFunSongId,
+] = useState<number | null>(null);
+
+const [
+  selectedKaraFunTitle,
+  setSelectedKaraFunTitle,
+] = useState('');
+
+const [
+  selectedKaraFunArtist,
+  setSelectedKaraFunArtist,
+] = useState('');
+
 const [pickerLoading, setPickerLoading] =
   useState(false);
 
@@ -942,53 +957,122 @@ const searchPickerSongs = useCallback(
 
     setPickerLoading(true);
 
-    const { data, error } = await supabase
-      .from('songs')
-      .select('id, title, artist')
-      .or(
-        `title.ilike.%${term}%,artist.ilike.%${term}%`
-      )
-      .limit(20);
+    try {
+      /*
+       * If this venue has KaraFun configured,
+       * use KaraFun as the authoritative catalog.
+       */
+      if (karafunChannel) {
+        const response = await fetch(
+          `https://www.karafun.com/${karafunChannel}/` +
+            `?type=search` +
+            `&q=${encodeURIComponent(term)}` +
+            `&types=karaoke`
+        );
 
-    if (error) {
+        if (!response.ok) {
+          throw new Error(
+            `KaraFun search failed: ${response.status}`
+          );
+        }
+
+        const data = await response.json();
+
+        const results: SVSongOption[] =
+          (Array.isArray(data) ? data : [])
+            .slice(0, 20)
+            .map((result: any) => {
+              const alreadyQueued =
+                performances.some(
+                  (performance) =>
+                    performance.song_title
+                      .trim()
+                      .toLowerCase() ===
+                      String(
+                        result.title || ''
+                      )
+                        .trim()
+                        .toLowerCase() &&
+                    performance.status !==
+                      'completed'
+                );
+
+              return {
+                title: result.title || '',
+                artist: result.artist || '',
+                status: alreadyQueued
+                  ? 'queued'
+                  : 'available',
+
+                // temporary extra metadata
+                karafunSongId:
+                  Number(result.songId) || null,
+              } as SVSongOption & {
+                karafunSongId: number | null;
+              };
+            });
+
+        setPickerSongs(results);
+        setPickerLoading(false);
+        return;
+      }
+
+      /*
+       * No KaraFun configured:
+       * fall back to the existing StageVotes catalog.
+       */
+      const { data, error } = await supabase
+        .from('songs')
+        .select('id, title, artist')
+        .or(
+          `title.ilike.%${term}%,artist.ilike.%${term}%`
+        )
+        .limit(20);
+
+      if (error) {
+        throw error;
+      }
+
+      const results: SVSongOption[] =
+        (data || []).map((result) => {
+          const alreadyQueued =
+            performances.some(
+              (performance) =>
+                performance.song_title
+                  .trim()
+                  .toLowerCase() ===
+                  result.title
+                    .trim()
+                    .toLowerCase() &&
+                performance.status !==
+                  'completed'
+            );
+
+          return {
+            title: result.title,
+            artist: result.artist || '',
+            status: alreadyQueued
+              ? 'queued'
+              : 'available',
+          };
+        });
+
+      setPickerSongs(results);
+    } catch (error) {
       console.error(
         'Host song search failed:',
         error
       );
 
       setPickerSongs([]);
+    } finally {
       setPickerLoading(false);
-      return;
     }
-
-    const results: SVSongOption[] =
-      (data || []).map((result) => {
-        const alreadyQueued =
-          performances.some(
-            (performance) =>
-              performance.song_title
-                .trim()
-                .toLowerCase() ===
-                result.title
-                  .trim()
-                  .toLowerCase() &&
-              performance.status !==
-                'completed'
-          );
-
-        return {
-          title: result.title,
-          artist: result.artist || '',
-          status: alreadyQueued
-            ? 'queued'
-            : 'available',
-        };
-      });
-
-    setPickerSongs(results);
-    setPickerLoading(false);
   },
-  [performances]
+  [
+    performances,
+    karafunChannel,
+  ]
 );
 
   async function addPerformance(): Promise<boolean> {
@@ -1061,6 +1145,20 @@ const { error } = await supabase.from('performances').insert({
   singer_name: singerName.trim(),
   song_title: songTitle.trim(),
   artist: artist.trim(),
+
+  karafun_song_id:
+    selectedKaraFunSongId,
+
+  karafun_title:
+    selectedKaraFunSongId
+      ? selectedKaraFunTitle
+      : null,
+
+  karafun_artist:
+    selectedKaraFunSongId
+      ? selectedKaraFunArtist
+      : null,
+
   queue_order: nextOrder,
   round: assignedRound
 });
@@ -1074,6 +1172,9 @@ if (error) {
     setSongTitle('');
     setArtist('');
     setPickerSongs([]);
+    setSelectedKaraFunSongId(null);
+setSelectedKaraFunTitle('');
+setSelectedKaraFunArtist('');
 setShowManualSongFields(false);
     await loadPerformances();
 
@@ -1738,13 +1839,24 @@ const desiredNext =
     karaFunCurrentItemIdRef.current;
 
   const currentKaraFunItem =
-    currentKaraFunItemId
-      ? karafunQueueItems.find(
-          (item: any) =>
-            item.queueItemId ===
-            currentKaraFunItemId
-        )
-      : null;
+  karafunQueueItems.find(
+    (item: any) =>
+      (
+        currentKaraFunItemId &&
+        item.queueItemId ===
+          currentKaraFunItemId
+      ) ||
+      (
+        normalize(item.singer) ===
+          normalize(
+            karaFunCurrentSingerRef.current
+          ) &&
+        normalize(item.title) ===
+          normalize(
+            karaFunCurrentTitleRef.current
+          )
+      )
+  ) || null;
 
   /*
    * Find the singer/song that StageVotes
@@ -1950,11 +2062,25 @@ return;
      * The correct target is not in KaraFun.
      * Remove KaraFun's incorrect next item.
      */
-    if (
-      karaFunNextItem?.queueItemId &&
-      karaFunNextItem.queueItemId !==
-        currentKaraFunItemId
-    ) {
+    const karaFunNextIsActuallyCurrent =
+  Boolean(
+    karaFunNextItem &&
+      normalize(karaFunNextItem.singer) ===
+        normalize(
+          karaFunCurrentSingerRef.current
+        ) &&
+      normalize(karaFunNextItem.title) ===
+        normalize(
+          karaFunCurrentTitleRef.current
+        )
+  );
+
+if (
+  karaFunNextItem?.queueItemId &&
+  karaFunNextItem.queueItemId !==
+    currentKaraFunItemId &&
+  !karaFunNextIsActuallyCurrent
+) {
       console.log(
         'Removing stale KaraFun next singer:',
         karaFunNextItem.singer,
@@ -2068,8 +2194,40 @@ karafunSendingPerformanceIdsRef.current.add(
   }
 
   try {
+  /*
+   * If StageVotes already knows the exact
+   * KaraFun catalog ID, use it directly.
+   *
+   * Older/manual performances fall back to
+   * the existing KaraFun text search.
+   */
+  const savedKaraFunSongId =
+    Number(
+      (performance as any).karafun_song_id
+    ) || null;
+
+  let selectedSong: any = null;
+
+  if (savedKaraFunSongId) {
+    selectedSong = {
+      songId: savedKaraFunSongId,
+      title:
+        (performance as any).karafun_title ||
+        title,
+      artist:
+        (performance as any).karafun_artist ||
+        performanceArtist,
+    };
+
+    console.log(
+      '🎯 Using saved KaraFun catalog song:',
+      selectedSong
+    );
+  } else {
     /*
-     * Search KaraFun for the StageVotes song.
+     * Legacy/manual fallback:
+     * search KaraFun using the StageVotes
+     * title and artist.
      */
     const searchQuery = performanceArtist
       ? `${title} ${performanceArtist}`
@@ -2090,7 +2248,10 @@ karafunSendingPerformanceIdsRef.current.add(
 
     const songs = await response.json();
 
-    if (!Array.isArray(songs) || songs.length === 0) {
+    if (
+      !Array.isArray(songs) ||
+      songs.length === 0
+    ) {
       alert(
         `KaraFun could not find "${title}".`
       );
@@ -2104,7 +2265,7 @@ karafunSendingPerformanceIdsRef.current.add(
         .replace(/[’']/g, "'");
 
     /*
-     * Prefer an exact title + artist match.
+     * Prefer exact title + artist.
      * Then exact title.
      * Finally use KaraFun's first result.
      */
@@ -2125,8 +2286,9 @@ karafunSendingPerformanceIdsRef.current.add(
         normalize(title)
     );
 
-    const selectedSong =
+    selectedSong =
       exactMatch || titleMatch || songs[0];
+  }
 
     if (!selectedSong?.songId) {
       alert(
@@ -3896,11 +4058,28 @@ karafunPlayerOnline={karafunPlayerOnline}
     onSearch={searchPickerSongs}
     loading={pickerLoading}
     onSelect={(selected) => {
-      setSongTitle(selected.title);
-      setArtist(selected.artist);
-      setPickerSongs([]);
-      setShowManualSongFields(false);
-    }}
+  setSongTitle(selected.title);
+  setArtist(selected.artist);
+
+  setSelectedKaraFunSongId(
+    selected.karafunSongId ?? null
+  );
+
+  setSelectedKaraFunTitle(
+    selected.karafunSongId
+      ? selected.title
+      : ''
+  );
+
+  setSelectedKaraFunArtist(
+    selected.karafunSongId
+      ? selected.artist
+      : ''
+  );
+
+  setPickerSongs([]);
+  setShowManualSongFields(false);
+}}
     onSurpriseMe={async () => {
       setPickerLoading(true);
 
