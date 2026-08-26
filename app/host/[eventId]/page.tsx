@@ -172,14 +172,35 @@ const karaFunLastAutoAdvancedItemIdRef =
 const karaFunCurrentItemIdRef =
   useRef<string | null>(null);
 
+const karaFunCurrentSingerRef =
+  useRef('');
+
+const karaFunCurrentTitleRef =
+  useRef('');
+
 const karaFunAutoAdvancingRef =
   useRef(false);
+
+const karaFunSuppressNextAutoAdvanceRef =
+  useRef(false);
+
+const karaFunPendingSkipAdvanceRef =
+  useRef<string | null>(null);
 
 const karaFunQueueSyncInFlightRef =
   useRef(false);
 
+const karaFunSkipNextSentRef =
+  useRef(false);
+
 const nextSingerRef =
   useRef<(() => Promise<void>) | null>(null);
+
+const currentPerformanceRef =
+  useRef<PerformanceRow | null>(null);
+
+const rotatedQueueRef =
+  useRef<PerformanceRow[]>([]);
 
 const [welcomeAccountId, setWelcomeAccountId] =
   useState<string | null>(null);
@@ -1178,11 +1199,16 @@ function isTournamentPerformanceReady(
     ws.onmessage = (event) => {
       let message;
 
-      try {
-        message = JSON.parse(event.data);
-      } catch {
-        return;
-      }
+try {
+  message = JSON.parse(event.data);
+} catch {
+  return;
+}
+
+console.log(
+  '🔥 KARAFUN RAW MESSAGE:',
+  message
+);
 
       if (
         message.type ===
@@ -1201,17 +1227,6 @@ function isTournamentPerformanceReady(
             },
           })
         );
-
-        const queueRequestId =
-  Date.now() + 1;
-
-ws.send(
-  JSON.stringify({
-    id: queueRequestId,
-    type: 'remote.QueueRequest',
-    payload: {},
-  })
-);
 
         setKarafunConnecting(false);
 setKarafunConnectionError('');
@@ -1303,6 +1318,12 @@ if (message.type === 'remote.StatusEvent') {
     status?.current?.song
       ?.title || '';
 
+  karaFunCurrentSingerRef.current =
+  karaFunSinger.trim().toLowerCase();
+
+karaFunCurrentTitleRef.current =
+  karaFunTitle.trim().toLowerCase();
+
   if (
     karaFunState !== 3 ||
     !karaFunCurrentId
@@ -1314,17 +1335,35 @@ if (message.type === 'remote.StatusEvent') {
     karaFunCurrentItemIdRef.current;
 
   if (!previousPlayingId) {
-    karaFunCurrentItemIdRef.current =
-      karaFunCurrentId;
+  karaFunCurrentItemIdRef.current =
+    karaFunCurrentId;
 
-    console.log(
-      'KaraFun playing:',
-      karaFunSinger,
-      karaFunTitle
-    );
+  console.log(
+    'KaraFun playing:',
+    karaFunSinger,
+    karaFunTitle
+  );
 
-    return;
+  /*
+   * We now know which KaraFun song is truly
+   * CURRENT. The QueueEvent may have arrived
+   * before this StatusEvent, so force one
+   * fresh queue read. That lets normal sync
+   * populate the StageVotes UP NEXT singer.
+   */
+  const socket =
+    karafunSocketRef.current;
+
+  if (
+    socket &&
+    socket.readyState === WebSocket.OPEN
+  ) {
+    karaFunQueueSyncInFlightRef.current =
+      false;
   }
+
+  return;
+}
 
   if (
     previousPlayingId === karaFunCurrentId
@@ -1334,6 +1373,71 @@ if (message.type === 'remote.StatusEvent') {
 
   karaFunCurrentItemIdRef.current =
     karaFunCurrentId;
+
+if (
+  karaFunSuppressNextAutoAdvanceRef.current
+) {
+  const pendingSkipId =
+    karaFunPendingSkipAdvanceRef.current;
+
+  const pendingSkipPerformance =
+    pendingSkipId
+      ? performances.find(
+          (performance) =>
+            performance.id === pendingSkipId
+        ) || null
+      : null;
+
+  const normalize = (
+    value?: string | null
+  ) =>
+    (value || '')
+      .trim()
+      .toLowerCase();
+
+  const skipTargetIsNowPlaying =
+    Boolean(
+      pendingSkipPerformance &&
+      normalize(karaFunSinger) ===
+        normalize(
+          pendingSkipPerformance.singer_name
+        ) &&
+      normalize(karaFunTitle) ===
+        normalize(
+          pendingSkipPerformance.song_title
+        )
+    );
+
+  if (
+  pendingSkipPerformance &&
+  skipTargetIsNowPlaying
+) {
+  const confirmedSkipPerformance =
+    pendingSkipPerformance;
+
+  console.log(
+    '✅ KaraFun confirmed skipped target is now playing:',
+    karaFunSinger,
+    karaFunTitle
+  );
+
+    karaFunPendingSkipAdvanceRef.current =
+      null;
+
+    karaFunSkipNextSentRef.current =
+      false;
+
+    karaFunSuppressNextAutoAdvanceRef.current =
+      false;
+
+  } else {
+    console.log(
+      '⏳ Waiting for KaraFun to confirm skipped target...'
+    );
+  }
+
+  return;
+}
 
   if (
     karaFunLastAutoAdvancedItemIdRef.current ===
@@ -1365,19 +1469,81 @@ if (message.type === 'remote.StatusEvent') {
     karaFunTitle
   );
 
-  const advanceSinger =
-    nextSingerRef.current;
+const normalize = (
+  value?: string | null
+) =>
+  (value || '')
+    .trim()
+    .toLowerCase();
 
-  if (!advanceSinger) {
+const latestCurrent =
+  currentPerformanceRef.current;
+
+const latestQueue =
+  rotatedQueueRef.current;
+
+const expectedNext =
+  latestQueue.find(
+    (performance) =>
+      performance.id !==
+        latestCurrent?.id &&
+      performance.status !==
+        'completed' &&
+      performance.status !==
+        'skipped'
+  ) || null;
+
+if (!expectedNext) {
+  console.log(
+    'KaraFun changed songs, but StageVotes has no expected next singer.'
+  );
+
+  karaFunAutoAdvancingRef.current = false;
+  return;
+}
+
+const karaFunMatchesExpectedNext =
+  normalize(karaFunSinger) ===
+    normalize(expectedNext.singer_name) &&
+  normalize(karaFunTitle) ===
+    normalize(expectedNext.song_title);
+
+if (!karaFunMatchesExpectedNext) {
+  console.log(
+    '⚠️ KaraFun changed to an unexpected song — StageVotes will not advance:',
+    {
+      karaFunSinger,
+      karaFunTitle,
+      expectedSinger:
+        expectedNext.singer_name,
+      expectedTitle:
+        expectedNext.song_title,
+    }
+  );
+
+  karaFunAutoAdvancingRef.current = false;
+  return;
+}
+
+const advanceSinger =
+  nextSingerRef.current;
+
+if (!advanceSinger) {
+  karaFunAutoAdvancingRef.current = false;
+  return;
+}
+
+console.log(
+  '✅ KaraFun started the expected next singer — advancing StageVotes:',
+  expectedNext.singer_name,
+  expectedNext.song_title
+);
+
+void advanceSinger().finally(() => {
+  setTimeout(() => {
     karaFunAutoAdvancingRef.current = false;
-    return;
-  }
-
-  void advanceSinger().finally(() => {
-    setTimeout(() => {
-      karaFunAutoAdvancingRef.current = false;
-    }, 750);
-  });
+  }, 750);
+});
 
   return;
 }
@@ -1472,7 +1638,7 @@ if (message.type === 'remote.AppLeftEvent') {
   }
 }
 
-  async function syncKaraFunQueueOrder() {
+async function syncKaraFunQueueOrder() {
   const ws = karafunSocketRef.current;
 
   if (
@@ -1486,39 +1652,83 @@ if (message.type === 'remote.AppLeftEvent') {
     return;
   }
 
-  const normalize = (value?: string | null) =>
-    (value || '').trim().toLowerCase();
+  const normalize = (
+    value?: string | null
+  ) =>
+    (value || '')
+      .trim()
+      .toLowerCase();
 
   const desiredQueue = [
     ...(current ? [current] : []),
     ...rotatedQueue.filter(
       (performance) =>
         performance.id !== current?.id &&
-        performance.status !== 'completed' &&
-        performance.status !== 'skipped'
+        performance.status !==
+          'completed' &&
+        performance.status !==
+          'skipped'
     ),
   ].filter((performance) =>
     performance.song_title?.trim()
   );
 
-  const desiredCurrent = desiredQueue[0] || null;
-  const desiredNext = desiredQueue[1] || null;
+  const stageVotesCurrentSinger =
+  normalize(current?.singer_name);
 
-  if (!desiredNext) {
+const stageVotesCurrentTitle =
+  normalize(current?.song_title);
+
+const karaFunIsPlayingStageVotesCurrent =
+  Boolean(
+    current &&
+    karaFunCurrentSingerRef.current ===
+      stageVotesCurrentSinger &&
+    karaFunCurrentTitleRef.current ===
+      stageVotesCurrentTitle
+  );
+
+const desiredNext =
+  current && karaFunIsPlayingStageVotesCurrent
+    ? desiredQueue[1] || null
+    : desiredQueue[0] || null;
+  /*
+   * If the host just skipped the current
+   * singer, the performance we need KaraFun
+   * to place NEXT is the new StageVotes
+   * current singer.
+   */
+  const pendingSkipId =
+    karaFunPendingSkipAdvanceRef.current;
+
+  const pendingSkipPerformance =
+    pendingSkipId
+      ? performances.find(
+          (performance) =>
+            performance.id === pendingSkipId
+        ) || null
+      : null;
+
+  const desiredKaraFunNext =
+    pendingSkipPerformance ||
+    desiredNext;
+
+  if (!desiredKaraFunNext) {
     return;
   }
 
-  const desiredNextSinger = normalize(
-    desiredNext.singer_name
-  );
+  const desiredNextSinger =
+    normalize(
+      desiredKaraFunNext.singer_name
+    );
 
-  const desiredNextTitle = normalize(
-    desiredNext.song_title
-  );
+  const desiredNextTitle =
+    normalize(
+      desiredKaraFunNext.song_title
+    );
 
   /*
-   * Figure out which KaraFun item is ACTUALLY
-   * playing from the StatusEvent current ID.
+   * What KaraFun is actually playing.
    */
   const currentKaraFunItemId =
     karaFunCurrentItemIdRef.current;
@@ -1533,115 +1743,184 @@ if (message.type === 'remote.AppLeftEvent') {
       : null;
 
   /*
-   * Find the StageVotes UP NEXT song anywhere
-   * in KaraFun's current queue.
+   * Find the singer/song that StageVotes
+   * wants immediately after KaraFun's
+   * currently playing item.
    */
   const desiredNextKaraFunItem =
     karafunQueueItems.find(
       (item: any) =>
-        item.singer === desiredNextSinger &&
-        item.title === desiredNextTitle
+        item.singer ===
+          desiredNextSinger &&
+        item.title ===
+          desiredNextTitle
     );
 
   /*
- * Remove anything from KaraFun that is not
- * the current song or StageVotes UP NEXT.
- *
- * StageVotes intentionally keeps KaraFun
- * only two songs deep.
- */
-
+   * If the correct target already exists,
+   * remove stale buffer items.
+   *
+   * StageVotes intentionally keeps KaraFun
+   * only two songs deep.
+   */
   if (
-  currentKaraFunItemId &&
-  desiredNextKaraFunItem?.queueItemId
-) {
-  const staleItems =
-    karafunQueueItems.filter(
-      (item: any) =>
-        item.queueItemId !==
-          currentKaraFunItemId &&
-        item.queueItemId !==
-          desiredNextKaraFunItem.queueItemId
+    currentKaraFunItemId &&
+    desiredNextKaraFunItem?.queueItemId
+  ) {
+    const staleItems =
+      karafunQueueItems.filter(
+        (item: any) =>
+          item.queueItemId !==
+            currentKaraFunItemId &&
+          item.queueItemId !==
+            desiredNextKaraFunItem.queueItemId
+      );
+
+    if (staleItems.length > 0) {
+      karaFunQueueSyncInFlightRef.current =
+        true;
+
+      staleItems.forEach(
+        (item: any) => {
+          console.log(
+            'Removing stale KaraFun buffer item:',
+            item.singer,
+            item.title
+          );
+
+          ws.send(
+            JSON.stringify({
+              id:
+                Date.now() +
+                Math.floor(
+                  Math.random() * 1000
+                ),
+              type:
+                'remote.RemoveFromQueueRequest',
+              payload: {
+                queueItemId:
+                  item.queueItemId,
+              },
+            })
+          );
+        }
+      );
+
+     setTimeout(() => {
+  karaFunQueueSyncInFlightRef.current =
+    false;
+}, 750);
+
+return;
+    }
+  }
+
+  /*
+   * Determine KaraFun's physical next item.
+   */
+  /*
+ * KaraFun's QueueEvent contains the songs
+ * WAITING to play. The currently playing
+ * song is reported separately by StatusEvent.
+ *
+ * Therefore StageVotes' desired UP NEXT
+ * singer should always be KaraFun queue[0].
+ */
+const currentIndex =
+  currentKaraFunItem?.index ?? -1;
+
+const karaFunNextItem =
+  currentIndex >= 0
+    ? karafunQueueItems[currentIndex + 1]
+    : karafunQueueItems[0];
+
+  const karaFunNextIsCorrect =
+    Boolean(
+      karaFunNextItem &&
+        karaFunNextItem.singer ===
+          desiredNextSinger &&
+        karaFunNextItem.title ===
+          desiredNextTitle
     );
 
-  if (staleItems.length > 0) {
-    karaFunQueueSyncInFlightRef.current = true;
-
-    staleItems.forEach((item: any) => {
+  /*
+   * The queue is finally correct.
+   *
+   * If this correction was caused by
+   * Skip Current Singer, NOW tell KaraFun
+   * to advance exactly once.
+   */
+  if (karaFunNextIsCorrect) {
+    if (
+      pendingSkipId &&
+      pendingSkipPerformance
+    ) {
       console.log(
-        'Removing stale KaraFun buffer item:',
-        item.singer,
-        item.title
-      );
+  '✅ KaraFun skip target is ready:',
+  pendingSkipPerformance.singer_name,
+  pendingSkipPerformance.song_title,
+);
 
-      ws.send(
-        JSON.stringify({
-          id:
-            Date.now() +
-            Math.floor(Math.random() * 1000),
-          type:
-            'remote.RemoveFromQueueRequest',
-          payload: {
-            queueItemId: item.queueItemId,
-          },
-        })
-      );
-    });
+      /*
+       * Clear this BEFORE sending Next
+       * so another QueueEvent cannot send
+       * a duplicate NextRequest.
+       */
+      if (!karaFunSkipNextSentRef.current) {
+  karaFunSkipNextSentRef.current = true;
 
-    setTimeout(() => {
-      karaFunQueueSyncInFlightRef.current =
-        false;
-    }, 750);
+  karaFunSuppressNextAutoAdvanceRef.current =
+    true;
 
-    return;
-  }
+  ws.send(
+    JSON.stringify({
+      id: Date.now(),
+      type: 'remote.NextRequest',
+      payload: {},
+    })
+  );
+
+  console.log(
+    '⏭️ KaraFun advancing to skipped target:',
+    pendingSkipPerformance.singer_name
+  );
 }
 
-  /*
-   * Determine what KaraFun currently considers
-   * the song immediately after the playing item.
-   */
-  const currentIndex =
-    currentKaraFunItem?.index ?? -1;
+return;
 
-  const karaFunNextItem =
-    currentIndex >= 0
-      ? karafunQueueItems[currentIndex + 1]
-      : karafunQueueItems[0];
+      /*
+       * KaraFun emits several StatusEvents
+       * while changing songs. Ignore those
+       * briefly so StageVotes does not
+       * auto-advance a second time.
+       */
+      setTimeout(() => {
+        karaFunSuppressNextAutoAdvanceRef.current =
+          false;
+      }, 3000);
+    }
 
-  /*
-   * Already correct.
-   */
-  if (
-    karaFunNextItem &&
-    karaFunNextItem.singer ===
-      desiredNextSinger &&
-    karaFunNextItem.title ===
-      desiredNextTitle
-  ) {
     return;
   }
 
-  karaFunQueueSyncInFlightRef.current = true;
+  karaFunQueueSyncInFlightRef.current =
+    true;
 
   try {
     /*
      * CASE 1:
-     * Desired next singer already exists in KaraFun.
-     * Move them immediately after the current song.
+     * The correct target already exists in
+     * KaraFun, just in the wrong position.
      */
     if (
       desiredNextKaraFunItem?.queueItemId
     ) {
-      const targetPosition =
-        currentIndex >= 0
-          ? currentIndex + 1
-          : 0;
+      const targetPosition = 1;
 
       console.log(
         'Moving KaraFun next singer:',
-        desiredNext.singer_name,
-        desiredNext.song_title,
+        desiredKaraFunNext.singer_name,
+        desiredKaraFunNext.song_title,
         'to position',
         targetPosition
       );
@@ -1649,7 +1928,8 @@ if (message.type === 'remote.AppLeftEvent') {
       ws.send(
         JSON.stringify({
           id: Date.now(),
-          type: 'remote.MoveInQueueRequest',
+          type:
+            'remote.MoveInQueueRequest',
           payload: {
             queueItemId:
               desiredNextKaraFunItem.queueItemId,
@@ -1663,10 +1943,8 @@ if (message.type === 'remote.AppLeftEvent') {
 
     /*
      * CASE 2:
-     * StageVotes says a new singer is next,
-     * but their song is not in KaraFun yet.
-     *
-     * Remove the stale next item first.
+     * The correct target is not in KaraFun.
+     * Remove KaraFun's incorrect next item.
      */
     if (
       karaFunNextItem?.queueItemId &&
@@ -1693,35 +1971,35 @@ if (message.type === 'remote.AppLeftEvent') {
     }
 
     /*
-     * Then add the correct StageVotes UP NEXT
-     * song immediately after the current one.
+     * Add the exact StageVotes target
+     * immediately after the currently
+     * playing KaraFun song.
      */
-    const targetPosition =
-      currentIndex >= 0
-        ? currentIndex + 1
-        : 0;
+   const targetPosition =
+  karaFunCurrentItemIdRef.current
+    ? 1
+    : 0;
 
     console.log(
       'Adding correct KaraFun next singer:',
-      desiredNext.singer_name,
-      desiredNext.song_title,
+      desiredKaraFunNext.singer_name,
+      desiredKaraFunNext.song_title,
       'at position',
       targetPosition
     );
 
     await sendPerformanceToKaraFun(
-  desiredNext
-);
-  } finally {
-    /*
-     * Give KaraFun a moment to emit its new
-     * QueueEvent before allowing another sync.
-     */
-    setTimeout(() => {
-      karaFunQueueSyncInFlightRef.current =
-        false;
-    }, 750);
-  }
+      desiredKaraFunNext,
+      targetPosition
+    );
+  } 
+  
+finally {
+  setTimeout(() => {
+    karaFunQueueSyncInFlightRef.current =
+      false;
+  }, 750);
+}
 }
 
   async function sendPerformanceToKaraFun(
@@ -2057,23 +2335,210 @@ const { error } = await supabase
   await loadAll();
 }
 
-async function skipSinger(performanceId: string) {
- const accountId = await getMyAccountId();
-if (!accountId) return;
+async function skipSinger(
+  performanceId: string
+) {
+  const accountId = await getMyAccountId();
 
-const { error } = await supabase
-  .from('performances')
-  .update({ status: 'skipped' })
-  .eq('id', performanceId)
-  .eq('account_id', accountId);
+  if (!accountId) return;
+
+  const activeQueue = rotatedQueue.filter(
+    (p) =>
+      p.status !== 'completed' &&
+      p.status !== 'skipped'
+  );
+
+  const currentIndex =
+    activeQueue.findIndex(
+      (p) => p.id === performanceId
+    );
+
+  if (currentIndex < 0) {
+    alert('Performance not found.');
+    return;
+  }
+
+  const performance =
+    activeQueue[currentIndex];
+
+  const nextSinger =
+    activeQueue[currentIndex + 1];
+
+  if (!nextSinger) {
+    alert(
+      'There is no singer after this one to skip behind.'
+    );
+    return;
+  }
+
+  const isCurrent =
+    performance.id ===
+    event?.current_performance_id;
+
+  const nextRound =
+    nextSinger.round || 1;
+
+  const nextSingerOrder =
+    nextSinger.manual_queue_order ??
+    nextSinger.queue_order ??
+    0;
+
+  // Find the performance immediately after
+  // nextSinger in the SAME round.
+  const followingSinger =
+    activeQueue
+      .slice(currentIndex + 2)
+      .find(
+        (p) =>
+          (p.round || 1) === nextRound
+      );
+
+  const followingOrder =
+    followingSinger
+      ? followingSinger.manual_queue_order ??
+        followingSinger.queue_order ??
+        null
+      : null;
+
+  // Put the skipped singer directly AFTER
+  // nextSinger without changing permanent queue_order.
+  const temporaryOrder =
+    followingOrder !== null &&
+    followingOrder > nextSingerOrder
+      ? (nextSingerOrder +
+          followingOrder) /
+        2
+      : nextSingerOrder + 0.5;
+
+  const { error: moveError } =
+    await supabase
+      .from('performances')
+      .update({
+        round: nextRound,
+        manual_queue_order:
+          temporaryOrder,
+      })
+      .eq('id', performance.id)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (moveError) {
+    console.error(
+      'Unable to skip singer:',
+      moveError
+    );
+
+    alert(
+      `Could not skip singer: ${moveError.message}`
+    );
+
+    return;
+  }
+
+  // If we skipped the current singer,
+  // immediately make the next person current.
+  if (isCurrent) {
+    const { error: currentError } =
+      await supabase
+        .from('events')
+        .update({
+          current_performance_id:
+            nextSinger.id,
+          current_performance_started_at:
+            new Date().toISOString(),
+          is_voting_open: false,
+        })
+        .eq('id', eventId)
+        .eq('account_id', accountId);
+
+    if (currentError) {
+      console.error(
+        'Unable to advance after skip:',
+        currentError
+      );
+
+      alert(
+        `Singer was moved, but the next singer could not be made current: ${currentError.message}`
+      );
+
+      return;
+    }
+
+    karaFunPendingSkipAdvanceRef.current =
+  nextSinger.id;
+
+karaFunSuppressNextAutoAdvanceRef.current =
+  true;
+
+console.log(
+  '⏭️ KaraFun skip pending for:',
+  nextSinger.singer_name,
+  nextSinger.song_title
+);
+}
+
+await loadAll();
+}
+
+async function moveSingerToNextRound(
+  performanceId: string
+) {
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return;
+
+  const performance = performances.find(
+    (p) => p.id === performanceId
+  );
+
+  if (!performance) {
+    alert('Performance not found.');
+    return;
+  }
+
+  // Don't allow the currently performing song
+  // to be moved into another round.
+  if (
+    performance.id ===
+    event?.current_performance_id
+  ) {
+    alert(
+      'The current singer cannot be moved to another round.'
+    );
+    return;
+  }
+
+  const currentRound =
+    performance.round || 1;
+
+  const nextRound =
+    currentRound + 1;
+
+  const { error } = await supabase
+    .from('performances')
+    .update({
+      round: nextRound,
+    })
+    .eq('id', performanceId)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId);
 
   if (error) {
-    alert(error.message);
-    return false;
+    console.error(
+      'Unable to move performance to next round:',
+      error
+    );
+
+    alert(
+      `Could not move singer to the next round: ${error.message}`
+    );
+
+    return;
   }
 
   await loadAll();
 }
+
 async function moveSinger(performanceId: string, direction: 'up' | 'down') {
   const visibleQueue = rotatedQueue.filter(
     (p) => p.status !== 'completed' && p.status !== 'skipped'
@@ -2327,6 +2792,14 @@ async function toggleQrSetting(
     event?.current_performance_id,
   ]
 );
+
+useEffect(() => {
+  currentPerformanceRef.current =
+    current || null;
+
+  rotatedQueueRef.current =
+    rotatedQueue;
+}, [current, rotatedQueue]);
 
 // useEffect(() => {
 //   if (

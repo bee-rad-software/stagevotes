@@ -3,6 +3,7 @@ export type RotationPerformance = {
   round?: number | null;
   queue_order?: number | null;
   status?: string | null;
+  manual_queue_order?: number | null;
 };
 
 export function buildRotationQueue<
@@ -25,13 +26,22 @@ export function buildRotationQueue<
       return roundDiff;
     }
 
-    const orderDiff =
-      (a.queue_order || 0) -
-      (b.queue_order || 0);
+    const aOrder =
+  a.manual_queue_order ??
+  a.queue_order ??
+  0;
 
-    if (orderDiff !== 0) {
-      return orderDiff;
-    }
+const bOrder =
+  b.manual_queue_order ??
+  b.queue_order ??
+  0;
+
+const orderDiff =
+  aOrder - bOrder;
+
+if (orderDiff !== 0) {
+  return orderDiff;
+}
 
     return a.id.localeCompare(b.id);
   });

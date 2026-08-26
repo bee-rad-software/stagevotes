@@ -44,6 +44,10 @@ export type PerformanceRow = {
   id?: string;
   photo_url?: string | null;
 } | null;
+round?: number | null;
+device_id?: string | null;
+submission_id?: string | null;
+manual_queue_order?: number | null;
 };
 
 export type VoteRow = {
