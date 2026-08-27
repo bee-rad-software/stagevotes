@@ -196,6 +196,21 @@ const karaFunCurrentTitleRef =
 const karaFunAutoAdvancingRef =
   useRef(false);
 
+const karaFunRecoveringRef =
+  useRef(false);
+
+const karaFunRecoveryStatusSeenRef =
+  useRef(false);
+
+const karaFunRecoveryQueueSeenRef =
+  useRef(false);
+
+const karaFunRecoveryBaselineSetRef =
+  useRef(false);
+
+const karaFunRecoveryNeedsAdvanceRef =
+  useRef(false);
+
 const karaFunSuppressNextAutoAdvanceRef =
   useRef(false);
 
@@ -206,6 +221,17 @@ const karaFunQueueSyncInFlightRef =
   useRef(false);
 
 const karaFunSkipNextSentRef =
+  useRef(false);
+
+const karaFunReconnectTimerRef =
+  useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+const karaFunReconnectAttemptsRef =
+  useRef(0);
+
+const karaFunManualDisconnectRef =
   useRef(false);
 
 const nextSingerRef =
@@ -1236,6 +1262,8 @@ function isTournamentPerformanceReady(
 }
 
   async function connectKaraFun() {
+  karaFunManualDisconnectRef.current = false;
+
   if (!karafunChannel) {
     setKarafunConnected(false);
     setKarafunConnectionError(
@@ -1251,6 +1279,20 @@ function isTournamentPerformanceReady(
   ) {
     return;
   }
+
+karaFunRecoveringRef.current = true;
+
+karaFunRecoveryStatusSeenRef.current =
+  false;
+
+karaFunRecoveryQueueSeenRef.current =
+  false;
+
+karaFunRecoveryBaselineSetRef.current =
+  false;
+
+karaFunRecoveryNeedsAdvanceRef.current =
+  false;
 
   setKarafunConnecting(true);
   setKarafunConnected(false);
@@ -1338,6 +1380,20 @@ setKarafunPlayerOnline(false);
           'StageVotes KaraFun bridge authenticated.'
         );
 
+  karaFunReconnectAttemptsRef.current = 0;
+
+if (karaFunReconnectTimerRef.current) {
+  clearTimeout(
+    karaFunReconnectTimerRef.current
+  );
+
+  karaFunReconnectTimerRef.current = null;
+}
+
+console.log(
+  '✅ KaraFun reconnect state reset.'
+);
+
         return;
       }
 
@@ -1363,6 +1419,38 @@ if (message.type === 'remote.QueueEvent') {
 );
 
 setKarafunQueueItems(karaFunEntries);
+
+karaFunRecoveryQueueSeenRef.current = true;
+
+/*
+ * If StageVotes already has a current singer,
+ * recovery cannot finish until KaraFun has
+ * given us a real playing-song baseline.
+ */
+const queueRecoveryHasRequiredBaseline =
+  !currentPerformanceRef.current ||
+  karaFunRecoveryBaselineSetRef.current;
+
+if (
+  karaFunRecoveringRef.current &&
+  karaFunRecoveryStatusSeenRef.current &&
+  queueRecoveryHasRequiredBaseline
+) {
+  karaFunRecoveringRef.current = false;
+
+  console.log(
+    '✅ KaraFun recovery complete — status, queue, and baseline received.'
+  );
+
+  karaFunQueueSyncInFlightRef.current =
+    false;
+
+  setKarafunQueueSynced(false);
+
+  setTimeout(() => {
+    setKarafunQueueSynced(true);
+  }, 100);
+}
 
   setKarafunSentPerformanceIds(() => {
   const next = new Set<string>();
@@ -1424,6 +1512,145 @@ if (message.type === 'remote.StatusEvent') {
 
 karaFunCurrentTitleRef.current =
   karaFunTitle.trim().toLowerCase();
+
+/*
+ * Fresh KaraFun status is authoritative.
+ * Replace any current-item ID we preserved
+ * during a disconnect.
+ */
+
+/*
+ * During recovery, establish the currently
+ * playing KaraFun song BEFORE recovery can
+ * be declared complete.
+ */
+if (
+  karaFunRecoveringRef.current &&
+  !karaFunRecoveryBaselineSetRef.current &&
+  karaFunState === 3 &&
+  karaFunCurrentId
+) {
+  karaFunCurrentItemIdRef.current =
+    karaFunCurrentId;
+
+  karaFunRecoveryBaselineSetRef.current =
+    true;
+
+  const normalize = (
+  value?: string | null
+) =>
+  (value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[“”"']/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const recoveryCurrent =
+  currentPerformanceRef.current;
+
+const recoveryQueue =
+  rotatedQueueRef.current;
+
+const recoveryExpectedNext =
+  recoveryQueue.find(
+    (performance) =>
+      performance.id !==
+        recoveryCurrent?.id &&
+      performance.status !==
+        'completed' &&
+      performance.status !==
+        'skipped'
+  ) || null;
+
+const recoveredOnStageVotesCurrent =
+  Boolean(
+    recoveryCurrent &&
+    normalize(karaFunSinger) ===
+      normalize(
+        recoveryCurrent.singer_name
+      ) &&
+    normalize(karaFunTitle) ===
+      normalize(
+        recoveryCurrent.song_title
+      )
+  );
+
+const recoveredOnExpectedNext =
+  Boolean(
+    recoveryExpectedNext &&
+    normalize(karaFunSinger) ===
+      normalize(
+        recoveryExpectedNext.singer_name
+      ) &&
+    normalize(karaFunTitle) ===
+      normalize(
+        recoveryExpectedNext.song_title
+      )
+  );
+
+karaFunRecoveryNeedsAdvanceRef.current =
+  Boolean(
+    recoveryCurrent &&
+    !recoveredOnStageVotesCurrent &&
+    recoveredOnExpectedNext
+  );
+
+  console.log(
+    '🛡️ KaraFun recovery baseline established:',
+    karaFunSinger,
+    karaFunTitle,
+    karaFunCurrentId
+  );
+}
+
+karaFunRecoveryStatusSeenRef.current = true;
+
+const recoveryHasRequiredBaseline =
+  !currentPerformanceRef.current ||
+  karaFunRecoveryBaselineSetRef.current;
+
+if (
+  karaFunRecoveringRef.current &&
+  karaFunRecoveryQueueSeenRef.current &&
+  recoveryHasRequiredBaseline
+) {
+  karaFunRecoveringRef.current = false;
+
+  if (
+  karaFunRecoveryNeedsAdvanceRef.current
+) {
+  const advanceSinger =
+    nextSingerRef.current;
+
+  if (advanceSinger) {
+    console.log(
+      '🔄 KaraFun advanced while disconnected — catching StageVotes up.'
+    );
+
+    karaFunRecoveryNeedsAdvanceRef.current =
+      false;
+
+    void advanceSinger();
+
+    return;
+  }
+}
+
+  console.log(
+    '✅ KaraFun recovery complete — status, queue, and baseline received.'
+  );
+
+  karaFunQueueSyncInFlightRef.current =
+    false;
+
+  setKarafunQueueSynced(false);
+
+  setTimeout(() => {
+    setKarafunQueueSynced(true);
+  }, 100);
+}
 
   if (
     karaFunState !== 3 ||
@@ -1703,23 +1930,90 @@ if (message.type === 'remote.AppLeftEvent') {
     };
 
     ws.onclose = () => {
-      karafunSocketRef.current = null;
-      karaFunCurrentItemIdRef.current = null;
-      karaFunAutoAdvancingRef.current = false;
-      karaFunLastAutoAdvancedItemIdRef.current = null;
+  karafunSocketRef.current = null;
 
-      setKarafunConnecting(false);
-      setKarafunConnected(false);
-      setKarafunPlayerOnline(false);
-      setKarafunQueueSynced(false);
-      setKarafunConnectionError(
-        'KaraFun disconnected. Start KaraFun and reconnect.'
-      );
+  karaFunAutoAdvancingRef.current = false;
+  karaFunLastAutoAdvancedItemIdRef.current =
+    null;
+
+  setKarafunConnecting(false);
+  setKarafunConnected(false);
+  setKarafunPlayerOnline(false);
+  setKarafunQueueSynced(false);
+
+  console.log(
+    'KaraFun bridge disconnected.'
+  );
+
+  if (karaFunManualDisconnectRef.current) {
+  karaFunManualDisconnectRef.current =
+    false;
+
+  karaFunReconnectAttemptsRef.current = 0;
+
+  if (karaFunReconnectTimerRef.current) {
+    clearTimeout(
+      karaFunReconnectTimerRef.current
+    );
+
+    karaFunReconnectTimerRef.current =
+      null;
+  }
+
+  setKarafunConnectionError('');
+
+  console.log(
+    'KaraFun was disconnected manually — auto reconnect cancelled.'
+  );
+
+  return;
+}
+
+  /*
+   * Prevent multiple reconnect timers
+   * from being scheduled at once.
+   */
+  if (karaFunReconnectTimerRef.current) {
+    return;
+  }
+
+  const attempt =
+    karaFunReconnectAttemptsRef.current + 1;
+
+  karaFunReconnectAttemptsRef.current =
+    attempt;
+
+  /*
+   * Back off gradually:
+   * 3s, 6s, 9s, then max 15s.
+   */
+  const reconnectDelay =
+    Math.min(attempt * 3000, 15000);
+
+  setKarafunConnectionError(
+    `KaraFun disconnected. Reconnecting in ${
+      reconnectDelay / 1000
+    } seconds...`
+  );
+
+  console.log(
+    `🔄 KaraFun reconnect scheduled in ${
+      reconnectDelay / 1000
+    } seconds.`
+  );
+
+  karaFunReconnectTimerRef.current =
+    setTimeout(() => {
+      karaFunReconnectTimerRef.current =
+        null;
 
       console.log(
-        'KaraFun bridge disconnected.'
+        '🔄 Attempting KaraFun reconnect...'
       );
-    };
+
+      void connectKaraFun();
+    }, reconnectDelay);
+};
   } catch (error) {
     console.error(
       'Unable to connect to KaraFun:',
@@ -1739,19 +2033,140 @@ if (message.type === 'remote.AppLeftEvent') {
   }
 }
 
+function disconnectKaraFun() {
+  /*
+   * This is an intentional host disconnect,
+   * so the onclose handler must NOT
+   * automatically reconnect.
+   */
+  karaFunManualDisconnectRef.current = true;
+
+  karaFunReconnectAttemptsRef.current = 0;
+
+  if (karaFunReconnectTimerRef.current) {
+    clearTimeout(
+      karaFunReconnectTimerRef.current
+    );
+
+    karaFunReconnectTimerRef.current = null;
+  }
+
+  const ws = karafunSocketRef.current;
+
+  karafunSocketRef.current = null;
+
+  karaFunRecoveringRef.current = false;
+  karaFunQueueSyncInFlightRef.current = false;
+
+  setKarafunConnecting(false);
+  setKarafunConnected(false);
+  setKarafunPlayerOnline(false);
+  setKarafunQueueSynced(false);
+  setKarafunConnectionError('');
+
+  if (
+    ws &&
+    (
+      ws.readyState === WebSocket.OPEN ||
+      ws.readyState === WebSocket.CONNECTING
+    )
+  ) {
+    ws.close();
+  }
+
+  console.log(
+    'KaraFun disconnected manually.'
+  );
+}
+
+function toggleKaraFunConnection() {
+  if (
+    karafunConnected ||
+    karafunSocketRef.current?.readyState ===
+      WebSocket.OPEN
+  ) {
+    disconnectKaraFun();
+    return;
+  }
+
+  void connectKaraFun();
+}
+
 async function syncKaraFunQueueOrder() {
   const ws = karafunSocketRef.current;
 
-  if (
-    !ws ||
-    ws.readyState !== WebSocket.OPEN ||
-    !karafunConnected ||
-    !karafunPlayerOnline ||
-    !karafunQueueSynced ||
-    karaFunQueueSyncInFlightRef.current
-  ) {
-    return;
+  console.log(
+  '🚦 KaraFun sync gate:',
+  {
+    recovering:
+      karaFunRecoveringRef.current,
+    hasSocket: !!ws,
+    socketOpen:
+      ws?.readyState === WebSocket.OPEN,
+    connected: karafunConnected,
+    playerOnline: karafunPlayerOnline,
+    queueSynced: karafunQueueSynced,
+    syncInFlight:
+      karaFunQueueSyncInFlightRef.current,
+    current:
+      current?.singer_name || null,
+    next:
+      rotatedQueue.find(
+        (performance) =>
+          performance.id !== current?.id &&
+          performance.status !== 'completed' &&
+          performance.status !== 'skipped'
+      )?.singer_name || null,
   }
+);
+
+ /*
+ * Recovery safety release:
+ *
+ * If KaraFun is online and is clearly still
+ * playing StageVotes' current singer/song,
+ * recovery has enough information to resume
+ * normal queue synchronization.
+ */
+if (
+  karaFunRecoveringRef.current &&
+  current &&
+  karaFunCurrentItemIdRef.current &&
+  karaFunCurrentSingerRef.current
+    .trim()
+    .toLowerCase() ===
+    current.singer_name
+      ?.trim()
+      .toLowerCase() &&
+  karaFunCurrentTitleRef.current
+    .trim()
+    .toLowerCase() ===
+    current.song_title
+      ?.trim()
+      .toLowerCase()
+) {
+  console.log(
+    '✅ KaraFun recovery confirmed current singer — resuming queue sync:',
+    current.singer_name,
+    current.song_title
+  );
+
+  karaFunRecoveringRef.current = false;
+  karaFunRecoveryBaselineSetRef.current = true;
+  karaFunRecoveryStatusSeenRef.current = true;
+}
+
+if (
+  karaFunRecoveringRef.current ||
+  !ws ||
+  ws.readyState !== WebSocket.OPEN ||
+  !karafunConnected ||
+  !karafunPlayerOnline ||
+  !karafunQueueSynced ||
+  karaFunQueueSyncInFlightRef.current
+) {
+  return;
+}
 
 const normalize = (
   value?: string | null
@@ -1787,10 +2202,12 @@ const stageVotesCurrentTitle =
 const karaFunIsPlayingStageVotesCurrent =
   Boolean(
     current &&
-    karaFunCurrentSingerRef.current ===
-      stageVotesCurrentSinger &&
-    karaFunCurrentTitleRef.current ===
-      stageVotesCurrentTitle
+    normalize(
+      karaFunCurrentSingerRef.current
+    ) === stageVotesCurrentSinger &&
+    normalize(
+      karaFunCurrentTitleRef.current
+    ) === stageVotesCurrentTitle
   );
 
 const desiredNext =
@@ -1804,39 +2221,170 @@ const desiredNext =
    * current singer.
    */
   const pendingSkipId =
-    karaFunPendingSkipAdvanceRef.current;
+  karaFunPendingSkipAdvanceRef.current;
 
-  const pendingSkipPerformance =
-    pendingSkipId
-      ? performances.find(
-          (performance) =>
-            performance.id === pendingSkipId
-        ) || null
-      : null;
+let pendingSkipPerformance =
+  pendingSkipId
+    ? performances.find(
+        (performance) =>
+          performance.id === pendingSkipId
+      ) || null
+    : null;
 
-  const desiredKaraFunNext =
-    pendingSkipPerformance ||
-    desiredNext;
-
-  if (!desiredKaraFunNext) {
-    return;
-  }
-
-  const desiredNextSinger =
+/*
+ * The skip target may already be StageVotes'
+ * current singer and already playing in KaraFun.
+ *
+ * If so, the skip is complete. Clear the stale
+ * pending state so normal UP NEXT syncing can
+ * resume.
+ */
+const pendingSkipIsAlreadyCurrent =
+  Boolean(
+    pendingSkipPerformance &&
+    current?.id ===
+      pendingSkipPerformance.id &&
     normalize(
-      desiredKaraFunNext.singer_name
-    );
-
-  const desiredNextTitle =
+      karaFunCurrentSingerRef.current
+    ) ===
+      normalize(
+        pendingSkipPerformance.singer_name
+      ) &&
     normalize(
-      desiredKaraFunNext.song_title
-    );
+      karaFunCurrentTitleRef.current
+    ) ===
+      normalize(
+        pendingSkipPerformance.song_title
+      )
+  );
+
+if (pendingSkipIsAlreadyCurrent) {
+  console.log(
+    '✅ KaraFun skip already complete — clearing pending target:',
+    pendingSkipPerformance?.singer_name
+  );
+
+  karaFunPendingSkipAdvanceRef.current =
+    null;
+
+  karaFunSkipNextSentRef.current = false;
+
+  karaFunSuppressNextAutoAdvanceRef.current =
+    false;
+
+  pendingSkipPerformance = null;
+}
+
+const desiredKaraFunNext =
+  pendingSkipPerformance ||
+  desiredNext;
+
+ /*
+ * If StageVotes has nobody waiting,
+ * there is nothing for KaraFun to sync.
+ *
+ * Do not fall back to an old/completed
+ * performance.
+ */
 
   /*
    * What KaraFun is actually playing.
    */
   const currentKaraFunItemId =
     karaFunCurrentItemIdRef.current;
+
+  const protectedKaraFunItemId =
+  currentKaraFunItemId;
+
+  const isProtectedKaraFunItem = (
+  item: any
+) =>
+  Boolean(
+    (
+      protectedKaraFunItemId &&
+      item.queueItemId ===
+        protectedKaraFunItemId
+    ) ||
+    (
+      normalize(item.singer) ===
+        normalize(
+          karaFunCurrentSingerRef.current
+        ) &&
+      normalize(item.title) ===
+        normalize(
+          karaFunCurrentTitleRef.current
+        )
+    )
+  );
+
+  /*
+ * Nobody is waiting in StageVotes.
+ *
+ * Remove stale KaraFun buffer items,
+ * but NEVER remove the currently playing song.
+ */
+if (!desiredKaraFunNext) {
+  const leftoverQueueItems =
+    karafunQueueItems.filter(
+      (item: any) =>
+        !isProtectedKaraFunItem(item)
+    );
+
+  if (leftoverQueueItems.length > 0) {
+    karaFunQueueSyncInFlightRef.current =
+      true;
+
+    leftoverQueueItems.forEach(
+      (item: any) => {
+        console.log(
+          '🧹 Clearing leftover KaraFun buffer item:',
+          item.singer,
+          item.title
+        );
+
+        ws.send(
+          JSON.stringify({
+            id:
+              Date.now() +
+              Math.floor(
+                Math.random() * 1000
+              ),
+            type:
+              'remote.RemoveFromQueueRequest',
+            payload: {
+              queueItemId:
+                item.queueItemId,
+            },
+          })
+        );
+      }
+    );
+
+    setTimeout(() => {
+      karaFunQueueSyncInFlightRef.current =
+        false;
+    }, 750);
+  }
+
+  return;
+}
+
+const desiredNextSinger =
+  normalize(
+    desiredKaraFunNext.singer_name
+  );
+
+const desiredNextTitle =
+  normalize(
+    desiredKaraFunNext.song_title
+  );
+
+  /*
+ * StageVotes has nobody waiting.
+ *
+ * Clear any leftover KaraFun buffer songs,
+ * but NEVER touch the currently playing item.
+ */
 
   const currentKaraFunItem =
   karafunQueueItems.find(
@@ -1884,13 +2432,12 @@ const desiredNext =
     desiredNextKaraFunItem?.queueItemId
   ) {
     const staleItems =
-      karafunQueueItems.filter(
-        (item: any) =>
-          item.queueItemId !==
-            currentKaraFunItemId &&
-          item.queueItemId !==
-            desiredNextKaraFunItem.queueItemId
-      );
+  karafunQueueItems.filter(
+    (item: any) =>
+      !isProtectedKaraFunItem(item) &&
+      item.queueItemId !==
+        desiredNextKaraFunItem.queueItemId
+  );
 
     if (staleItems.length > 0) {
       karaFunQueueSyncInFlightRef.current =
@@ -2029,76 +2576,93 @@ return;
      * KaraFun, just in the wrong position.
      */
     if (
-      desiredNextKaraFunItem?.queueItemId
-    ) {
-      const targetPosition = 1;
+  desiredNextKaraFunItem?.queueItemId
+) {
+  /*
+   * Never move the song KaraFun is currently
+   * playing. If our desired-next calculation
+   * accidentally resolves to the live song,
+   * bail out and let the next sync pass correct it.
+   */
+  if (
+    isProtectedKaraFunItem(
+      desiredNextKaraFunItem
+    )
+  ) {
+    console.log(
+      '🛡️ Refusing to move KaraFun current song:',
+      desiredNextKaraFunItem.singer,
+      desiredNextKaraFunItem.title
+    );
 
-      console.log(
-        'Moving KaraFun next singer:',
-        desiredKaraFunNext.singer_name,
-        desiredKaraFunNext.song_title,
-        'to position',
-        targetPosition
-      );
+    return;
+  }
 
-      ws.send(
-        JSON.stringify({
-          id: Date.now(),
-          type:
-            'remote.MoveInQueueRequest',
-          payload: {
-            queueItemId:
-              desiredNextKaraFunItem.queueItemId,
-            to: targetPosition,
-          },
-        })
-      );
+  const targetPosition = 1;
 
-      return;
-    }
+  /*
+   * If it is already physically in the correct
+   * position, do nothing. This prevents a
+   * Move -> QueueEvent -> Move loop.
+   */
+  if (
+    desiredNextKaraFunItem.index ===
+    targetPosition
+  ) {
+    return;
+  }
+
+  console.log(
+    'Moving KaraFun next singer:',
+    desiredKaraFunNext.singer_name,
+    desiredKaraFunNext.song_title,
+    'to position',
+    targetPosition
+  );
+
+  ws.send(
+    JSON.stringify({
+      id: Date.now(),
+      type:
+        'remote.MoveInQueueRequest',
+      payload: {
+        queueItemId:
+          desiredNextKaraFunItem.queueItemId,
+        to: targetPosition,
+      },
+    })
+  );
+
+  return;
+}
 
     /*
      * CASE 2:
      * The correct target is not in KaraFun.
      * Remove KaraFun's incorrect next item.
      */
-    const karaFunNextIsActuallyCurrent =
-  Boolean(
-    karaFunNextItem &&
-      normalize(karaFunNextItem.singer) ===
-        normalize(
-          karaFunCurrentSingerRef.current
-        ) &&
-      normalize(karaFunNextItem.title) ===
-        normalize(
-          karaFunCurrentTitleRef.current
-        )
+    if (
+  karaFunNextItem?.queueItemId &&
+  !isProtectedKaraFunItem(karaFunNextItem)
+) {
+  console.log(
+    'Removing stale KaraFun next singer:',
+    karaFunNextItem.singer,
+    karaFunNextItem.title
   );
 
-if (
-  karaFunNextItem?.queueItemId &&
-  karaFunNextItem.queueItemId !==
-    currentKaraFunItemId &&
-  !karaFunNextIsActuallyCurrent
-) {
-      console.log(
-        'Removing stale KaraFun next singer:',
-        karaFunNextItem.singer,
-        karaFunNextItem.title
-      );
-
-      ws.send(
-        JSON.stringify({
-          id: Date.now(),
-          type:
-            'remote.RemoveFromQueueRequest',
-          payload: {
-            queueItemId:
-              karaFunNextItem.queueItemId,
-          },
-        })
-      );
-    }
+  ws.send(
+    JSON.stringify({
+      id: Date.now(),
+      type:
+        'remote.RemoveFromQueueRequest',
+      payload: {
+        queueItemId:
+          karaFunNextItem.queueItemId,
+      },
+    })
+  );
+}
 
     /*
      * Add the exact StageVotes target
@@ -3632,7 +4196,7 @@ onOpenKaraFunDisplay={() =>
       '_blank'
     )
   }
-  onConnectKaraFun={connectKaraFun}
+  onConnectKaraFun={toggleKaraFunConnection}
   karafunConnected={karafunConnected}
   karafunConnecting={karafunConnecting}
 karafunConnectionError={karafunConnectionError}
@@ -4080,50 +4644,71 @@ karafunPlayerOnline={karafunPlayerOnline}
   setPickerSongs([]);
   setShowManualSongFields(false);
 }}
-    onSurpriseMe={async () => {
-      setPickerLoading(true);
+   onSurpriseMe={async () => {
+  setPickerLoading(true);
 
-      const { data, error } =
-        await supabase
-          .from('songs')
-          .select('id, title, artist')
-          .limit(100);
+  try {
+    /*
+     * If KaraFun is configured, Surprise Me
+     * should use KaraFun as the source of truth.
+     */
+    if (karafunChannel) {
+      const surpriseTerms = [
+        'love',
+        'rock',
+        'dance',
+        'party',
+        'country',
+        'classic',
+        'pop',
+      ];
 
-      if (error || !data?.length) {
-        console.error(
-          'Surprise song search failed:',
-          error
+      const randomTerm =
+        surpriseTerms[
+          Math.floor(
+            Math.random() *
+              surpriseTerms.length
+          )
+        ];
+
+      const response = await fetch(
+        `https://www.karafun.com/${karafunChannel}/` +
+          `?type=search` +
+          `&q=${encodeURIComponent(randomTerm)}` +
+          `&types=karaoke`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `KaraFun search failed: ${response.status}`
         );
-
-        alert(
-          'We could not find a surprise song. Try again.'
-        );
-
-        setPickerLoading(false);
-        return;
       }
 
+      const data = await response.json();
+
       const availableSongs =
-        data.filter((result) => {
-          return !performances.some(
-            (performance) =>
-              performance.song_title
-                .trim()
-                .toLowerCase() ===
-                result.title
+        (Array.isArray(data) ? data : []).filter(
+          (result: any) =>
+            !performances.some(
+              (performance) =>
+                performance.song_title
                   .trim()
-                  .toLowerCase() &&
-              performance.status !==
-                'completed'
-          );
-        });
+                  .toLowerCase() ===
+                  String(
+                    result.title || ''
+                  )
+                    .trim()
+                    .toLowerCase() &&
+                performance.status !==
+                  'completed'
+            )
+        );
 
       if (availableSongs.length === 0) {
         alert(
           'No available surprise songs were found.'
         );
 
-        setPickerLoading(false);
         return;
       }
 
@@ -4135,11 +4720,100 @@ karafunPlayerOnline={karafunPlayerOnline}
           )
         ];
 
-      setSongTitle(randomSong.title);
-      setArtist(randomSong.artist || '');
-      setPickerLoading(false);
+      setSongTitle(
+        randomSong.title || ''
+      );
+
+      setArtist(
+        randomSong.artist || ''
+      );
+
+      setSelectedKaraFunSongId(
+        Number(randomSong.songId) || null
+      );
+
+      setSelectedKaraFunTitle(
+        randomSong.title || ''
+      );
+
+      setSelectedKaraFunArtist(
+        randomSong.artist || ''
+      );
+
       setShowManualSongFields(false);
-    }}
+
+      return;
+    }
+
+    /*
+     * No KaraFun configured:
+     * fall back to StageVotes song catalog.
+     */
+    const { data, error } =
+      await supabase
+        .from('songs')
+        .select('id, title, artist')
+        .limit(100);
+
+    if (error || !data?.length) {
+      throw error ||
+        new Error(
+          'No StageVotes songs available.'
+        );
+    }
+
+    const availableSongs =
+      data.filter((result) => {
+        return !performances.some(
+          (performance) =>
+            performance.song_title
+              .trim()
+              .toLowerCase() ===
+              result.title
+                .trim()
+                .toLowerCase() &&
+            performance.status !==
+              'completed'
+        );
+      });
+
+    if (availableSongs.length === 0) {
+      alert(
+        'No available surprise songs were found.'
+      );
+
+      return;
+    }
+
+    const randomSong =
+      availableSongs[
+        Math.floor(
+          Math.random() *
+            availableSongs.length
+        )
+      ];
+
+    setSongTitle(randomSong.title);
+    setArtist(randomSong.artist || '');
+
+    setSelectedKaraFunSongId(null);
+    setSelectedKaraFunTitle('');
+    setSelectedKaraFunArtist('');
+
+    setShowManualSongFields(false);
+  } catch (error) {
+    console.error(
+      'Surprise song search failed:',
+      error
+    );
+
+    alert(
+      'We could not find a surprise song. Try again.'
+    );
+  } finally {
+    setPickerLoading(false);
+  }
+}}
   />
 
   {songTitle && (

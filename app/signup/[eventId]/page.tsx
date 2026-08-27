@@ -803,27 +803,109 @@ const needsCompetitionSong =
 }
 
   async function pickSurpriseSong() {
-    setMessage('');
-    setDuplicateWarning('');
-    setPickerLoading(true);
+  setMessage('');
+  setDuplicateWarning('');
+  setPickerError('');
+  setPickerLoading(true);
 
+  try {
+    /*
+     * If KaraFun is configured, use KaraFun
+     * as the source of truth for Surprise Me.
+     */
+    if (karafunChannel) {
+      const surpriseTerms = [
+        'love',
+        'rock',
+        'dance',
+        'party',
+        'country',
+        'classic',
+        'pop',
+      ];
+
+      const randomTerm =
+        surpriseTerms[
+          Math.floor(
+            Math.random() *
+              surpriseTerms.length
+          )
+        ];
+
+      const response = await fetch(
+        `https://www.karafun.com/${karafunChannel}/` +
+          `?type=search` +
+          `&q=${encodeURIComponent(randomTerm)}` +
+          `&types=karaoke`
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `KaraFun search failed: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      const queuedTitles = new Set(
+        queue.map((performance) =>
+          performance.song_title
+            ?.trim()
+            .toLowerCase()
+        )
+      );
+
+      const availableSongs =
+        (Array.isArray(data) ? data : []).filter(
+          (song: any) =>
+            !queuedTitles.has(
+              String(song.title || '')
+                .trim()
+                .toLowerCase()
+            )
+        );
+
+      if (availableSongs.length === 0) {
+        setPickerError(
+          'Every song we checked is already queued. Try searching instead.'
+        );
+        return;
+      }
+
+      const selectedSong =
+        availableSongs[
+          Math.floor(
+            Math.random() *
+              availableSongs.length
+          )
+        ];
+
+      setSurpriseSong({
+        title: selectedSong.title || '',
+        artist: selectedSong.artist || '',
+        status: 'available',
+        note: 'StageVotes picked this one for you',
+        karafunSongId:
+          Number(selectedSong.songId) || null,
+      });
+
+      return;
+    }
+
+    /*
+     * No KaraFun configured:
+     * fall back to the StageVotes catalog.
+     */
     const { data, error } = await supabase
       .from('songs')
       .select('id, title, artist')
       .limit(250);
 
     if (error || !data?.length) {
-      console.error(
-        'Surprise song search failed:',
-        error?.message
-      );
-
-      setMessage(
-        'We could not find a surprise song. Try again!'
-      );
-
-      setPickerLoading(false);
-      return;
+      throw error ||
+        new Error(
+          'No StageVotes songs available.'
+        );
     }
 
     const queuedTitles = new Set(
@@ -842,21 +924,19 @@ const needsCompetitionSong =
     );
 
     if (availableSongs.length === 0) {
-      setMessage(
+      setPickerError(
         'Every song we checked is already queued. Try searching instead.'
       );
-
-      setPickerLoading(false);
       return;
     }
 
-    const randomIndex = Math.floor(
-      Math.random() *
-        availableSongs.length
-    );
-
     const selectedSong =
-      availableSongs[randomIndex];
+      availableSongs[
+        Math.floor(
+          Math.random() *
+            availableSongs.length
+        )
+      ];
 
     setSurpriseSong({
       id: selectedSong.id,
@@ -864,10 +944,21 @@ const needsCompetitionSong =
       artist: selectedSong.artist || '',
       status: 'available',
       note: 'StageVotes picked this one for you',
+      karafunSongId: null,
     });
+  } catch (error) {
+    console.error(
+      'Surprise song search failed:',
+      error
+    );
 
+    setPickerError(
+      'We could not find a surprise song. Try again!'
+    );
+  } finally {
     setPickerLoading(false);
   }
+}
 
   async function checkDuplicateSong(
   songTitle: string
