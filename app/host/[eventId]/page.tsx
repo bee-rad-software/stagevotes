@@ -1889,14 +1889,32 @@ void advanceSinger().finally(() => {
 }
 
 if (message.type === 'remote.AppLeftEvent') {
+  /*
+   * The bridge WebSocket can stay alive even
+   * when the KaraFun desktop player closes.
+   *
+   * Put StageVotes into recovery mode so when
+   * KaraFun returns we establish a fresh
+   * playing-song baseline before syncing.
+   */
+  karaFunRecoveringRef.current = true;
+
+  karaFunRecoveryStatusSeenRef.current = false;
+  karaFunRecoveryQueueSeenRef.current = false;
+  karaFunRecoveryBaselineSetRef.current = false;
+  karaFunRecoveryNeedsAdvanceRef.current = false;
+
+  karaFunQueueSyncInFlightRef.current = false;
+
   setKarafunPlayerOnline(false);
+  setKarafunQueueSynced(false);
 
   setKarafunConnectionError(
-    'KaraFun is connected, but the player is not running.'
+    'KaraFun player disconnected. Waiting for it to return...'
   );
 
   console.log(
-    'KaraFun desktop player left.'
+    '🔌 KaraFun desktop player left — recovery mode armed.'
   );
 
   return;
