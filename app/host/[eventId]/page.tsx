@@ -1507,6 +1507,24 @@ if (message.type === 'remote.StatusEvent') {
     status?.current?.song
       ?.title || '';
 
+  console.log(
+  '🧭 KaraFun recovery status:',
+  {
+    recovering:
+      karaFunRecoveringRef.current,
+    state: karaFunState,
+    currentId: karaFunCurrentId,
+    singer: karaFunSinger,
+    title: karaFunTitle,
+    baselineSet:
+      karaFunRecoveryBaselineSetRef.current,
+    statusSeen:
+      karaFunRecoveryStatusSeenRef.current,
+    queueSeen:
+      karaFunRecoveryQueueSeenRef.current,
+  }
+);
+
   karaFunCurrentSingerRef.current =
   karaFunSinger.trim().toLowerCase();
 
@@ -1527,8 +1545,9 @@ karaFunCurrentTitleRef.current =
 if (
   karaFunRecoveringRef.current &&
   !karaFunRecoveryBaselineSetRef.current &&
-  karaFunState === 3 &&
-  karaFunCurrentId
+  karaFunCurrentId &&
+  karaFunSinger &&
+  karaFunTitle
 ) {
   karaFunCurrentItemIdRef.current =
     karaFunCurrentId;
