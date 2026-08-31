@@ -39,7 +39,7 @@ export default function AppShell({
       </aside>
 
       <section className="sv-main">
-        <header className="sv-topbar">
+        <header className="sv-topbar sv-desktop-drag">
           <div>
             <h1>{title}</h1>
             <p>{subtitle}</p>

@@ -130,6 +130,7 @@ const [showFirstWelcome, setShowFirstWelcome] =
   useState(false);
 const [karafunChannel, setKarafunChannel] = useState('');
 const [karafunConnected, setKarafunConnected] = useState(false);
+const [karafunDisplayOpen, setKarafunDisplayOpen] = useState(false);
 
 const [
   karafunQueueSynced,
@@ -320,6 +321,34 @@ const checkinUrl =
     setWelcomeProgressLoaded(true);
   }
 }, [eventId]);
+
+useEffect(() => {
+  const desktop = (window as any).stagevotesDesktop;
+
+  if (!desktop) {
+    return;
+  }
+
+  let unsubscribe: (() => void) | undefined;
+
+  void desktop
+    .getKarafunDisplayState?.()
+    .then((isOpen: boolean) => {
+      setKarafunDisplayOpen(Boolean(isOpen));
+    });
+
+  if (desktop.onKarafunDisplayState) {
+    unsubscribe = desktop.onKarafunDisplayState(
+      (isOpen: boolean) => {
+        setKarafunDisplayOpen(Boolean(isOpen));
+      }
+    );
+  }
+
+  return () => {
+    unsubscribe?.();
+  };
+}, []);
 
 useEffect(() => {
   if (!eventId || !welcomeProgressLoaded) {
@@ -4220,12 +4249,24 @@ account?.subscription_status &&
       '_blank'
     )
   }
-onOpenKaraFunDisplay={() =>
+
+karafunDisplayOpen={karafunDisplayOpen}
+
+onOpenKaraFunDisplay={() => {
+  const desktop =
+    (window as any).stagevotesDesktop;
+
+  if (desktop?.toggleKarafunDisplay) {
+  desktop.toggleKarafunDisplay(eventId);
+  return;
+}
+
   window.open(
     `/karafun-display/${eventId}`,
-    '_blank'
-  )
-}
+    "_blank",
+    "noopener,noreferrer"
+  );
+}}
 
   onAwards={() =>
     window.open(

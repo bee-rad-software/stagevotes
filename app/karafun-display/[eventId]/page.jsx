@@ -249,8 +249,11 @@ function SingerAvatar({
     <header className="kf-header">
       <div className="kf-brand">
         <div className="kf-brand-mark">
-          SV
-        </div>
+  <img
+    src="/icon-512.png"
+    alt="StageVotes"
+  />
+</div>
 
         <div>
           <div className="kf-brand-name">
@@ -610,6 +613,7 @@ margin-right: 0;
         justify-content: space-between;
         padding-bottom:
           clamp(16px, 2vh, 28px);
+        -webkit-app-region: drag;
       }
 
       .kf-brand {
@@ -619,24 +623,21 @@ margin-right: 0;
       }
 
       .kf-brand-mark {
-        width: 46px;
-        height: 46px;
-        border-radius: 13px;
-        display: grid;
-        place-items: center;
-        font-size: 15px;
-        font-weight: 950;
-        letter-spacing: -0.5px;
-        background:
-          linear-gradient(
-            135deg,
-            #38bdf8,
-            #f97316
-          );
-        box-shadow:
-          0 8px 26px
-          rgba(0, 0, 0, 0.35);
-      }
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow:
+    0 8px 26px rgba(0, 0, 0, 0.35);
+}
+
+.kf-brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
       .kf-brand-name {
         font-size:
@@ -670,6 +671,7 @@ margin-right: 0;
           1px solid
           rgba(34, 197, 94, 0.35);
         color: #86efac;
+        -webkit-app-region: no-drag;
       }
 
       .kf-live-dot {

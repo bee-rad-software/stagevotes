@@ -9198,3 +9198,18 @@ a.atlas-live-venue-logo {
   font-size: 0.85rem;
   letter-spacing: normal;
 }
+
+/* StageVotes desktop window drag area */
+.sv-desktop-drag {
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+/* Anything interactive placed in the header later
+   should remain clickable */
+.sv-desktop-drag button,
+.sv-desktop-drag a,
+.sv-desktop-drag input,
+.sv-desktop-drag select {
+  -webkit-app-region: no-drag;
+}

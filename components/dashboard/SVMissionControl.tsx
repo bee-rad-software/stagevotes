@@ -22,6 +22,7 @@ type Props = {
   onOpenDisplay?: () => void;
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
+  karafunDisplayOpen?: boolean;
   onOpenKaraFunDisplay?: () => void;
   karafunConnecting?: boolean;
 karafunConnectionError?: string;
@@ -46,6 +47,7 @@ export default function SVMissionControl({
   onOpenDisplay,
   onAwards,
   onConnectKaraFun,
+  karafunDisplayOpen,
   onOpenKaraFunDisplay,
 
   votingOpen = false,
@@ -129,8 +131,12 @@ karafunPlayerOnline = false,
 
     case 'karafunDisplay':
   return {
-    label: 'READY',
-    className: 'info',
+    label: karafunDisplayOpen
+      ? 'OPEN'
+      : 'READY',
+    className: karafunDisplayOpen
+      ? 'success'
+      : 'info',
   };
 
     case 'awards':
@@ -312,15 +318,17 @@ Launch audience display
   className="sv-mission-action"
   onClick={onOpenKaraFunDisplay}
 >
-  <StatusBadge type="karafunDisplay" />
+ <StatusBadge type="karafunDisplay" />
 
   <Monitor size={26} />
 
   <span>KaraFun Display</span>
 
   <small>
-    Launch singer queue display
-  </small>
+  {karafunDisplayOpen
+    ? "Click to close singer queue display"
+    : "Launch singer queue display"}
+</small>
 </button>
 
         <button

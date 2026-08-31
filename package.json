@@ -1,11 +1,19 @@
 {
+  "name": "stagevotes",
+  "version": "0.1.0",
+  "private": true,
+  "main": "electron-karafun-display.js",
+
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "karafun-display": "electron electron-karafun-display.js"
+    "desktop": "electron electron-karafun-display.js",
+    "desktop:pack": "electron-builder --dir",
+    "desktop:dist": "electron-builder"
   },
+
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -22,12 +30,34 @@
     "react-dom": "latest",
     "stripe": "^18.0.0"
   },
+
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "electron": "^44.1.0",
+    "electron-builder": "^26.15.3",
     "typescript": "latest"
+  },
+
+  "build": {
+    "appId": "com.stagevotes.host",
+    "productName": "StageVotes",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+  "electron-karafun-display.js",
+  "electron-preload.js",
+  "public/icon-512.png",
+  "package.json"
+],
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "target": [
+        "dmg"
+      ]
+    }
   }
 }

@@ -1,33 +1,112 @@
-const { app, BrowserWindow, screen } = require("electron");
+const { app, BrowserWindow, screen, ipcMain } = require("electron");
+const path = require("path");
+const fs = require("fs");
+const BASE_URL = app.isPackaged
+  ? "https://app.stagevotes.com"
+  : "http://localhost:3000";
+
+app.setName("StageVotes Host");
 
 const DISPLAY_WIDTH = 430;
 
-function getEventId() {
-  const eventId = process.argv[2];
+let hostWindow = null;
+let companionWindow = null;
 
-  if (!eventId) {
-    console.error("Missing StageVotes event ID");
-    return null;
-  }
-
-  return eventId;
+function getWindowStatePath() {
+  return path.join(
+    app.getPath("userData"),
+    "window-state.json"
+  );
 }
 
-function createHostWindow(eventId) {
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { x, y, width, height } = primaryDisplay.workArea;
+function loadWindowState() {
+  try {
+    const statePath =
+      getWindowStatePath();
 
-  const hostWidth = width - DISPLAY_WIDTH;
+    if (!fs.existsSync(statePath)) {
+      return null;
+    }
 
-  const hostWindow = new BrowserWindow({
-    width: hostWidth,
-    height,
-    x,
-    y,
+    return JSON.parse(
+      fs.readFileSync(statePath, "utf8")
+    );
+  } catch (error) {
+    console.error(
+      "Could not load window state:",
+      error
+    );
 
-    // For now, leave the Host window framed.
-    // We'll make this feel more app-like after the structure works.
-    frame: true,
+    return null;
+  }
+}
+
+function isBoundsVisible(bounds) {
+  if (!bounds) {
+    return false;
+  }
+
+  const displays = screen.getAllDisplays();
+
+  return displays.some((display) => {
+    const area = display.workArea;
+
+    const horizontalOverlap =
+      bounds.x < area.x + area.width &&
+      bounds.x + bounds.width > area.x;
+
+    const verticalOverlap =
+      bounds.y < area.y + area.height &&
+      bounds.y + bounds.height > area.y;
+
+    return horizontalOverlap && verticalOverlap;
+  });
+}
+
+function saveWindowState(state) {
+  try {
+    fs.writeFileSync(
+      getWindowStatePath(),
+      JSON.stringify(state, null, 2)
+    );
+  } catch (error) {
+    console.error(
+      "Could not save window state:",
+      error
+    );
+  }
+}
+
+function createHostWindow() {
+  const savedState =
+  loadWindowState()?.host;
+
+const usableSavedState =
+  isBoundsVisible(savedState)
+    ? savedState
+    : null;
+
+  hostWindow = new BrowserWindow({
+    width:
+  usableSavedState?.width || 1280,
+
+height:
+  usableSavedState?.height || 900,
+
+x:
+  usableSavedState?.x,
+
+y:
+  usableSavedState?.y,
+
+    title: "StageVotes Host",
+
+    titleBarStyle: "hiddenInset",
+
+    trafficLightPosition: {
+      x: 16,
+      y: 16,
+    },
 
     resizable: true,
     movable: true,
@@ -40,25 +119,93 @@ function createHostWindow(eventId) {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(
+        __dirname,
+        "electron-preload.js"
+      ),
     },
   });
 
-  hostWindow.loadURL(
-    `http://localhost:3000/host/${eventId}`
-  );
+  hostWindow.loadURL(BASE_URL);
+
+  const saveHostBounds = () => {
+  if (
+    !hostWindow ||
+    hostWindow.isDestroyed() ||
+    hostWindow.isMaximized()
+  ) {
+    return;
+  }
+
+  const bounds =
+    hostWindow.getBounds();
+
+  const existing =
+    loadWindowState() || {};
+
+  saveWindowState({
+    ...existing,
+    host: bounds,
+  });
+};
+
+hostWindow.on(
+  "resize",
+  saveHostBounds
+);
+
+hostWindow.on(
+  "move",
+  saveHostBounds
+);
+
+  hostWindow.on("closed", () => {
+    hostWindow = null;
+  });
 
   return hostWindow;
 }
 
 function createCompanionWindow(eventId) {
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { x, y, width, height } = primaryDisplay.workArea;
+  if (
+    companionWindow &&
+    !companionWindow.isDestroyed()
+  ) {
+    companionWindow.focus();
+    return companionWindow;
+  }
 
-  const companionWindow = new BrowserWindow({
-    width: DISPLAY_WIDTH,
-    height,
-    x: x + width - DISPLAY_WIDTH,
+  const savedState =
+  loadWindowState()?.companion;
+
+  const usableSavedState =
+  isBoundsVisible(savedState)
+    ? savedState
+    : null;
+
+  const primaryDisplay =
+    screen.getPrimaryDisplay();
+
+  const {
+    x,
     y,
+    width,
+    height,
+  } = primaryDisplay.workArea;
+
+  companionWindow = new BrowserWindow({
+    width:
+  usableSavedState?.width || DISPLAY_WIDTH,
+
+height:
+  usableSavedState?.height || height,
+
+x:
+  usableSavedState?.x ??
+  x + width - DISPLAY_WIDTH,
+
+y:
+  usableSavedState?.y ?? y,
 
     frame: false,
 
@@ -76,28 +223,120 @@ function createCompanionWindow(eventId) {
     },
   });
 
+  const saveCompanionBounds = () => {
+  if (
+    !companionWindow ||
+    companionWindow.isDestroyed()
+  ) {
+    return;
+  }
+
+  const bounds =
+    companionWindow.getBounds();
+
+  const existing =
+    loadWindowState() || {};
+
+  saveWindowState({
+    ...existing,
+    companion: bounds,
+  });
+};
+
+companionWindow.on(
+  "resize",
+  saveCompanionBounds
+);
+
+companionWindow.on(
+  "move",
+  saveCompanionBounds
+);
+
   companionWindow.loadURL(
-    `http://localhost:3000/karafun-display/${eventId}`
-  );
+  `${BASE_URL}/karafun-display/${eventId}`
+);
+
+  if (
+    hostWindow &&
+    !hostWindow.isDestroyed()
+  ) {
+    hostWindow.webContents.send(
+      "karafun-display-state",
+      true
+    );
+  }
+
+  companionWindow.on("closed", () => {
+    companionWindow = null;
+
+    if (
+      hostWindow &&
+      !hostWindow.isDestroyed()
+    ) {
+      hostWindow.webContents.send(
+        "karafun-display-state",
+        false
+      );
+    }
+  });
 
   return companionWindow;
 }
 
 app.whenReady().then(() => {
-  const eventId = getEventId();
-
-  if (!eventId) {
-    app.quit();
-    return;
+  if (process.platform === "darwin") {
+    app.dock.setIcon(
+      path.join(
+        __dirname,
+        "public",
+        "icon-512.png"
+      )
+    );
   }
 
-  createHostWindow(eventId);
-  createCompanionWindow(eventId);
+  ipcMain.on(
+    "toggle-karafun-display",
+    (_event, requestedEventId) => {
+      if (
+        companionWindow &&
+        !companionWindow.isDestroyed()
+      ) {
+        companionWindow.close();
+        return;
+      }
+
+      if (!requestedEventId) {
+        console.error(
+          "Cannot open KaraFun display without an event ID."
+        );
+        return;
+      }
+
+      createCompanionWindow(
+        requestedEventId
+      );
+    }
+  );
+
+  ipcMain.handle(
+    "get-karafun-display-state",
+    () => {
+      return Boolean(
+        companionWindow &&
+        !companionWindow.isDestroyed()
+      );
+    }
+  );
+
+  createHostWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createHostWindow(eventId);
-      createCompanionWindow(eventId);
+    if (
+      !hostWindow ||
+      hostWindow.isDestroyed()
+    ) {
+      createHostWindow();
     }
   });
 });
