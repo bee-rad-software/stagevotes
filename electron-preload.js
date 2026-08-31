@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("stagevotesDesktop", {
+  isDesktop: true,
   toggleKarafunDisplay: (eventId) => {
   ipcRenderer.send(
     "toggle-karafun-display",

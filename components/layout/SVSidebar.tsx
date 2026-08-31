@@ -1,12 +1,26 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { navigation } from '@/lib/navigation';
 import { usePathname } from 'next/navigation';
 
 export default function SVSidebar() {
+  
   const pathname = usePathname();
+
+  const [isDesktop, setIsDesktop] =
+  useState(false);
+
+useEffect(() => {
+  setIsDesktop(
+    Boolean(
+      (window as any)
+        .stagevotesDesktop?.isDesktop
+    )
+  );
+}, []);
 
 const eventMatch = pathname.match(
   /^\/(?:host|audience|displays|analytics|history)\/([^/]+)/
@@ -16,7 +30,14 @@ const currentEventId = eventMatch?.[1] || null;
 
   return (
     <aside className="sv-sidebar">
-      <div className="sv-logo-area">
+      <div
+  className="sv-logo-area"
+  style={{
+    paddingTop: isDesktop
+      ? 48
+      : undefined,
+  }}
+>
         <Image
           src="/icon.jpg"
           alt="StageVotes"
