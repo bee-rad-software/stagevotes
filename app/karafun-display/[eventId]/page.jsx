@@ -128,24 +128,26 @@ function SingerAvatar({
   size = 48,
 }) {
   const singerKey =
-  performance?.singer_name
-    ?.trim()
-    .toLowerCase();
+    performance?.singer_name
+      ?.trim()
+      .toLowerCase();
 
-const photoUrl =
-  (
-    performance?.singer_profile_id
-      ? profilePhotos[
-          performance.singer_profile_id
-        ]
-      : ''
-  ) ||
-  (
-    singerKey
-      ? profilePhotos[`name:${singerKey}`]
-      : ''
-  ) ||
-  '';
+  const photoUrl =
+    (
+      performance?.singer_profile_id
+        ? profilePhotos[
+            performance.singer_profile_id
+          ]
+        : ''
+    ) ||
+    (
+      singerKey
+        ? profilePhotos[
+            `name:${singerKey}`
+          ]
+        : ''
+    ) ||
+    '';
 
   const initial =
     performance?.singer_name
@@ -196,460 +198,911 @@ const photoUrl =
     </div>
   );
 }
+  useEffect(() => {
+ let hideTimer;
 
+  const showCursor = () => {
+    document.body.style.cursor = 'default';
+
+    clearTimeout(hideTimer);
+
+    hideTimer = setTimeout(() => {
+      document.body.style.cursor = 'none';
+    }, 2500);
+  };
+
+  window.addEventListener('mousemove', showCursor);
+
+  showCursor();
+
+  return () => {
+    window.removeEventListener(
+      'mousemove',
+      showCursor
+    );
+
+    clearTimeout(hideTimer);
+
+    document.body.style.cursor = 'default';
+  };
+}, []);
 
   return (
   <main
-  style={{
-    width: 320,
-    maxWidth: 320,
-    minHeight: '100vh',
-    margin: "0 auto",
-        background:
-          'radial-gradient(circle at top left, rgba(56,189,248,0.25), transparent 32%), linear-gradient(180deg, #020617, #0f172a)',
-        color: 'white',
-        padding: 14,
-        boxSizing: 'border-box',
-        fontFamily: 'Arial, sans-serif',
-        overflow: 'hidden',
-      }}
-    >
-      
-<div
-  style={{
-    position: 'relative',
-    marginBottom: 18,
-  }}
->
-  <div
-    style={{
-      position: 'absolute',
-      inset: -18,
-      borderRadius: 42,
-      background:
-        'radial-gradient(circle at 70% 75%, rgba(249,115,22,.45), transparent 60%), radial-gradient(circle at 25% 20%, rgba(56,189,248,.35), transparent 55%)',
-      opacity: 1,
-filter: 'blur(50px)',
-      animation: 'glowPulse 8s ease-in-out infinite',
-      pointerEvents: 'none',
-      zIndex: 0,
-    }}
-  />
-
-{/* Spotlights */}
-<div
-  style={{
-    position: 'absolute',
-    top: -160,
-    left: 30,
-    width: 140,
-    height: 500,
-    background:
-      'linear-gradient(to bottom, rgba(255,255,255,.28), rgba(255,255,255,0))',
-    clipPath: 'polygon(45% 0%,55% 0%,100% 100%,0% 100%)',
-    filter: 'blur(10px)',
-    transformOrigin: 'top center',
-    animation: 'beamLeft 8s ease-in-out infinite',
-    pointerEvents: 'none',
-    zIndex: 2,
-  }}
-/>
-
-<div
-  style={{
-    position: 'absolute',
-    top: -160,
-    right: 30,
-    width: 140,
-    height: 500,
-    background:
-      'linear-gradient(to bottom, rgba(255,255,255,.22), rgba(255,255,255,0))',
-    clipPath: 'polygon(45% 0%,55% 0%,100% 100%,0% 100%)',
-    filter: 'blur(10px)',
-    transformOrigin: 'top center',
-    animation: 'beamRight 10s ease-in-out infinite',
-    pointerEvents: 'none',
-    zIndex: 2,
-  }}
-/>
-
-<div
-  style={{
-    position: 'absolute',
-    top: -120,
-    left: -180,
-    width: 140,
-    height: 520,
-    background:
-      'linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent)',
-    transform: 'rotate(28deg)',
-    animation: 'shineSweep 8s ease-in-out infinite',
-    pointerEvents: 'none',
-    zIndex: 2,
-  }}
-/>
-
-  <div
-    key={current?.id || 'waiting'}
-    style={{
-      background: 'linear-gradient(135deg, #38bdf8 0%, #60c5ff 22%, #fb923c 62%, #f97316 82%, #ea580c 100%)',
-      backgroundSize: '180% 180%',
-      animation: 'gradientShift 18s ease-in-out infinite, popIn 0.8s cubic-bezier(0.22,1,0.36,1)',
-      position: 'relative',
-      zIndex: 1,
-      borderRadius: 26,
-      padding: 24,
-      minHeight: 235,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      boxShadow: '0 15px 35px rgba(0,0,0,.35)',
+    className="kf-display"
+    onDoubleClick={async () => {
+      if (!document.fullscreenElement) {
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch {
+          // Browser may block fullscreen.
+        }
+      }
     }}
   >
-   <div
-  style={{
-    fontSize: 13,
-    fontWeight: 900,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 18,
-  }}
->
-  NOW SINGING
-</div>
+    <div className="kf-ambient kf-ambient-blue" />
+    <div className="kf-ambient kf-ambient-orange" />
 
-<motion.div
-  animate={{ y: [0, -4, 0] }}
-  transition={{
-    duration: 2.4,
-    repeat: Infinity,
-    ease: 'easeInOut',
-  }}
-  style={{
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: 12,
-  }}
->
-  <div
-    style={{
-      position: 'relative',
-      width: 88,
-      height: 88,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}
-  >
-    {/* StageVotes glow */}
-    <motion.div
-      animate={{
-        scale: [1, 1.12, 1],
-        opacity: [0.55, 0.9, 0.55],
-      }}
-      transition={{
-        duration: 2.8,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-      style={{
-        position: 'absolute',
-        inset: -5,
-        borderRadius: '50%',
-        background:
-          'linear-gradient(135deg, #38bdf8, #f97316)',
-        filter: 'blur(9px)',
-      }}
-    />
+    <div className="kf-stage-light kf-stage-light-left" />
+    <div className="kf-stage-light kf-stage-light-right" />
 
-    {/* Clean gradient ring */}
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        borderRadius: '50%',
-        background:
-          'linear-gradient(135deg, #38bdf8, #f97316)',
-        boxShadow:
-          '0 8px 24px rgba(0,0,0,.30)',
-      }}
-    />
-
-    <div
-      style={{
-        position: 'relative',
-        zIndex: 2,
-        display: 'flex',
-      }}
-    >
-      <SingerAvatar
-        performance={current}
-        size={82}
-      />
-    </div>
-  </div>
-</motion.div>
-
-<motion.div
-  key={current?.id || 'waiting-singer'}
-  initial={{ opacity: 0, x: 35, scale: 0.96 }}
-  animate={{ opacity: 1, x: 0, scale: 1 }}
-  exit={{ opacity: 0, x: -35, scale: 0.96 }}
-  transition={{
-  duration: 0.75,
-  ease: [0.22, 1, 0.36, 1],
-}}
-  style={{
-    fontSize:
-      (current?.singer_name || 'Waiting').length > 16
-        ? 40
-        : (current?.singer_name || 'Waiting').length > 11
-        ? 48
-        : 64,
-    fontWeight: 900,
-    textAlign: 'center',
-    lineHeight: 1.02,
-    textTransform: 'uppercase',
-    wordBreak: 'break-word',
-  }}
->
-  {current?.singer_name || 'Waiting'}
-</motion.div>
-
-<div
-  style={{
-    marginTop: 22,
-    fontSize: 22,
-    fontWeight: 700,
-    textAlign: 'center',
-    lineHeight: 1.2,
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    minHeight: 52,
-    padding: '0 8px',
-  }}
->
-  {current?.song_title || ''}
-</div>
-
-<div
-  style={{
-    marginTop: 8,
-    fontSize: 17,
-    fontWeight: 500,
-    opacity: 0.65,
-    textAlign: 'center',
-    letterSpacing: 0.3,
-  }}
->
-  {current?.artist || ''}
-</div>
-      </div>
-      </div>
-
-      <div
-        style={{
-          background: 'rgba(15, 23, 42, 0.92)',
-          border: '1px solid rgba(148,163,184,0.25)',
-          borderRadius: 22,
-          padding: 18,
-          marginBottom: 14,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 12,
-            color: '#38bdf8',
-            fontWeight: 900,
-            letterSpacing: 1.4,
-            marginBottom: 10,
-          }}
-        >
-          UP NEXT
+    <header className="kf-header">
+      <div className="kf-brand">
+        <div className="kf-brand-mark">
+          SV
         </div>
 
-        {upcoming.length === 0 ? (
-  <div style={{ fontSize: 20, color: '#cbd5e1' }}>
-    No singers waiting
-  </div>
-) : (
-  upcoming.map((p, index) => (
-    <motion.div
-      key={p.id}
-      layout
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -16 }}
-      transition={{
-        duration: 0.35,
-        ease: 'easeOut',
-      }}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 9,
-        padding: '8px 0',
-        borderBottom:
-          index < upcoming.length - 1
-            ? '1px solid rgba(148,163,184,0.18)'
-            : 'none',
-      }}
-    >
-      <span
-        style={{
-          color: '#f97316',
-          minWidth: 24,
-          fontSize: 18,
-          fontWeight: 900,
-        }}
-      >
-        {index + 1}.
+        <div>
+          <div className="kf-brand-name">
+            STAGEVOTES
+          </div>
+
+          <div className="kf-brand-subtitle">
+            KARAOKE LIVE
+          </div>
+        </div>
+      </div>
+
+      <div className="kf-live-pill">
+        <span className="kf-live-dot" />
+        LIVE
+      </div>
+    </header>
+
+    <section className="kf-layout">
+      <AnimatePresence mode="wait">
+        <motion.section
+          key={current?.id || 'waiting'}
+          className="kf-now"
+          initial={{
+            opacity: 0,
+            scale: 0.985,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+          }}
+          exit={{
+            opacity: 0,
+            scale: 1.015,
+          }}
+          transition={{
+            duration: 0.55,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+        >
+          <div className="kf-now-glow" />
+
+          <div className="kf-now-content">
+            <div className="kf-kicker">
+              NOW SINGING
+            </div>
+
+            <motion.div
+              animate={{
+                y: [0, -5, 0],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+              className="kf-avatar-shell"
+            >
+              <div className="kf-avatar-glow" />
+
+              <SingerAvatar
+  performance={current}
+  size={78}
+/>
+            </motion.div>
+
+            <motion.h1
+              key={
+                current?.singer_name ||
+                'waiting'
+              }
+              initial={{
+                opacity: 0,
+                y: 18,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                delay: 0.08,
+                duration: 0.5,
+              }}
+              className="kf-singer"
+            >
+              {current?.singer_name ||
+                'Waiting'}
+            </motion.h1>
+
+            {current?.song_title && (
+              <div className="kf-song">
+                {current.song_title}
+              </div>
+            )}
+
+            {current?.artist && (
+              <div className="kf-artist">
+                {current.artist}
+              </div>
+            )}
+          </div>
+        </motion.section>
+      </AnimatePresence>
+
+      <aside className="kf-side">
+        <section className="kf-up-next">
+          <div className="kf-section-heading">
+            <span>UP NEXT</span>
+
+            <span className="kf-section-count">
+              {upcoming.length}
+            </span>
+          </div>
+
+          <div className="kf-queue">
+            {upcoming.length === 0 ? (
+              <div className="kf-empty">
+                <div className="kf-empty-icon">
+                  🎤
+                </div>
+
+                <div>
+                  <strong>
+                    The stage is open
+                  </strong>
+
+                  <span>
+                    Scan below to join the
+                    rotation.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              upcoming.map(
+                (performance, index) => (
+                  <motion.div
+                    key={performance.id}
+                    layout
+                    initial={{
+                      opacity: 0,
+                      x: 30,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      x: 0,
+                    }}
+                    transition={{
+                      duration: 0.35,
+                      delay: index * 0.05,
+                    }}
+                    className={
+                      index === 0
+                        ? 'kf-queue-row kf-queue-row-next'
+                        : 'kf-queue-row'
+                    }
+                  >
+                    <div className="kf-position">
+                      {index + 1}
+                    </div>
+
+                    <SingerAvatar
+                      performance={
+                        performance
+                      }
+                      size={
+  index === 0
+    ? 42
+    : 32
+}
+                    />
+
+                    <div className="kf-queue-copy">
+                      <div className="kf-queue-singer">
+                        {
+                          performance.singer_name
+                        }
+                      </div>
+
+                      <div className="kf-queue-song">
+                        {
+                          performance.song_title
+                        }
+                      </div>
+                    </div>
+
+                    {index === 0 && (
+                      <div className="kf-next-chip">
+                        NEXT
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              )
+            )}
+          </div>
+        </section>
+
+        <section className="kf-join">
+          <div className="kf-join-copy">
+            <div className="kf-kicker kf-kicker-blue">
+              WANT TO SING?
+            </div>
+
+            <div className="kf-join-title">
+              Join the rotation
+            </div>
+
+            <div className="kf-join-description">
+              Scan with your phone and add
+              your song.
+            </div>
+          </div>
+
+          <div className="kf-qr">
+            <AppQRCode
+              value={signupUrl}
+              size={92}
+            />
+          </div>
+        </section>
+      </aside>
+    </section>
+
+    <footer className="kf-footer">
+      <span>
+        Powered by StageVotes
       </span>
 
-      <SingerAvatar
-        performance={p}
-        size={38}
-      />
+      <span className="kf-footer-hint">
+        Double-click anywhere for fullscreen
+      </span>
+    </footer>
 
-      <div
-        style={{
-          minWidth: 0,
-          flex: 1,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 18,
-            fontWeight: 900,
-            lineHeight: 1.05,
-          }}
-        >
-          {p.singer_name}
-        </div>
+    <style jsx global>{`
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #020617;
+      }
 
-        <div
-          style={{
-            marginTop: 3,
-            fontSize: 12,
-            color: '#94a3b8',
-            fontWeight: 600,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {p.song_title}
-        </div>
-      </div>
-    </motion.div>
-  ))
-)}
-      </div>
+      body {
+        overscroll-behavior: none;
+      }
 
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.14)',
-          borderRadius: 22,
-          padding: 16,
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            background: 'white',
-            borderRadius: 14,
-            padding: 10,
-            width: 116,
-            height: 116,
-            margin: '0 auto 10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <AppQRCode value={signupUrl} size={96} />
-        </div>
+      * {
+        box-sizing: border-box;
+      }
 
-        <div style={{ fontSize: 20, fontWeight: 900 }}>
-          Scan to Join
-        </div>
+      .kf-display {
+  position: relative;
+  width: min(430px, 100vw);
+  height: 100vh;
+  min-height: 100vh;
+  margin-left: auto;
+margin-right: 0;
+        overflow: hidden;
+        color: white;
+        background:
+          radial-gradient(
+            circle at 18% 20%,
+            rgba(56, 189, 248, 0.14),
+            transparent 34%
+          ),
+          radial-gradient(
+            circle at 82% 70%,
+            rgba(249, 115, 22, 0.12),
+            transparent 32%
+          ),
+          linear-gradient(
+            145deg,
+            #020617 0%,
+            #07101f 48%,
+            #020617 100%
+          );
+        font-family:
+          Arial,
+          Helvetica,
+          sans-serif;
+        display: grid;
+        grid-template-rows:
+          auto minmax(0, 1fr) auto;
+        padding: clamp(20px, 2vw, 38px);
+      }
 
-        <div style={{ fontSize: 13, color: '#cbd5e1', marginTop: 4 }}>
-          Add your song from your phone
-        </div>
-      </div>
+      .kf-ambient {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(100px);
+        pointer-events: none;
+        opacity: 0.4;
+      }
 
-<style jsx global>{`
- 
- @keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
+      .kf-ambient-blue {
+        width: 38vw;
+        height: 38vw;
+        top: -20vw;
+        left: -12vw;
+        background: #38bdf8;
+      }
+
+      .kf-ambient-orange {
+        width: 34vw;
+        height: 34vw;
+        right: -13vw;
+        bottom: -16vw;
+        background: #f97316;
+      }
+
+      .kf-stage-light {
+        position: absolute;
+        top: -30vh;
+        width: 22vw;
+        height: 105vh;
+        pointer-events: none;
+        opacity: 0.12;
+        filter: blur(16px);
+        background:
+          linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.7),
+            rgba(255,255,255,0)
+          );
+        clip-path:
+          polygon(
+            47% 0%,
+            53% 0%,
+            100% 100%,
+            0% 100%
+          );
+      }
+
+      .kf-stage-light-left {
+        left: 8vw;
+        transform: rotate(-12deg);
+        animation:
+          kfBeamLeft 10s
+          ease-in-out infinite;
+      }
+
+      .kf-stage-light-right {
+        right: 8vw;
+        transform: rotate(12deg);
+        animation:
+          kfBeamRight 12s
+          ease-in-out infinite;
+      }
+
+      .kf-header {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom:
+          clamp(16px, 2vh, 28px);
+      }
+
+      .kf-brand {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+      }
+
+      .kf-brand-mark {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        font-weight: 950;
+        letter-spacing: -0.5px;
+        background:
+          linear-gradient(
+            135deg,
+            #38bdf8,
+            #f97316
+          );
+        box-shadow:
+          0 8px 26px
+          rgba(0, 0, 0, 0.35);
+      }
+
+      .kf-brand-name {
+        font-size:
+          clamp(15px, 1.2vw, 22px);
+        font-weight: 950;
+        letter-spacing: 0.16em;
+      }
+
+      .kf-brand-subtitle {
+        margin-top: 3px;
+        color: #64748b;
+        font-size:
+          clamp(8px, 0.65vw, 11px);
+        font-weight: 900;
+        letter-spacing: 0.2em;
+      }
+
+      .kf-live-pill {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 9px 14px;
+        border-radius: 999px;
+        font-size:
+          clamp(11px, 0.8vw, 14px);
+        font-weight: 900;
+        letter-spacing: 0.1em;
+        background:
+          rgba(34, 197, 94, 0.11);
+        border:
+          1px solid
+          rgba(34, 197, 94, 0.35);
+        color: #86efac;
+      }
+
+      .kf-live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow:
+          0 0 14px #22c55e;
+        animation:
+          kfPulse 1.8s infinite;
+      }
+
+     .kf-layout {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
 }
- 
- @keyframes popIn {
-    0% {
-      opacity: 0;
-      transform: translateY(18px) scale(0.96);
-      filter: brightness(1.25);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-      filter: brightness(1);
-    }
-  }
 
-@keyframes shineSweep {
-  0% {
-    transform: translateX(-220px) rotate(28deg);
-    opacity: 0;
-  }
+      .kf-now {
+  position: relative;
+  min-height: 0;
+  flex: 0 0 275px;
+  overflow: hidden;
+  border-radius: 32px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+        background:
+          linear-gradient(
+            135deg,
+            rgba(56,189,248,0.94)
+            0%,
+            rgba(59,130,246,0.84)
+            23%,
+            rgba(249,115,22,0.92)
+            68%,
+            rgba(234,88,12,0.96)
+            100%
+          );
+        box-shadow:
+          0 35px 100px
+          rgba(0,0,0,0.42);
+      }
 
-  10% {
-    opacity: 0.9;
-  }
+      .kf-now::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(
+            115deg,
+            transparent 15%,
+            rgba(255,255,255,0.09)
+            42%,
+            transparent 62%
+          );
+        animation:
+          kfShimmer 10s
+          ease-in-out infinite;
+        pointer-events: none;
+      }
 
-  45% {
-    transform: translateX(520px) rotate(28deg);
-    opacity: 0.9;
-  }
+      .kf-now-glow {
+        position: absolute;
+        width: 55%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        top: -28%;
+        left: -12%;
+        background:
+          rgba(255,255,255,0.16);
+        filter: blur(90px);
+      }
 
-  60% {
-    opacity: 0;
-  }
+      .kf-now-content {
+        position: relative;
+        z-index: 3;
+        width: min(100%, 950px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
 
-  100% {
-    transform: translateX(520px) rotate(28deg);
-    opacity: 0;
-  }
+      .kf-kicker {
+        font-size:
+          clamp(11px, 0.9vw, 16px);
+        font-weight: 950;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color:
+          rgba(255,255,255,0.88);
+      }
+
+      .kf-kicker-blue {
+        color: #38bdf8;
+      }
+
+     .kf-avatar-shell {
+  position: relative;
+  width: 82px;
+  height: 82px;
+  margin: 10px 0 6px;
+  display: grid;
+  place-items: center;
 }
 
-@keyframes beamLeft {
-  0%   { transform: rotate(-12deg); opacity:.18; }
-  50%  { transform: rotate(8deg); opacity:.38; }
-  100% { transform: rotate(-12deg); opacity:.18; }
+      .kf-avatar-glow {
+        position: absolute;
+        inset: -12px;
+        border-radius: 50%;
+        background:
+          rgba(255,255,255,0.28);
+        filter: blur(22px);
+        animation:
+          kfGlow 3s
+          ease-in-out infinite;
+      }
+
+      .kf-singer {
+        margin: 0;
+        max-width: 100%;
+        font-size: 64px;
+        font-weight: 950;
+        letter-spacing: -0.055em;
+        line-height: 0.9;
+        text-transform: uppercase;
+        text-wrap: balance;
+        text-shadow:
+          0 10px 35px
+          rgba(0,0,0,0.2);
+      }
+
+      .kf-song {
+        margin-top: 12px;
+        max-width: 90%;
+        font-size: 24px;
+        font-weight: 900;
+        line-height: 1.05;
+        text-wrap: balance;
+      }
+
+      .kf-artist {
+        margin-top: 5px;
+font-size: 16px;
+        font-weight: 650;
+        color:
+          rgba(255,255,255,0.7);
+      }
+
+      .kf-side {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-@keyframes beamRight {
-  0%   { transform: rotate(12deg); opacity:.14; }
-  50%  { transform: rotate(-8deg); opacity:.32; }
-  100% { transform: rotate(12deg); opacity:.14; }
+      .kf-up-next,
+      .kf-join {
+        position: relative;
+        overflow: hidden;
+        background:
+          rgba(15,23,42,0.72);
+        border:
+          1px solid
+          rgba(148,163,184,0.16);
+        box-shadow:
+          0 30px 70px
+          rgba(0,0,0,0.28);
+        backdrop-filter: blur(22px);
+      }
+
+     .kf-up-next {
+  flex: 0 0 345px;
+  height: 345px;
+  min-height: 345px;
+  overflow: hidden;
 }
 
-`}</style>
-    
+      .kf-section-heading {
+        display: flex;
+        align-items: center;
+        justify-content:
+          space-between;
+        margin-bottom: 8px;
+        color: #38bdf8;
+        font-size:
+          clamp(12px, 0.9vw, 16px);
+        font-weight: 950;
+        letter-spacing: 0.18em;
+      }
+
+      .kf-section-count {
+        display: grid;
+        place-items: center;
+        min-width: 28px;
+        height: 28px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background:
+          rgba(56,189,248,0.12);
+      }
+
+      .kf-queue {
+  display: grid;
+  gap: 2px;
+}
+
+      .kf-queue-row {
+  position: relative;
+  display: grid;
+  grid-template-columns:
+    24px auto minmax(0,1fr)
+    auto;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 5px;
+  border-radius: 12px;
+  transition:
+    background 0.2s ease;
+}
+
+      .kf-queue-row-next {
+  padding: 4px 5px;
+        background:
+          linear-gradient(
+            90deg,
+            rgba(56,189,248,0.13),
+            rgba(56,189,248,0.025)
+          );
+        border:
+          1px solid
+          rgba(56,189,248,0.2);
+      }
+
+      .kf-position {
+        color: #f97316;
+        font-size:
+          clamp(18px, 1.35vw, 25px);
+        font-weight: 950;
+      }
+
+      .kf-queue-copy {
+        min-width: 0;
+      }
+
+      .kf-queue-singer {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size:
+          clamp(18px, 1.45vw, 28px);
+        font-weight: 950;
+      }
+
+      .kf-queue-song {
+        margin-top: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #94a3b8;
+        font-size:
+          clamp(11px, 0.9vw, 16px);
+        font-weight: 650;
+      }
+
+      .kf-next-chip {
+        padding: 6px 8px;
+        border-radius: 999px;
+        background:
+          rgba(56,189,248,0.12);
+        color: #38bdf8;
+        font-size: 10px;
+        font-weight: 950;
+        letter-spacing: 0.1em;
+      }
+
+      .kf-empty {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        padding: 18px 4px;
+        color: #cbd5e1;
+      }
+
+      .kf-empty-icon {
+        font-size: 34px;
+      }
+
+      .kf-empty strong,
+      .kf-empty span {
+        display: block;
+      }
+
+      .kf-empty strong {
+        font-size: 18px;
+      }
+
+      .kf-empty span {
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .kf-join {
+        border-radius: 26px;
+        padding:
+          clamp(18px, 1.6vw, 26px);
+        display: flex;
+        align-items: center;
+        justify-content:
+          space-between;
+        gap: 18px;
+      }
+
+      .kf-join-copy {
+        min-width: 0;
+      }
+
+      .kf-join-title {
+        margin-top: 8px;
+        font-size:
+          clamp(20px, 1.65vw, 30px);
+        font-weight: 950;
+      }
+
+      .kf-join-description {
+        margin-top: 6px;
+        max-width: 260px;
+        color: #94a3b8;
+        font-size:
+          clamp(11px, 0.8vw, 14px);
+        line-height: 1.4;
+      }
+
+      .kf-qr {
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        padding: 10px;
+        border-radius: 16px;
+        background: white;
+        box-shadow:
+          0 12px 36px
+          rgba(0,0,0,0.35);
+      }
+
+      .kf-footer {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        justify-content:
+          space-between;
+        align-items: center;
+        padding-top:
+          clamp(12px, 1.5vh, 20px);
+        color: #475569;
+        font-size:
+          clamp(9px, 0.7vw, 12px);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .kf-footer-hint {
+        opacity: 0.65;
+      }
+
+      @keyframes kfPulse {
+        0%, 100% {
+          opacity: 0.6;
+          transform: scale(0.9);
+        }
+
+        50% {
+          opacity: 1;
+          transform: scale(1.15);
+        }
+      }
+
+      @keyframes kfGlow {
+        0%, 100% {
+          opacity: 0.45;
+          transform: scale(0.95);
+        }
+
+        50% {
+          opacity: 0.85;
+          transform: scale(1.08);
+        }
+      }
+
+      @keyframes kfShimmer {
+        0% {
+          transform:
+            translateX(-45%);
+        }
+
+        50% {
+          transform:
+            translateX(45%);
+        }
+
+        100% {
+          transform:
+            translateX(-45%);
+        }
+      }
+
+      @keyframes kfBeamLeft {
+        0%, 100% {
+          transform: rotate(-12deg);
+        }
+
+        50% {
+          transform: rotate(4deg);
+        }
+      }
+
+      @keyframes kfBeamRight {
+        0%, 100% {
+          transform: rotate(12deg);
+        }
+
+        50% {
+          transform: rotate(-4deg);
+        }
+      }
+
+    `}</style>
   </main>
-  );
+);
 }

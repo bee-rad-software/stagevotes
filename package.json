@@ -3,7 +3,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "karafun-display": "electron electron-karafun-display.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -26,6 +27,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "electron": "^44.1.0",
     "typescript": "latest"
   }
 }
