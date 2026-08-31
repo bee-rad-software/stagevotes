@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { navigation } from '@/lib/navigation';
 import { usePathname } from 'next/navigation';
@@ -38,14 +37,13 @@ const currentEventId = eventMatch?.[1] || null;
       : undefined,
   }}
 >
-        <Image
-          src="/icon.jpg"
-          alt="StageVotes"
-          width={60}
-          height={60}
-          className="sv-app-logo"
-          priority
-        />
+        <img
+  src="/icon-512.png"
+  alt="StageVotes"
+  width={60}
+  height={60}
+  className="sv-app-logo"
+/>
 
         <div className="sv-brand-text">
           <strong>StageVotes</strong>
