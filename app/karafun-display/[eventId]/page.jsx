@@ -692,6 +692,7 @@ margin-right: 0;
   flex-direction: column;
   gap: 14px;
   min-height: 0;
+  overflow: hidden;
 }
 
       .kf-now {
@@ -828,9 +829,11 @@ font-size: 16px;
 
       .kf-side {
   min-height: 0;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow: hidden;
 }
 
       .kf-up-next,
@@ -848,11 +851,14 @@ font-size: 16px;
         backdrop-filter: blur(22px);
       }
 
-     .kf-up-next {
-  flex: 0 0 345px;
-  height: 345px;
-  min-height: 345px;
+    .kf-up-next {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: hidden;
+}
+
+      .kf-join {
+  flex: 0 0 auto;
 }
 
       .kf-section-heading {

@@ -1,4 +1,10 @@
-const { app, BrowserWindow, screen, ipcMain } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  screen,
+  ipcMain,
+  Menu,
+} = require("electron");
 const path = require("path");
 const fs = require("fs");
 const BASE_URL = app.isPackaged
@@ -6,6 +12,10 @@ const BASE_URL = app.isPackaged
   : "http://localhost:3000";
 
 app.setName("StageVotes Host");
+
+if (process.platform === "win32") {
+  Menu.setApplicationMenu(null);
+}
 
 const DISPLAY_WIDTH = 430;
 
@@ -101,7 +111,19 @@ y:
 
     title: "StageVotes Host",
 
-    titleBarStyle: "hiddenInset",
+    titleBarStyle:
+  process.platform === "darwin"
+    ? "hiddenInset"
+    : "hidden",
+
+    titleBarOverlay:
+  process.platform === "win32"
+    ? {
+        height: 48,
+        color: "#0b0f19",
+        symbolColor: "#ffffff",
+      }
+    : false,
 
     trafficLightPosition: {
       x: 16,
@@ -199,6 +221,8 @@ function createCompanionWindow(eventId) {
 
 height:
   usableSavedState?.height || height,
+
+minHeight: 720,
 
 x:
   usableSavedState?.x ??

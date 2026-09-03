@@ -11,7 +11,8 @@
     "lint": "next lint",
     "desktop": "electron electron-karafun-display.js",
     "desktop:pack": "electron-builder --dir",
-    "desktop:dist": "electron-builder"
+    "desktop:dist": "electron-builder",
+    "desktop:dist:win": "electron-builder --win --x64"
   },
 
   "dependencies": {
@@ -54,10 +55,22 @@
   "package.json"
 ],
     "mac": {
-      "category": "public.app-category.entertainment",
-      "target": [
-        "dmg"
+  "category": "public.app-category.entertainment",
+  "icon": "build/icon.icns",
+  "target": [
+    "dmg"
+  ]
+},
+"win": {
+  "target": [
+    {
+      "target": "nsis",
+      "arch": [
+        "x64"
       ]
     }
+  ],
+  "icon": "build/icon.ico"
+}
   }
 }
