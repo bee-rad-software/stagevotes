@@ -1173,23 +1173,35 @@ const assignedRound =
 
 const singerOriginalOrder =
   singerExistingSongs.length > 0
-    ? Math.min(...singerExistingSongs.map((p: any) => p.queue_order || 0))
+    ? Math.min(
+        ...singerExistingSongs.map(
+          (p: any) =>
+            p.queue_order || 0
+        )
+      )
     : null;
 
-const maxQueueOrder =
-  performances.reduce(
-    (max, p: any) =>
-      Math.max(
-        max,
-        p.queue_order || 0
-      ),
-    0
-  );
+let nextOrder: number;
 
-const nextOrder =
-  singerOriginalOrder !== null
-    ? singerOriginalOrder
-    : maxQueueOrder + 1;
+if (singerOriginalOrder !== null) {
+  // Existing singer keeps their permanent
+  // rotation position.
+  nextOrder = singerOriginalOrder;
+} else {
+  // Brand-new singer gets the next permanent
+  // rotation slot for the entire show.
+  const maxSingerOrder =
+    performances.reduce(
+      (max, p: any) =>
+        Math.max(
+          max,
+          p.queue_order || 0
+        ),
+      0
+    );
+
+  nextOrder = maxSingerOrder + 1;
+}
 
 const accountId = await getMyAccountId();
 if (!accountId) return false;
@@ -3168,13 +3180,196 @@ async function skipSinger(
   const performance =
     activeQueue[currentIndex];
 
-  const nextSinger =
-    activeQueue[currentIndex + 1];
+  const skippedIdentity =
+    getRotationIdentity(performance);
 
-  if (!nextSinger) {
-    alert(
-      'There is no singer after this one to skip behind.'
+  /*
+   * The singer immediately before this one
+   * matters for fairness.
+   *
+   * Example:
+   * Michael -> Drew -> Michael -> Jennifer
+   *
+   * Skipping Drew should NOT promote Michael
+   * into two consecutive turns. Jennifer is
+   * the next eligible singer instead.
+   */
+  const previousPerformance =
+    currentIndex > 0
+      ? activeQueue[currentIndex - 1]
+      : null;
+
+  const previousIdentity =
+    previousPerformance
+      ? getRotationIdentity(
+          previousPerformance
+        )
+      : null;
+
+  const laterPerformances =
+    activeQueue.slice(currentIndex + 1);
+
+  const targetSinger =
+    laterPerformances.find(
+      (candidate) => {
+        const candidateIdentity =
+          getRotationIdentity(candidate);
+
+        if (
+          candidateIdentity ===
+          skippedIdentity
+        ) {
+          return false;
+        }
+
+        if (
+          previousIdentity &&
+          candidateIdentity ===
+            previousIdentity
+        ) {
+          return false;
+        }
+
+        return true;
+      }
     );
+
+  if (!targetSinger) {
+    alert(
+      'There is no different singer available to skip behind.'
+    );
+    return;
+  }
+
+  const targetIndex =
+    activeQueue.findIndex(
+      (p) => p.id === targetSinger.id
+    );
+
+  const destinationRound =
+    targetSinger.round || 1;
+
+  /*
+   * Anything between the skipped singer and
+   * target singer that belongs to the target
+   * round should remain AFTER the skipped singer.
+   *
+   * Example:
+   *
+   * Drew -> Michael song 2 -> Jennifer
+   *
+   * becomes:
+   *
+   * Jennifer -> Drew -> Michael song 2
+   */
+  const interveningPerformances =
+    activeQueue
+      .slice(currentIndex + 1, targetIndex)
+      .filter(
+        (p) =>
+          (p.round || 1) ===
+            destinationRound &&
+          p.id !== targetSinger.id
+      );
+
+  const interveningIds =
+    new Set(
+      interveningPerformances.map(
+        (p) => p.id
+      )
+    );
+
+  const destinationRoundQueue =
+    activeQueue.filter(
+      (p) =>
+        p.id !== performance.id &&
+        (p.round || 1) ===
+          destinationRound
+    );
+
+  const affectedIndexes =
+    destinationRoundQueue
+      .map((p, index) =>
+        p.id === targetSinger.id ||
+        interveningIds.has(p.id)
+          ? index
+          : -1
+      )
+      .filter((index) => index >= 0);
+
+  const insertionIndex =
+    affectedIndexes.length > 0
+      ? Math.min(...affectedIndexes)
+      : destinationRoundQueue.length;
+
+  const unaffectedQueue =
+    destinationRoundQueue.filter(
+      (p) =>
+        p.id !== targetSinger.id &&
+        !interveningIds.has(p.id)
+    );
+
+  const reorderedRound = [
+    ...unaffectedQueue,
+  ];
+
+  reorderedRound.splice(
+    insertionIndex,
+    0,
+    targetSinger,
+    performance,
+    ...interveningPerformances
+  );
+
+  /*
+   * Renumber ONLY this destination round.
+   * No other round is touched.
+   */
+  const updates =
+    reorderedRound.map(
+      (p, index) => ({
+        id: p.id,
+        round: destinationRound,
+        manual_queue_order:
+          index + 1,
+      })
+    );
+
+  const results =
+    await Promise.all(
+      updates.map((update) =>
+        supabase
+          .from('performances')
+          .update({
+            round: update.round,
+            manual_queue_order:
+              update.manual_queue_order,
+          })
+          .eq('id', update.id)
+          .eq('event_id', eventId)
+          .eq(
+            'account_id',
+            accountId
+          )
+      )
+    );
+
+  const failedUpdate =
+    results.find(
+      (result) => result.error
+    );
+
+  if (failedUpdate?.error) {
+    console.error(
+      'Unable to skip singer:',
+      failedUpdate.error
+    );
+
+    alert(
+      `Could not skip singer: ${failedUpdate.error.message}`
+    );
+
+    await loadAll();
     return;
   }
 
@@ -3182,81 +3377,26 @@ async function skipSinger(
     performance.id ===
     event?.current_performance_id;
 
-  const nextRound =
-    nextSinger.round || 1;
-
-  const nextSingerOrder =
-    nextSinger.manual_queue_order ??
-    nextSinger.queue_order ??
-    0;
-
-  // Find the performance immediately after
-  // nextSinger in the SAME round.
-  const followingSinger =
-    activeQueue
-      .slice(currentIndex + 2)
-      .find(
-        (p) =>
-          (p.round || 1) === nextRound
-      );
-
-  const followingOrder =
-    followingSinger
-      ? followingSinger.manual_queue_order ??
-        followingSinger.queue_order ??
-        null
-      : null;
-
-  // Put the skipped singer directly AFTER
-  // nextSinger without changing permanent queue_order.
-  const temporaryOrder =
-    followingOrder !== null &&
-    followingOrder > nextSingerOrder
-      ? (nextSingerOrder +
-          followingOrder) /
-        2
-      : nextSingerOrder + 0.5;
-
-  const { error: moveError } =
-    await supabase
-      .from('performances')
-      .update({
-        round: nextRound,
-        manual_queue_order:
-          temporaryOrder,
-      })
-      .eq('id', performance.id)
-      .eq('event_id', eventId)
-      .eq('account_id', accountId);
-
-  if (moveError) {
-    console.error(
-      'Unable to skip singer:',
-      moveError
-    );
-
-    alert(
-      `Could not skip singer: ${moveError.message}`
-    );
-
-    return;
-  }
-
-  // If we skipped the current singer,
-  // immediately make the next person current.
+  /*
+   * If the LIVE singer was skipped,
+   * targetSinger becomes current.
+   */
   if (isCurrent) {
     const { error: currentError } =
       await supabase
         .from('events')
         .update({
           current_performance_id:
-            nextSinger.id,
+            targetSinger.id,
           current_performance_started_at:
             new Date().toISOString(),
           is_voting_open: false,
         })
         .eq('id', eventId)
-        .eq('account_id', accountId);
+        .eq(
+          'account_id',
+          accountId
+        );
 
     if (currentError) {
       console.error(
@@ -3268,23 +3408,24 @@ async function skipSinger(
         `Singer was moved, but the next singer could not be made current: ${currentError.message}`
       );
 
+      await loadAll();
       return;
     }
 
     karaFunPendingSkipAdvanceRef.current =
-  nextSinger.id;
+      targetSinger.id;
 
-karaFunSuppressNextAutoAdvanceRef.current =
-  true;
+    karaFunSuppressNextAutoAdvanceRef.current =
+      true;
 
-console.log(
-  '⏭️ KaraFun skip pending for:',
-  nextSinger.singer_name,
-  nextSinger.song_title
-);
-}
+    console.log(
+      '⏭️ KaraFun skip pending for:',
+      targetSinger.singer_name,
+      targetSinger.song_title
+    );
+  }
 
-await loadAll();
+  await loadAll();
 }
 
 async function moveSingerToNextRound(
@@ -3321,11 +3462,37 @@ async function moveSingerToNextRound(
   const nextRound =
     currentRound + 1;
 
+  const destinationRoundPerformances =
+  performances.filter(
+    (p) =>
+      p.id !== performanceId &&
+      p.status !== 'completed' &&
+      p.status !== 'skipped' &&
+      (p.round || 1) === nextRound
+  );
+
+const maxDestinationOrder =
+  destinationRoundPerformances.reduce(
+    (max, p) => {
+      const order =
+        p.manual_queue_order ??
+        p.queue_order ??
+        0;
+
+      return Math.max(max, order);
+    },
+    0
+  );
+
+const nextManualOrder =
+  maxDestinationOrder + 1;
+
   const { error } = await supabase
     .from('performances')
     .update({
-      round: nextRound,
-    })
+  round: nextRound,
+  manual_queue_order: nextManualOrder,
+})
     .eq('id', performanceId)
     .eq('event_id', eventId)
     .eq('account_id', accountId);
@@ -3346,28 +3513,91 @@ async function moveSingerToNextRound(
   await loadAll();
 }
 
-async function moveSinger(performanceId: string, direction: 'up' | 'down') {
+async function moveSinger(
+  performanceId: string,
+  direction: 'up' | 'down'
+) {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
   const visibleQueue = rotatedQueue.filter(
-    (p) => p.status !== 'completed' && p.status !== 'skipped'
+    (p) =>
+      p.status !== 'completed' &&
+      p.status !== 'skipped'
   );
 
-  const index = visibleQueue.findIndex((p) => p.id === performanceId);
-  const swapWith = direction === 'up' ? index - 1 : index + 1;
+  const index = visibleQueue.findIndex(
+    (p) => p.id === performanceId
+  );
 
-  if (index < 0 || swapWith < 0 || swapWith >= visibleQueue.length) return;
+  if (index < 0) return;
 
   const currentItem = visibleQueue[index];
-  const otherItem = visibleQueue[swapWith];
 
-  await supabase
-    .from('performances')
-    .update({ queue_order: otherItem.queue_order })
-    .eq('id', currentItem.id);
+  const sameRoundQueue = visibleQueue.filter(
+    (p) =>
+      (p.round || 1) ===
+      (currentItem.round || 1)
+  );
 
-  await supabase
+  const sameRoundIndex =
+    sameRoundQueue.findIndex(
+      (p) => p.id === performanceId
+    );
+
+  const targetIndex =
+    direction === 'up'
+      ? sameRoundIndex - 1
+      : sameRoundIndex + 1;
+
+  if (
+    targetIndex < 0 ||
+    targetIndex >= sameRoundQueue.length
+  ) {
+    return;
+  }
+
+  const targetItem =
+    sameRoundQueue[targetIndex];
+
+  const currentOrder =
+    currentItem.manual_queue_order ??
+    currentItem.queue_order ??
+    0;
+
+  const targetOrder =
+    targetItem.manual_queue_order ??
+    targetItem.queue_order ??
+    0;
+
+  const { error } = await supabase
     .from('performances')
-    .update({ queue_order: currentItem.queue_order })
-    .eq('id', otherItem.id);
+    .update({
+      manual_queue_order: targetOrder,
+    })
+    .eq('id', currentItem.id)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  const { error: targetError } =
+    await supabase
+      .from('performances')
+      .update({
+        manual_queue_order: currentOrder,
+      })
+      .eq('id', targetItem.id)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (targetError) {
+    alert(targetError.message);
+    return;
+  }
 
   await loadAll();
 }
@@ -3938,23 +4168,65 @@ async function handleQueueReorder(
   draggedId: string,
   targetId: string
 ) {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
   const currentId =
     event?.current_performance_id;
 
-  const movableQueue = rotatedQueue.filter(
-    (performance) =>
-      performance.id !== currentId
-  );
+  const draggedPerformance =
+    rotatedQueue.find(
+      (performance) =>
+        performance.id === draggedId
+    );
 
-  const oldIndex = movableQueue.findIndex(
-    (performance) =>
-      performance.id === draggedId
-  );
+  const targetPerformance =
+    rotatedQueue.find(
+      (performance) =>
+        performance.id === targetId
+    );
 
-  const newIndex = movableQueue.findIndex(
-    (performance) =>
-      performance.id === targetId
-  );
+  if (
+    !draggedPerformance ||
+    !targetPerformance
+  ) {
+    return;
+  }
+
+  const draggedRound =
+    draggedPerformance.round || 1;
+
+  const targetRound =
+    targetPerformance.round || 1;
+
+  // Dragging is only allowed within the
+  // same round. Moving between rounds should
+  // use "Move to Next Round".
+  if (draggedRound !== targetRound) {
+    return;
+  }
+
+  const sameRoundQueue =
+    rotatedQueue.filter(
+      (performance) =>
+        performance.id !== currentId &&
+        performance.status !== 'completed' &&
+        performance.status !== 'skipped' &&
+        (performance.round || 1) ===
+          draggedRound
+    );
+
+  const oldIndex =
+    sameRoundQueue.findIndex(
+      (performance) =>
+        performance.id === draggedId
+    );
+
+  const newIndex =
+    sameRoundQueue.findIndex(
+      (performance) =>
+        performance.id === targetId
+    );
 
   if (
     oldIndex === -1 ||
@@ -3964,7 +4236,7 @@ async function handleQueueReorder(
     return;
   }
 
-  const reordered = [...movableQueue];
+  const reordered = [...sameRoundQueue];
 
   const [movedPerformance] =
     reordered.splice(oldIndex, 1);
@@ -3975,13 +4247,16 @@ async function handleQueueReorder(
     movedPerformance
   );
 
+  // Only establish manual ordering for
+  // performances in THIS round.
   const updates = reordered.map(
     (performance, index) => ({
       id: performance.id,
-      queue_order: index + 1,
+      manual_queue_order: index + 1,
     })
   );
 
+  // Optimistic local update.
   setPerformances((current) =>
     current.map((performance) => {
       const update = updates.find(
@@ -3992,8 +4267,8 @@ async function handleQueueReorder(
       return update
         ? {
             ...performance,
-            queue_order:
-              update.queue_order,
+            manual_queue_order:
+              update.manual_queue_order,
           }
         : performance;
     })
@@ -4004,10 +4279,12 @@ async function handleQueueReorder(
       supabase
         .from('performances')
         .update({
-          queue_order:
-            update.queue_order,
+          manual_queue_order:
+            update.manual_queue_order,
         })
         .eq('id', update.id)
+        .eq('event_id', eventId)
+        .eq('account_id', accountId)
     )
   );
 

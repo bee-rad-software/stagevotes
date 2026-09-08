@@ -4,6 +4,7 @@ export type RotationPerformance = {
   queue_order?: number | null;
   status?: string | null;
   manual_queue_order?: number | null;
+  created_at?: string | null;
 };
 
 export function buildRotationQueue<
@@ -43,7 +44,24 @@ if (orderDiff !== 0) {
   return orderDiff;
 }
 
-    return a.id.localeCompare(b.id);
+const aCreated =
+  a.created_at
+    ? new Date(a.created_at).getTime()
+    : 0;
+
+const bCreated =
+  b.created_at
+    ? new Date(b.created_at).getTime()
+    : 0;
+
+const createdDiff =
+  aCreated - bCreated;
+
+if (createdDiff !== 0) {
+  return createdDiff;
+}
+
+return a.id.localeCompare(b.id);
   });
 
   // The event record is authoritative about

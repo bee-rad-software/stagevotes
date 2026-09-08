@@ -1153,6 +1153,67 @@ const needsCompetitionSong =
     };
   }
 
+  async function getSingerQueueDetails(
+  singerProfileId: string | null,
+  deviceId: string
+) {
+  const { data, error } = await supabase
+    .from('performances')
+    .select(`
+      round,
+      queue_order,
+      singer_profile_id,
+      device_id,
+      status
+    `)
+    .eq('event_id', eventId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const singerPerformances =
+    (data || []).filter((performance) => {
+      if (
+        singerProfileId &&
+        performance.singer_profile_id ===
+          singerProfileId
+      ) {
+        return true;
+      }
+
+      return Boolean(
+        deviceId &&
+        performance.device_id === deviceId
+      );
+    });
+
+  const highestRound =
+    singerPerformances.length > 0
+      ? Math.max(
+          ...singerPerformances.map(
+            (performance) =>
+              performance.round || 1
+          )
+        )
+      : null;
+
+  const originalOrder =
+    singerPerformances.length > 0
+      ? Math.min(
+          ...singerPerformances.map(
+            (performance) =>
+              performance.queue_order || 0
+          )
+        )
+      : null;
+
+  return {
+    highestRound,
+    originalOrder,
+  };
+}
+
   async function verifyDeviceSinger() {
     const deviceId = getDeviceId();
 
@@ -1467,32 +1528,18 @@ if (!singerProfileId && user) {
   singerProfileId =
     profileRow?.id || null;
 }
-     const {
-  nextQueueOrder,
-} = await getNextQueueDetails();
-
-const currentRound =
+     const currentRound =
   await getCurrentRound();
 
-const singerHighestRound =
-  myPerformances.length > 0
-    ? Math.max(
-        ...myPerformances.map(
-          (performance) =>
-            performance.round || 1
-        )
-      )
-    : null;
+const deviceId = getDeviceId();
 
-const singerOriginalOrder =
-  myPerformances.length > 0
-    ? Math.min(
-        ...myPerformances.map(
-          (performance) =>
-            performance.queue_order || 0
-        )
-      )
-    : null;
+const {
+  highestRound: singerHighestRound,
+  originalOrder: singerOriginalOrder,
+} = await getSingerQueueDetails(
+  singerProfileId,
+  deviceId
+);
 
 const assignedRound =
   singerHighestRound === null
@@ -1501,6 +1548,46 @@ const assignedRound =
         currentRound,
         singerHighestRound + 1
       );
+
+// A singer owns one permanent rotation position
+// for the entire show.
+//
+// Existing singers keep their original position.
+// Brand-new singers are assigned after every
+// singer who has already joined the show.
+
+let nextOrder: number;
+
+if (singerOriginalOrder !== null) {
+  nextOrder = singerOriginalOrder;
+} else {
+  const {
+    data: eventPerformances,
+    error: eventPerformancesError,
+  } = await supabase
+    .from('performances')
+    .select('queue_order')
+    .eq('event_id', eventId);
+
+  if (eventPerformancesError) {
+    throw new Error(
+      eventPerformancesError.message
+    );
+  }
+
+  const maxSingerOrder =
+    (eventPerformances || []).reduce(
+      (max, performance) => {
+        const order =
+          performance.queue_order ?? 0;
+
+        return Math.max(max, order);
+      },
+      0
+    );
+
+  nextOrder = maxSingerOrder + 1;
+}
 
       const { error } = await supabase
         .from('performances')
@@ -1522,13 +1609,9 @@ karafun_artist:
   song.karafunSongId
     ? song.artist.trim()
     : null,
-          queue_order:
-  singerOriginalOrder !== null
-    ? singerOriginalOrder
-    : nextQueueOrder,
-
+          queue_order: nextOrder,
 round: assignedRound,
-device_id: getDeviceId(),
+device_id: deviceId,
           singer_profile_id:
   singerProfileId,
 

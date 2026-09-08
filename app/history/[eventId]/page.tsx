@@ -887,8 +887,8 @@ const recentArchivedEvents = useMemo(() => {
             type="button"
             className="secondary"
             onClick={() =>
-              router.push('/show-history')
-            }
+  router.push('/history')
+}
           >
             View All {archivedEvents.length} Shows
           </button>

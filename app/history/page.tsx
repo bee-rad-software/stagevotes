@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import SVShell from '@/components/ui/SVShell';
 
 type EventRow = {
   id: string;
@@ -170,20 +171,48 @@ setTimeout(() => {
 }
   
   return (
-    <main className="container">
-      <div className="card">
+  <SVShell
+    title="Show History"
+    subtitle={`${events.length} shows`}
+  >
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 1180,
+        margin: '0 auto',
+      }}
+    >
+      <div
+  style={{
+    width: '100%',
+  }}
+>
         <h1>Show History</h1>
 
-        <div style={{ marginBottom: '20px' }}>
-         
-          <Link href="/history/season">
-  <button type="button">Season Leaderboard</button>
-</Link>
-          
-          <Link href="/account">
-            <button type="button">← Back to Account</button>
-          </Link>
-        </div>
+        <div
+  style={{
+    display: 'flex',
+    gap: 12,
+    flexWrap: 'wrap',
+    marginBottom: 24,
+  }}
+>
+  <Link
+    href="/history/season"
+    className="sv-btn sv-btn-primary"
+    style={{ textDecoration: 'none' }}
+  >
+    🏆 Season Leaderboard
+  </Link>
+
+  <Link
+    href="/account"
+    className="sv-btn sv-btn-secondary"
+    style={{ textDecoration: 'none' }}
+  >
+    ← Back to Account
+  </Link>
+</div>
 
 <input
   value={searchTerm}
@@ -254,42 +283,131 @@ setTimeout(() => {
           <div style={{ display: 'grid', gap: '16px' }}>
             {sortedEvents.map((event) => (
               <div
-                key={event.id}
-                className="card"
-                style={{ margin: 0 }}
-              >
-                <h2>{event.name}</h2>
-                <p>{event.venue}</p>
-                <p>
-                  {new Date(event.created_at).toLocaleDateString()} ·{' '}
-                  {event.is_show_ended ? 'Ended' : 'Active'}
-                </p>
-
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <Link href={`/host/${event.id}`}>
-                    <button type="button">Open Dashboard</button>
-                  </Link>
-
-                  <Link href={`/display/${event.id}`}>
-                    <button type="button">Open TV Display</button>
-                  </Link>
-
-                  <Link href={`/history/${event.id}`}>
-                    <button>View Report</button>
-                  </Link>
-
-                  <button
-  type="button"
-  onClick={() => {
-    setDuplicateEventId(event.id);
-    setDuplicateName(`${event.name} (Copy)`);
-    setShowDuplicateModal(true);
+  key={event.id}
+  className="card"
+  style={{
+    margin: 0,
+    padding: 20,
+    borderRadius: 18,
   }}
 >
-  📋 Duplicate Show
-</button>
-                  
-                </div>
+                <div
+  style={{
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+    marginBottom: 8,
+  }}
+>
+  <div>
+    <h2
+      style={{
+        margin: 0,
+        fontSize: 22,
+      }}
+    >
+      {event.name}
+    </h2>
+
+    <div
+      style={{
+        marginTop: 8,
+        color: '#cbd5e1',
+        fontSize: 14,
+        fontWeight: 700,
+      }}
+    >
+      {event.venue}
+    </div>
+
+    <div
+      style={{
+        marginTop: 6,
+        color: '#94a3b8',
+        fontSize: 13,
+      }}
+    >
+      {new Date(event.created_at).toLocaleDateString()}
+    </div>
+  </div>
+
+  <span
+    style={{
+      flexShrink: 0,
+      padding: '6px 10px',
+      borderRadius: 999,
+      fontSize: 12,
+      fontWeight: 900,
+      color: event.is_archived
+        ? '#c4b5fd'
+        : event.is_show_ended
+          ? '#cbd5e1'
+          : '#86efac',
+      background: event.is_archived
+        ? 'rgba(139,92,246,0.12)'
+        : event.is_show_ended
+          ? 'rgba(148,163,184,0.10)'
+          : 'rgba(34,197,94,0.12)',
+      border: event.is_archived
+        ? '1px solid rgba(139,92,246,0.25)'
+        : event.is_show_ended
+          ? '1px solid rgba(148,163,184,0.22)'
+          : '1px solid rgba(34,197,94,0.25)',
+    }}
+  >
+    {event.is_archived
+      ? 'ARCHIVED'
+      : event.is_show_ended
+        ? 'ENDED'
+        : 'ACTIVE'}
+  </span>
+</div>
+
+               <div
+  style={{
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
+    marginTop: 12,
+  }}
+>
+  <Link
+    href={`/host/${event.id}`}
+    style={{ textDecoration: 'none' }}
+    className="sv-btn sv-btn-primary"
+  >
+    Open Dashboard
+  </Link>
+
+  <Link
+    href={`/display/${event.id}`}
+    style={{ textDecoration: 'none' }}
+    className="sv-btn sv-btn-secondary"
+  >
+    Open TV Display
+  </Link>
+
+  <Link
+    href={`/history/${event.id}`}
+    style={{ textDecoration: 'none' }}
+    className="sv-btn sv-btn-secondary"
+  >
+    View Report
+  </Link>
+
+  <button
+    type="button"
+    className="sv-btn sv-btn-secondary"
+    onClick={() => {
+      setDuplicateEventId(event.id);
+      setDuplicateName(`${event.name} (Copy)`);
+      setShowDuplicateModal(true);
+    }}
+  >
+    📋 Duplicate Show
+  </button>
+</div>
               </div>
             ))}
           </div>
@@ -357,6 +475,7 @@ setTimeout(() => {
   </div>
 )}
       
-    </main>
+            </div>
+  </SVShell>
   );
 }
