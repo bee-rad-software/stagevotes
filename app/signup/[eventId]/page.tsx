@@ -72,7 +72,8 @@ type EventData = {
   venue_name?: string | null;
   current_performance_id?: string | null;
   competition_mode?: string | null;
-tournament_event_id?: string | null;
+  tournament_event_id?: string | null;
+  signups_open?: boolean | null;
 };
 
 const CURRENT_SHOW_KEY =
@@ -558,6 +559,9 @@ return Boolean(
 
   const isTournament =
   event?.competition_mode === 'tournament';
+
+  const signupsAreOpen =
+  event?.signups_open !== false;
 
   const hasReachedSongLimit =
   !isTournament &&
@@ -1483,6 +1487,15 @@ return false;
     song: SVSongOption
   ) {
 
+    if (!signupsAreOpen) {
+  setMessage(
+    'Signups are closed for tonight. You can still change or remove songs already in your queue.'
+  );
+
+  closeSongSheet();
+  return;
+}
+    
     if (hasReachedSongLimit) {
   setMessage(
     `This venue allows up to ${maxQueuedSongsPerSinger} ${
@@ -2486,7 +2499,7 @@ currentArtist={
           </div>
         )}
 
-        {(!isTournament ||
+       {(!isTournament ||
   myPerformances.length === 0) && (
   <>
     <button
@@ -2495,14 +2508,17 @@ currentArtist={
       onClick={openAddSong}
       disabled={
         submitting ||
+        !signupsAreOpen ||
         hasReachedSongLimit
       }
       style={{
         opacity:
+          !signupsAreOpen ||
           hasReachedSongLimit
             ? 0.55
             : 1,
         cursor:
+          !signupsAreOpen ||
           hasReachedSongLimit
             ? 'not-allowed'
             : 'pointer',
@@ -2510,14 +2526,29 @@ currentArtist={
     >
       <Plus size={18} />
 
-      {hasReachedSongLimit
-        ? 'Queue limit reached'
-        : myPerformances.length > 0
-          ? 'Add another song'
-          : 'Choose a song'}
+      {!signupsAreOpen
+        ? 'Signups closed'
+        : hasReachedSongLimit
+          ? 'Queue limit reached'
+          : myPerformances.length > 0
+            ? 'Add another song'
+            : 'Choose a song'}
     </button>
 
-    {hasReachedSongLimit && (
+    {!signupsAreOpen ? (
+      <p
+        className="sv-mobile-helper"
+        style={{
+          marginTop: 10,
+          textAlign: 'center',
+          color: '#fca5a5',
+        }}
+      >
+        Signups are closed for tonight.
+        You can still change or remove songs
+        already in your queue.
+      </p>
+    ) : hasReachedSongLimit ? (
       <p
         className="sv-mobile-helper"
         style={{
@@ -2535,7 +2566,7 @@ currentArtist={
         another after one is completed or
         removed.
       </p>
-    )}
+    ) : null}
   </>
 )}
 

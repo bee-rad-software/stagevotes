@@ -3916,6 +3916,54 @@ nextSingerRef.current = nextSinger;
     await loadEvent();
   }
 
+async function toggleSignups() {
+  const signupsAreOpen =
+    event?.signups_open !== false;
+
+  const nextSignupsOpen =
+    !signupsAreOpen;
+
+  if (
+    !nextSignupsOpen &&
+    !confirm(
+      'Close singer signups for tonight? Singers will no longer be able to join or add songs.'
+    )
+  ) {
+    return;
+  }
+
+  const accountId =
+    await getMyAccountId();
+
+  if (!accountId) return;
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      signups_open:
+        nextSignupsOpen,
+    })
+    .eq('id', eventId)
+    .eq('account_id', accountId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  setEvent((currentEvent) =>
+    currentEvent
+      ? {
+          ...currentEvent,
+          signups_open:
+            nextSignupsOpen,
+        }
+      : currentEvent
+  );
+
+  await loadAll();
+}
+
 async function toggleQrSetting(
   field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr',
   value: boolean
@@ -4626,6 +4674,99 @@ account?.subscription_status &&
     singerComplete={welcomeSingerAdded}
   />
 )}
+
+<section
+  className="sv-card"
+  style={{
+    marginBottom: 16,
+    border:
+      event?.signups_open === false
+        ? '1px solid rgba(239, 68, 68, 0.45)'
+        : '1px solid rgba(56, 189, 248, 0.4)',
+    background:
+      event?.signups_open === false
+        ? 'rgba(127, 29, 29, 0.16)'
+        : 'rgba(14, 116, 144, 0.12)',
+  }}
+>
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 16,
+      flexWrap: 'wrap',
+    }}
+  >
+    <div>
+      <div
+        style={{
+          color:
+            event?.signups_open === false
+              ? '#fca5a5'
+              : '#7dd3fc',
+          fontSize: 12,
+          fontWeight: 900,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+        }}
+      >
+        Singer Signups
+      </div>
+
+      <h2
+        style={{
+          margin: '5px 0 0',
+          fontSize: 20,
+        }}
+      >
+        {event?.signups_open === false
+          ? 'Signups are closed'
+          : 'Signups are open'}
+      </h2>
+
+      <p
+        style={{
+          margin: '6px 0 0',
+          color: '#94a3b8',
+          fontSize: 13,
+          lineHeight: 1.5,
+        }}
+      >
+        {event?.signups_open === false
+          ? 'Singers cannot join or add songs. Host controls remain available.'
+          : 'Singers can join and add songs within the venue queue limit.'}
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={toggleSignups}
+      style={{
+        padding: '11px 16px',
+        borderRadius: 10,
+        border:
+          event?.signups_open === false
+            ? '1px solid rgba(56, 189, 248, 0.55)'
+            : '1px solid rgba(239, 68, 68, 0.55)',
+        background:
+          event?.signups_open === false
+            ? 'rgba(14, 116, 144, 0.25)'
+            : 'rgba(127, 29, 29, 0.25)',
+        color:
+          event?.signups_open === false
+            ? '#7dd3fc'
+            : '#fca5a5',
+        fontWeight: 800,
+        cursor: 'pointer',
+      }}
+    >
+      {event?.signups_open === false
+        ? 'Reopen Signups'
+        : 'Close Signups'}
+    </button>
+  </div>
+</section>
 
 <SVMissionControl
   onStartShow={startShow}
