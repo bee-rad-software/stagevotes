@@ -1860,6 +1860,122 @@ device_id: deviceId,
   await confirmSongSelection(song);
 }
 
+async function removeQueuedSong(
+  performanceId: string
+) {
+  const targetPerformance = queue.find(
+    (performance) =>
+      performance.id === performanceId
+  );
+
+  if (!targetPerformance) {
+    setMessage(
+      'That song is no longer in the queue.'
+    );
+    return;
+  }
+
+  if (
+    !performanceBelongsToSinger(
+      targetPerformance
+    )
+  ) {
+    setMessage(
+      'You can only remove your own songs.'
+    );
+    return;
+  }
+
+  if (
+    performanceId ===
+    event?.current_performance_id
+  ) {
+    setMessage(
+      'You cannot remove the song you are currently performing.'
+    );
+    return;
+  }
+
+  if (
+    !confirm(
+      `Remove "${targetPerformance.song_title}" from your songs tonight?`
+    )
+  ) {
+    return;
+  }
+
+  setSubmitting(true);
+  setMessage('');
+
+  const removedRound =
+    targetPerformance.round || 1;
+
+  const targetIdentity =
+    getRotationIdentity(
+      targetPerformance
+    );
+
+  const laterSingerSongs = queue.filter(
+    (performance) =>
+      performance.id !== performanceId &&
+      getRotationIdentity(performance) ===
+        targetIdentity &&
+      (performance.round || 1) >
+        removedRound
+  );
+
+  const { error: removeError } =
+    await supabase
+      .from('performances')
+      .update({
+        status: 'completed',
+      })
+      .eq('id', performanceId)
+      .eq('event_id', eventId);
+
+  if (removeError) {
+    setMessage(
+      removeError.message ||
+        'We could not remove your song.'
+    );
+    setSubmitting(false);
+    return;
+  }
+
+  const roundUpdates = await Promise.all(
+    laterSingerSongs.map((performance) =>
+      supabase
+        .from('performances')
+        .update({
+          round: Math.max(
+            1,
+            (performance.round || 1) - 1
+          ),
+        })
+        .eq('id', performance.id)
+        .eq('event_id', eventId)
+    )
+  );
+
+  const roundUpdateError =
+    roundUpdates.find(
+      (result) => result.error
+    )?.error;
+
+  if (roundUpdateError) {
+    setMessage(
+      `Your song was removed, but we could not update every later round: ${roundUpdateError.message}`
+    );
+  } else {
+    setMessage(
+      `"${targetPerformance.song_title}" was removed from your songs tonight.`
+    );
+  }
+
+  await loadQueue();
+  setSubmitting(false);
+}
+
 async function confirmSongSelection(song: SVSongOption) {
   setPendingConflictSong(null);
   setSongConflictWarning('');
@@ -2258,34 +2374,67 @@ currentArtist={
                 </div>
 
                 {!isCurrent && (
-                  <button
-  type="button"
-  className="sv-change-song"
-  onClick={() => {
-    if (
-      !performance.song_title?.trim()
-    ) {
-      setEditingPerformanceId(
-        performance.id
-      );
-      setPickerSongs([]);
-      setSurpriseSong(null);
-      setDuplicateWarning('');
-      setMessage('');
-      setSongSheetOpen(true);
-      return;
-    }
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+    }}
+  >
+    <button
+      type="button"
+      className="sv-change-song"
+      disabled={submitting}
+      onClick={() => {
+        if (
+          !performance.song_title?.trim()
+        ) {
+          setEditingPerformanceId(
+            performance.id
+          );
+          setPickerSongs([]);
+          setSurpriseSong(null);
+          setDuplicateWarning('');
+          setMessage('');
+          setSongSheetOpen(true);
+          return;
+        }
 
-    openChangeSong(
-      performance.id
-    );
-  }}
->
-  {performance.song_title?.trim()
-    ? 'Change'
-    : 'Choose Song'}
-</button>
-                )}
+        openChangeSong(
+          performance.id
+        );
+      }}
+    >
+      {performance.song_title?.trim()
+        ? 'Change'
+        : 'Choose Song'}
+    </button>
+
+    {!isTournament && (
+      <button
+        type="button"
+        className="sv-change-song"
+        disabled={submitting}
+        onClick={() =>
+          removeQueuedSong(
+            performance.id
+          )
+        }
+        style={{
+          color: '#fca5a5',
+          borderColor:
+            'rgba(239, 68, 68, 0.45)',
+          background:
+            'rgba(127, 29, 29, 0.2)',
+        }}
+      >
+        Remove
+      </button>
+    )}
+  </div>
+)}
+
               </div>
             );
           }

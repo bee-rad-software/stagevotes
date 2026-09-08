@@ -3135,22 +3135,137 @@ const { error } = await supabase
   await loadAll();
 }
   
-  async function removeSinger(performanceId: string) {
-  if (!confirm('Remove this singer from the queue?')) return;
-
- const accountId = await getMyAccountId();
-if (!accountId) return;
-
-const { error } = await supabase
-  .from('performances')
-  .update({ status: 'completed' })
-  .eq('id', performanceId)
-  .eq('account_id', accountId);
-  if (error) {
-    alert(error.message);
-    return false;
+ async function removeSinger(
+  performanceId: string
+) {
+  if (
+    performanceId ===
+    event?.current_performance_id
+  ) {
+    alert(
+      'The currently performing song cannot be removed.'
+    );
+    return;
   }
 
+  if (
+    !confirm(
+      'Remove this song from the queue?'
+    )
+  ) {
+    return;
+  }
+
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return;
+
+  const { data: targetPerformance, error: targetError } =
+    await supabase
+      .from('performances')
+      .select(`
+        id,
+        singer_name,
+        singer_profile_id,
+        device_id,
+        round,
+        status
+      `)
+      .eq('id', performanceId)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId)
+      .single();
+
+  if (targetError || !targetPerformance) {
+    alert(
+      targetError?.message ||
+        'Performance not found.'
+    );
+    return;
+  }
+
+  const removedRound =
+    targetPerformance.round || 1;
+
+  const targetIdentity =
+    getRotationIdentity(targetPerformance);
+
+  const {
+    data: activePerformances,
+    error: activePerformancesError,
+  } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      singer_profile_id,
+      device_id,
+      round,
+      status
+    `)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId)
+    .neq('status', 'completed')
+    .neq('status', 'skipped');
+
+  if (activePerformancesError) {
+    alert(activePerformancesError.message);
+    return;
+  }
+
+  const laterSingerSongs =
+    (activePerformances || []).filter(
+      (performance) =>
+        performance.id !== performanceId &&
+        getRotationIdentity(performance) ===
+          targetIdentity &&
+        (performance.round || 1) >
+          removedRound
+    );
+
+  const { error: removeError } =
+    await supabase
+      .from('performances')
+      .update({
+        status: 'completed',
+      })
+      .eq('id', performanceId)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (removeError) {
+    alert(removeError.message);
+    return;
+  }
+
+  const roundUpdates = await Promise.all(
+    laterSingerSongs.map((performance) =>
+      supabase
+        .from('performances')
+        .update({
+          round: Math.max(
+            1,
+            (performance.round || 1) - 1
+          ),
+        })
+        .eq('id', performance.id)
+        .eq('event_id', eventId)
+        .eq('account_id', accountId)
+    )
+  );
+
+  const roundUpdateError =
+    roundUpdates.find(
+      (result) => result.error
+    )?.error;
+
+  if (roundUpdateError) {
+    alert(
+      `The song was removed, but we could not update every later round: ${roundUpdateError.message}`
+    );
+  }
+
+  setKarafunQueueSynced(false);
   await loadAll();
 }
 
