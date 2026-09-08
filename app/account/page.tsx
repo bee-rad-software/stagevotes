@@ -37,6 +37,10 @@ export default function AccountPage() {
   const [staticJudgeQr, setStaticJudgeQr] = useState(false);
   const [staticPeopleQr, setStaticPeopleQr] = useState(false);
   const [karafunChannel, setKarafunChannel] = useState('');
+  const [
+  maxQueuedSongsPerSinger,
+  setMaxQueuedSongsPerSinger,
+] = useState(3);
 
   useEffect(() => {
     loadAccount();
@@ -63,7 +67,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-.select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, karafun_channel')      .eq('id', accountUser.account_id)
+.select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, max_songs_per_singer, karafun_channel')      .eq('id', accountUser.account_id)
       .single();
 
     if (accountError || !account) {
@@ -92,6 +96,9 @@ if (venue?.id) {
     setStaticSignupQr(account.static_signup_qr || false);
     setStaticJudgeQr(account.static_judge_qr || false);
     setStaticPeopleQr(account.static_people_qr || false);
+    setMaxQueuedSongsPerSinger(
+  account.max_songs_per_singer ?? 3
+);
     setKarafunChannel(account.karafun_channel || '');
   }
 
@@ -109,6 +116,8 @@ if (venue?.id) {
         static_signup_qr: staticSignupQr,
         static_judge_qr: staticJudgeQr,
         static_people_qr: staticPeopleQr,
+        max_songs_per_singer:
+  maxQueuedSongsPerSinger,
         karafun_channel: karafunChannel,
       })
       .eq('id', accountId);
@@ -1024,6 +1033,89 @@ return (
           </button>
         </section>
 
+        <section className="sv-card">
+  <div>
+    <h2
+      style={{
+        margin: 0,
+        fontSize: 20,
+      }}
+    >
+      Singer Queue Limit
+    </h2>
+
+    <p
+      style={{
+        margin: '7px 0 18px',
+        opacity: 0.65,
+        fontSize: 13,
+        lineHeight: 1.5,
+      }}
+    >
+      Choose how many active songs each singer
+      can have in the queue at one time. Hosts
+      can still add additional songs manually.
+    </p>
+  </div>
+
+  <label
+    htmlFor="max-queued-songs"
+    style={{
+      display: 'grid',
+      gap: 8,
+    }}
+  >
+    <strong>
+      Maximum queued songs per singer
+    </strong>
+
+    <select
+      id="max-queued-songs"
+      value={maxQueuedSongsPerSinger}
+      onChange={(event) =>
+        setMaxQueuedSongsPerSinger(
+          Number(event.target.value)
+        )
+      }
+      style={{
+        width: '100%',
+        padding: '12px 14px',
+        borderRadius: 10,
+        border:
+          '1px solid rgba(255,255,255,0.12)',
+        background: '#111827',
+        color: 'white',
+        fontSize: 15,
+      }}
+    >
+      {Array.from(
+        { length: 10 },
+        (_, index) => index + 1
+      ).map((limit) => (
+        <option
+          key={limit}
+          value={limit}
+        >
+          {limit}{' '}
+          {limit === 1 ? 'song' : 'songs'}
+        </option>
+      ))}
+    </select>
+  </label>
+
+  <p
+    style={{
+      margin: '10px 0 0',
+      color: '#7dd3fc',
+      fontSize: 13,
+      lineHeight: 1.5,
+    }}
+  >
+    Completed, skipped, and removed songs do
+    not count toward this limit.
+  </p>
+</section>
+        
         <section className="sv-card">
           <h2
             style={{

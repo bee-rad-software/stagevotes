@@ -188,6 +188,11 @@ const [songConflictWarning, setSongConflictWarning] =
   const [cashappUrl, setCashappUrl] = useState('');
   const [applePayUrl, setApplePayUrl] = useState('');
 
+  const [
+  maxQueuedSongsPerSinger,
+  setMaxQueuedSongsPerSinger,
+] = useState(3);
+
   function getDeviceId() {
     if (typeof window === 'undefined') {
       return '';
@@ -333,7 +338,8 @@ const [songConflictWarning, setSongConflictWarning] =
   venmo_url,
   cashapp_url,
   apple_pay_url,
-  karafun_channel
+  karafun_channel,
+  max_songs_per_singer
   `
 )
         .eq('id', eventData.account_id)
@@ -355,6 +361,9 @@ const [songConflictWarning, setSongConflictWarning] =
     setVenmoUrl(accountData?.venmo_url || '');
     setCashappUrl(accountData?.cashapp_url || '');
     setApplePayUrl(accountData?.apple_pay_url || '');
+    setMaxQueuedSongsPerSinger(
+  accountData?.max_songs_per_singer ?? 3
+);
     setKarafunChannel(
   accountData?.karafun_channel || ''
 );
@@ -549,6 +558,11 @@ return Boolean(
 
   const isTournament =
   event?.competition_mode === 'tournament';
+
+  const hasReachedSongLimit =
+  !isTournament &&
+  myPerformances.length >=
+    maxQueuedSongsPerSinger;
 
   const performanceNeedingSong =
   myPerformances.find(
@@ -1158,15 +1172,17 @@ const needsCompetitionSong =
   deviceId: string
 ) {
   const { data, error } = await supabase
-    .from('performances')
-    .select(`
-      round,
-      queue_order,
-      singer_profile_id,
-      device_id,
-      status
-    `)
-    .eq('event_id', eventId);
+  .from('performances')
+  .select(`
+    round,
+    queue_order,
+    singer_profile_id,
+    device_id,
+    status
+  `)
+  .eq('event_id', eventId)
+  .neq('status', 'completed')
+  .neq('status', 'skipped');
 
   if (error) {
     throw new Error(error.message);
@@ -1466,6 +1482,19 @@ return false;
   async function addSongToQueue(
     song: SVSongOption
   ) {
+
+    if (hasReachedSongLimit) {
+  setMessage(
+    `This venue allows up to ${maxQueuedSongsPerSinger} ${
+      maxQueuedSongsPerSinger === 1
+        ? 'song'
+        : 'songs'
+    } in the queue at a time.`
+  );
+
+  closeSongSheet();
+  return;
+}
 
     if (!singerName.trim()) {
       setMessage(
@@ -2459,18 +2488,55 @@ currentArtist={
 
         {(!isTournament ||
   myPerformances.length === 0) && (
-  <button
-    type="button"
-    className="sv-full-button"
-    onClick={openAddSong}
-    disabled={submitting}
-  >
-    <Plus size={18} />
+  <>
+    <button
+      type="button"
+      className="sv-full-button"
+      onClick={openAddSong}
+      disabled={
+        submitting ||
+        hasReachedSongLimit
+      }
+      style={{
+        opacity:
+          hasReachedSongLimit
+            ? 0.55
+            : 1,
+        cursor:
+          hasReachedSongLimit
+            ? 'not-allowed'
+            : 'pointer',
+      }}
+    >
+      <Plus size={18} />
 
-    {myPerformances.length > 0
-      ? 'Add another song'
-      : 'Choose a song'}
-  </button>
+      {hasReachedSongLimit
+        ? 'Queue limit reached'
+        : myPerformances.length > 0
+          ? 'Add another song'
+          : 'Choose a song'}
+    </button>
+
+    {hasReachedSongLimit && (
+      <p
+        className="sv-mobile-helper"
+        style={{
+          marginTop: 10,
+          textAlign: 'center',
+          color: '#7dd3fc',
+        }}
+      >
+        This venue allows up to{' '}
+        {maxQueuedSongsPerSinger}{' '}
+        {maxQueuedSongsPerSinger === 1
+          ? 'song'
+          : 'songs'}{' '}
+        in the queue at a time. You can add
+        another after one is completed or
+        removed.
+      </p>
+    )}
+  </>
 )}
 
         {message && (

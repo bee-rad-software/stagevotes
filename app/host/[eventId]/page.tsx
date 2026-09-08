@@ -1144,9 +1144,11 @@ const newPerformanceIdentity =
   });
 
 const singerExistingSongs = performances.filter(
-  (p: any) =>
-    getRotationIdentity(p) ===
-    newPerformanceIdentity
+  (performance: any) =>
+    performance.status !== 'completed' &&
+    performance.status !== 'skipped' &&
+    getRotationIdentity(performance) ===
+      newPerformanceIdentity
 );
 
 const currentRound =
