@@ -41,6 +41,7 @@
   "build": {
     "appId": "com.stagevotes.host",
     "productName": "StageVotes",
+    "afterPack": "scripts/after-pack.cjs",
     "directories": {
       "output": "dist-electron"
     },
