@@ -54,6 +54,7 @@
     "mac": {
       "category": "public.app-category.entertainment",
       "icon": "build/icon.icns",
+      "x64ArchFiles": "Contents/Resources/app.asar.unpacked/node_modules/**/*",
       "target": [
         "dmg"
       ]
