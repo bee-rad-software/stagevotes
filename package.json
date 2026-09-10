@@ -11,6 +11,7 @@
     "desktop": "electron electron-karafun-display.js",
     "desktop:pack": "electron-builder --dir",
     "desktop:dist": "electron-builder",
+    "desktop:release:mac": "node scripts/release-mac.cjs",
     "desktop:dist:win": "electron-builder --win --x64"
   },
   "dependencies": {
