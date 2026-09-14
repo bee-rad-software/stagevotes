@@ -48,7 +48,17 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/');
+    const nextPath = new URLSearchParams(
+  window.location.search
+).get('next');
+
+const safeNextPath =
+  nextPath?.startsWith('/') &&
+  !nextPath.startsWith('//')
+    ? nextPath
+    : '/';
+
+router.push(safeNextPath);
     router.refresh();
   }
 
