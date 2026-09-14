@@ -92,29 +92,48 @@ export async function GET(request: NextRequest) {
 
     const platform = request.nextUrl.searchParams.get('platform');
 
-    if (platform !== 'mac') {
-      return NextResponse.json(
-        { error: 'That download is not available.' },
-        { status: 400 }
-      );
-    }
+const downloads = {
+  mac: {
+    objectKey: process.env.R2_MAC_OBJECT_KEY,
+    contentType: 'application/x-apple-diskimage',
+    filename: 'StageVotes-Mac.dmg',
+  },
+  windows: {
+    objectKey: process.env.R2_WINDOWS_OBJECT_KEY,
+    contentType: 'application/vnd.microsoft.portable-executable',
+    filename: 'StageVotes-Windows-Setup.exe',
+  },
+} as const;
 
-    const objectKey = process.env.R2_MAC_OBJECT_KEY;
+if (
+  platform !== 'mac' &&
+  platform !== 'windows'
+) {
+  return NextResponse.json(
+    { error: 'That download is not available.' },
+    { status: 400 }
+  );
+}
 
-    if (!objectKey) {
-      return NextResponse.json(
-        { error: 'The Mac download is not configured.' },
-        { status: 500 }
-      );
-    }
+const download = downloads[platform];
 
-    const command = new GetObjectCommand({
-      Bucket: process.env.R2_BUCKET!,
-      Key: objectKey,
-      ResponseContentType: 'application/x-apple-diskimage',
-      ResponseContentDisposition:
-        'attachment; filename="StageVotes-Mac.dmg"',
-    });
+if (!download.objectKey) {
+  return NextResponse.json(
+    {
+      error:
+        `The ${platform} download is not configured.`,
+    },
+    { status: 500 }
+  );
+}
+
+const command = new GetObjectCommand({
+  Bucket: process.env.R2_BUCKET!,
+  Key: download.objectKey,
+  ResponseContentType: download.contentType,
+  ResponseContentDisposition:
+    `attachment; filename="${download.filename}"`,
+});
 
     const url = await getSignedUrl(r2, command, {
       expiresIn: 60,
