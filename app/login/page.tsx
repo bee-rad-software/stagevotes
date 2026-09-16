@@ -367,7 +367,7 @@ router.push(safeNextPath);
           </div>
 
           <Link
-            href="/signup"
+            href="/onboarding"
             style={{
               minHeight: 50,
               display: 'flex',
