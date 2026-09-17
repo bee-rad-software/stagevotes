@@ -136,19 +136,31 @@ if (venue?.id) {
   }
 
   async function manageBilling() {
-    const response = await fetch('/api/stripe/portal', {
-      method: 'POST',
-    });
-
-    const data = await response.json();
-
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setMessage(data.error || 'Unable to open billing portal.');
-    }
+  if (!accountId) {
+    setMessage('Unable to find your StageVotes account.');
+    return;
   }
 
+  setMessage('');
+
+  const response = await fetch('/api/stripe/portal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ accountId }),
+  });
+
+  const data = await response.json();
+
+  if (response.ok && data.url) {
+    window.location.href = data.url;
+  } else {
+    setMessage(
+      data.error || 'Unable to open billing portal.'
+    );
+  }
+}
 async function uploadLogo(event: React.ChangeEvent<HTMLInputElement>) {
   const file = event.target.files?.[0];
 
