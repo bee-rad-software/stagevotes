@@ -29,6 +29,7 @@ import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
 import {
   getRotationIdentity,
 } from '@/lib/rotationIdentity';
+import SVFirstPerformanceCelebration from '@/components/singer/SVFirstPerformanceCelebration';
 import {
   buildRotationQueue,
 } from '@/lib/rotationQueue';
@@ -116,6 +117,33 @@ export default function SignupPage() {
 
   const [singerProfile, setSingerProfile] =
     useState<SingerProfile | null>(null);
+
+  const singerProfileIdRef =
+  useRef<string | null>(null);
+
+const singerNameRef = useRef('');
+
+const eventRef =
+  useRef<EventData | null>(null);
+
+const [
+  firstPerformanceCelebration,
+  setFirstPerformanceCelebration,
+] = useState<{
+  performanceId: string;
+  singerName: string;
+  songTitle: string;
+  venueName: string;
+} | null>(null);
+
+useEffect(() => {
+  singerNameRef.current = (
+    savedSingerName ||
+    singerName
+  )
+    .trim()
+    .toLowerCase();
+}, [savedSingerName, singerName]);
 
   const [profileLoading, setProfileLoading] =
     useState(true);
@@ -248,11 +276,12 @@ const [songConflictWarning, setSongConflictWarning] =
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      setSingerProfile(null);
-      setProfileLoading(false);
-      return;
-    }
+   if (!user) {
+  setSingerProfile(null);
+  singerProfileIdRef.current = null;
+  setProfileLoading(false);
+  return;
+}
 
     const { data, error } = await supabase
       .from('singer_profiles')
@@ -281,6 +310,9 @@ const [songConflictWarning, setSongConflictWarning] =
     const profile = data as SingerProfile | null;
 
     setSingerProfile(profile);
+
+    singerProfileIdRef.current =
+  profile?.id || null;
 
    if (profile?.id) {
   await claimGuestPerformances(
@@ -325,6 +357,8 @@ const [songConflictWarning, setSongConflictWarning] =
     const eventData = data as EventData;
 
     setEvent(eventData);
+
+    eventRef.current = eventData;
 
     if (!eventData.account_id) {
       return;
@@ -432,6 +466,141 @@ setOnDeckSinger(
 );
   }
 
+async function maybeCelebrateFirstPerformance(
+  payload: any
+) {
+  if (
+    payload.eventType !== 'UPDATE' ||
+    payload.new?.status !== 'completed' ||
+    payload.old?.status === 'completed'
+  ) {
+    return;
+  }
+
+  const performance =
+    payload.new as Performance;
+
+  const profileId =
+    singerProfileIdRef.current;
+
+  const deviceId = getDeviceId();
+
+  const sameProfile = Boolean(
+    profileId &&
+    performance.singer_profile_id ===
+      profileId
+  );
+
+  const sameDevice = Boolean(
+    deviceId &&
+    performance.device_id === deviceId
+  );
+
+  const sameLegacyName = Boolean(
+    !performance.singer_profile_id &&
+    !performance.device_id &&
+    !profileId &&
+    singerNameRef.current &&
+    performance.singer_name
+      ?.trim()
+      .toLowerCase() ===
+      singerNameRef.current
+  );
+
+  if (
+    !sameProfile &&
+    !sameDevice &&
+    !sameLegacyName
+  ) {
+    return;
+  }
+
+  const celebrationKey =
+    `stagevotes_first_performance_${performance.id}`;
+
+  if (
+    window.localStorage.getItem(
+      celebrationKey
+    )
+  ) {
+    return;
+  }
+
+  let countQuery = supabase
+    .from('performances')
+    .select('id', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('status', 'completed');
+
+  if (profileId) {
+    countQuery = countQuery.eq(
+      'singer_profile_id',
+      profileId
+    );
+  } else if (deviceId) {
+    countQuery = countQuery.eq(
+      'device_id',
+      deviceId
+    );
+  } else {
+    return;
+  }
+
+  const {
+    count,
+    error,
+  } = await countQuery;
+
+  if (error) {
+    console.error(
+      'Unable to check first performance:',
+      error.message
+    );
+
+    return;
+  }
+
+  if (count !== 1) {
+    return;
+  }
+
+  window.localStorage.setItem(
+    celebrationKey,
+    'shown'
+  );
+
+  if (
+    'vibrate' in navigator
+  ) {
+    navigator.vibrate?.([
+      80,
+      60,
+      120,
+    ]);
+  }
+
+  const currentEvent =
+    eventRef.current;
+
+  setFirstPerformanceCelebration({
+    performanceId: performance.id,
+    singerName:
+      performance.singer_name ||
+      savedSingerName ||
+      singerName ||
+      'Singer',
+    songTitle:
+      performance.song_title ||
+      'Your performance',
+    venueName:
+      currentEvent?.venue_name ||
+      currentEvent?.venue ||
+      'Your karaoke venue',
+  });
+}
+
   useEffect(() => {
     const savedName = localStorage.getItem(
       'karavote_singer_name'
@@ -462,9 +631,13 @@ setOnDeckSinger(
       table: 'performances',
       filter: `event_id=eq.${eventId}`,
     },
-    () => {
-      loadQueue();
-    }
+   (payload) => {
+  void maybeCelebrateFirstPerformance(
+    payload
+  );
+
+  loadQueue();
+}
   )
   .on(
     'postgres_changes',
@@ -1969,9 +2142,9 @@ async function removeQueuedSong(
   const { error: removeError } =
     await supabase
       .from('performances')
-      .update({
-        status: 'completed',
-      })
+     .update({
+  status: 'skipped',
+})
       .eq('id', performanceId)
       .eq('event_id', eventId);
 
@@ -2158,6 +2331,37 @@ function openCompetitionSong() {
           window.location.href = `/my-stage?event=${eventId}`;
         }}
       />
+
+            {singerProfile?.id && (
+        <button
+          type="button"
+          onClick={() => {
+            window.location.href =
+              `/my-stage?event=${eventId}`;
+          }}
+          style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: 9,
+            margin: '0 0 18px',
+            padding: '14px 18px',
+            border:
+              '1px solid rgba(56,189,248,.35)',
+            borderRadius: 16,
+            color: '#7dd3fc',
+            background:
+              'rgba(14,165,233,.1)',
+            fontSize: 15,
+            fontWeight: 900,
+            cursor: 'pointer',
+          }}
+        >
+          <Trophy size={18} />
+          Open My Stage
+        </button>
+      )}
 
       {!profileLoading && !singerProfile && (
   <SVSingerProfilePrompt
@@ -2810,7 +3014,40 @@ currentArtist={
     </div>
   )}
 
-      </SVBottomSheet>
+        </SVBottomSheet>
+
+      {firstPerformanceCelebration && (
+        <SVFirstPerformanceCelebration
+          singerName={
+            firstPerformanceCelebration.singerName
+          }
+          songTitle={
+            firstPerformanceCelebration.songTitle
+          }
+          venueName={
+            firstPerformanceCelebration.venueName
+          }
+          hasProfile={Boolean(
+            singerProfile?.id
+          )}
+          onDismiss={() => {
+            setFirstPerformanceCelebration(
+              null
+            );
+          }}
+          onSave={() => {
+            if (singerProfile?.id) {
+              window.location.href =
+                `/my-stage?event=${eventId}`;
+
+              return;
+            }
+
+            window.location.href =
+              `/singer-signup?event=${eventId}&claim=first-performance`;
+          }}
+        />
+      )}
     </main>
   );
 }
