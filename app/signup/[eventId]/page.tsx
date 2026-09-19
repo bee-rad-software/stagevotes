@@ -75,6 +75,7 @@ type EventData = {
   competition_mode?: string | null;
   tournament_event_id?: string | null;
   signups_open?: boolean | null;
+  is_show_ended?: boolean | null;
 };
 
 const CURRENT_SHOW_KEY =
@@ -126,15 +127,37 @@ const singerNameRef = useRef('');
 const eventRef =
   useRef<EventData | null>(null);
 
-const [
-  firstPerformanceCelebration,
-  setFirstPerformanceCelebration,
-] = useState<{
+type AchievementCelebration = {
+  id: string;
   performanceId: string;
   singerName: string;
   songTitle: string;
   venueName: string;
-} | null>(null);
+  achievementTitle: string;
+  achievementDescription: string;
+  achievementIcon: string;
+  isSecret: boolean;
+  earnedCount?: number;
+  earnedPercentage?: number;
+  earnedBadges: number;
+  totalBadges: number;
+};
+
+const [
+  achievementCelebrations,
+  setAchievementCelebrations,
+] = useState<AchievementCelebration[]>(
+  []
+);
+
+const activeAchievementCelebration =
+  achievementCelebrations[0] || null;
+
+function dismissAchievementCelebration() {
+  setAchievementCelebrations(
+    (current) => current.slice(1)
+  );
+}
 
 useEffect(() => {
   singerNameRef.current = (
@@ -466,6 +489,382 @@ setOnDeckSinger(
 );
   }
 
+async function queueProfileAchievements(
+  performance: Performance,
+  profileId: string
+) {
+  const {
+    data: earnedRows,
+    error: earnedError,
+  } = await supabase
+    .from('singer_achievements')
+    .select(`
+      id,
+      achievement_id,
+      earned_at,
+      achievement_definitions (
+        title,
+        unlocked_description,
+        icon,
+        is_secret
+      )
+    `)
+    .eq(
+      'singer_profile_id',
+      profileId
+    )
+    .eq(
+      'triggering_performance_id',
+      performance.id
+    )
+    .order('earned_at', {
+      ascending: true,
+    });
+
+  if (earnedError) {
+    console.error(
+      'Unable to load newly earned achievements:',
+      earnedError.message
+    );
+
+    return false;
+  }
+
+  const unseenRows = (
+    earnedRows || []
+  ).filter((earned: any) => {
+    return !window.localStorage.getItem(
+      `stagevotes_achievement_${earned.id}`
+    );
+  });
+
+  if (unseenRows.length === 0) {
+    return false;
+  }
+
+  const achievementIds = unseenRows.map(
+    (earned: any) =>
+      earned.achievement_id
+  );
+
+  const [
+    earnedCountResult,
+    totalCountResult,
+    badgeStatsResult,
+  ] = await Promise.all([
+    supabase
+      .from('singer_achievements')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq(
+        'singer_profile_id',
+        profileId
+      ),
+
+    supabase
+      .from('achievement_definitions')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('is_active', true),
+
+    supabase
+      .from('achievement_badge_stats')
+      .select(`
+        achievement_id,
+        earned_count,
+        earned_percentage
+      `)
+      .in(
+        'achievement_id',
+        achievementIds
+      ),
+  ]);
+
+  const badgeStatsMap = new Map(
+    (badgeStatsResult.data || []).map(
+      (badgeStats: any) => [
+        badgeStats.achievement_id,
+        badgeStats,
+      ]
+    )
+  );
+
+  const currentEvent = eventRef.current;
+
+  const celebrations:
+    AchievementCelebration[] =
+    unseenRows.map((earned: any) => {
+      const definition = Array.isArray(
+        earned.achievement_definitions
+      )
+        ? earned
+            .achievement_definitions[0]
+        : earned.achievement_definitions;
+
+      const badgeStats =
+        badgeStatsMap.get(
+          earned.achievement_id
+        );
+
+      window.localStorage.setItem(
+        `stagevotes_achievement_${earned.id}`,
+        'shown'
+      );
+
+      return {
+        id: earned.id,
+        performanceId: performance.id,
+        singerName:
+          performance.singer_name ||
+          savedSingerName ||
+          singerName ||
+          'Singer',
+        songTitle:
+          performance.song_title ||
+          'Your performance',
+        venueName:
+          currentEvent?.venue_name ||
+          currentEvent?.venue ||
+          'Your karaoke venue',
+        achievementTitle:
+          definition?.title ||
+          'Achievement Unlocked',
+        achievementDescription:
+          definition
+            ?.unlocked_description ||
+          'You earned a new StageVotes badge!',
+        achievementIcon:
+          definition?.icon || '🏆',
+        isSecret:
+          definition?.is_secret ||
+          false,
+        earnedCount: Number(
+          badgeStats?.earned_count || 1
+        ),
+        earnedPercentage: Number(
+          badgeStats
+            ?.earned_percentage || 0
+        ),
+        earnedBadges:
+          earnedCountResult.count ||
+          unseenRows.length,
+        totalBadges:
+          totalCountResult.count || 24,
+      };
+    });
+
+  setAchievementCelebrations(
+    (current) => [
+      ...current,
+      ...celebrations,
+    ]
+  );
+
+  return true;
+}
+
+ async function queueFinalCountdownCelebration(
+  profileId: string
+) {
+  const {
+    data: definition,
+    error: definitionError,
+  } = await supabase
+    .from('achievement_definitions')
+    .select(`
+      id,
+      title,
+      unlocked_description,
+      icon,
+      is_secret
+    `)
+    .eq(
+      'slug',
+      'the-final-countdown'
+    )
+    .maybeSingle();
+
+  if (
+    definitionError ||
+    !definition
+  ) {
+    if (definitionError) {
+      console.error(
+        'Unable to load final countdown badge:',
+        definitionError.message
+      );
+    }
+
+    return;
+  }
+
+  const {
+    data: earned,
+    error: earnedError,
+  } = await supabase
+    .from('singer_achievements')
+    .select(`
+      id,
+      achievement_id,
+      triggering_performance_id
+    `)
+    .eq(
+      'singer_profile_id',
+      profileId
+    )
+    .eq(
+      'achievement_id',
+      definition.id
+    )
+    .maybeSingle();
+
+  if (
+    earnedError ||
+    !earned
+  ) {
+    if (earnedError) {
+      console.error(
+        'Unable to load final countdown unlock:',
+        earnedError.message
+      );
+    }
+
+    return;
+  }
+
+  const celebrationKey =
+    `stagevotes_achievement_${earned.id}`;
+
+  if (
+    window.localStorage.getItem(
+      celebrationKey
+    )
+  ) {
+    return;
+  }
+
+  const [
+    performanceResult,
+    earnedCountResult,
+    totalCountResult,
+    badgeStatsResult,
+  ] = await Promise.all([
+    supabase
+      .from('performances')
+      .select(`
+        id,
+        singer_name,
+        song_title
+      `)
+      .eq(
+        'id',
+        earned.triggering_performance_id
+      )
+      .maybeSingle(),
+
+    supabase
+      .from('singer_achievements')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq(
+        'singer_profile_id',
+        profileId
+      ),
+
+    supabase
+      .from('achievement_definitions')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('is_active', true),
+
+    supabase
+      .from('achievement_badge_stats')
+      .select(`
+        earned_count,
+        earned_percentage
+      `)
+      .eq(
+        'achievement_id',
+        definition.id
+      )
+      .maybeSingle(),
+  ]);
+
+  const performance =
+    performanceResult.data;
+
+  const badgeStats =
+    badgeStatsResult.data;
+
+  const currentEvent = eventRef.current;
+
+  window.localStorage.setItem(
+    celebrationKey,
+    'shown'
+  );
+
+  setAchievementCelebrations(
+    (current) => [
+      ...current,
+      {
+        id: earned.id,
+        performanceId:
+          earned
+            .triggering_performance_id ||
+          'final-performance',
+        singerName:
+          performance?.singer_name ||
+          savedSingerName ||
+          singerName ||
+          'Singer',
+        songTitle:
+          performance?.song_title ||
+          'Your final performance',
+        venueName:
+          currentEvent?.venue_name ||
+          currentEvent?.venue ||
+          'Your karaoke venue',
+        achievementTitle:
+          definition.title,
+        achievementDescription:
+          definition
+            .unlocked_description,
+        achievementIcon:
+          definition.icon,
+        isSecret:
+          definition.is_secret,
+        earnedCount: Number(
+          badgeStats?.earned_count || 1
+        ),
+        earnedPercentage: Number(
+          badgeStats
+            ?.earned_percentage || 0
+        ),
+        earnedBadges:
+          earnedCountResult.count || 1,
+        totalBadges:
+          totalCountResult.count || 24,
+      },
+    ]
+  );
+
+  if ('vibrate' in navigator) {
+    navigator.vibrate?.([
+      80,
+      60,
+      120,
+    ]);
+  }
+}
+
 async function maybeCelebrateFirstPerformance(
   payload: any
 ) {
@@ -507,11 +906,32 @@ async function maybeCelebrateFirstPerformance(
       singerNameRef.current
   );
 
-  if (
+    if (
     !sameProfile &&
     !sameDevice &&
     !sameLegacyName
   ) {
+    return;
+  }
+
+  if (sameProfile && profileId) {
+    const queued =
+      await queueProfileAchievements(
+        performance,
+        profileId
+      );
+
+    if (
+      queued &&
+      'vibrate' in navigator
+    ) {
+      navigator.vibrate?.([
+        80,
+        60,
+        120,
+      ]);
+    }
+
     return;
   }
 
@@ -584,21 +1004,39 @@ async function maybeCelebrateFirstPerformance(
   const currentEvent =
     eventRef.current;
 
-  setFirstPerformanceCelebration({
-    performanceId: performance.id,
-    singerName:
-      performance.singer_name ||
-      savedSingerName ||
-      singerName ||
-      'Singer',
-    songTitle:
-      performance.song_title ||
-      'Your performance',
-    venueName:
-      currentEvent?.venue_name ||
-      currentEvent?.venue ||
-      'Your karaoke venue',
-  });
+   setAchievementCelebrations(
+    (current) => [
+      ...current,
+      {
+        id: `guest-first-${performance.id}`,
+        performanceId: performance.id,
+        singerName:
+          performance.singer_name ||
+          savedSingerName ||
+          singerName ||
+          'Singer',
+        songTitle:
+          performance.song_title ||
+          'Your performance',
+        venueName:
+          currentEvent?.venue_name ||
+          currentEvent?.venue ||
+          'Your karaoke venue',
+        achievementTitle:
+          'First Performance',
+        achievementDescription:
+          `You officially took the stage${
+            performance.singer_name
+              ? `, ${performance.singer_name}`
+              : ''
+          }!`,
+        achievementIcon: '🎤',
+        isSecret: false,
+        earnedBadges: 1,
+        totalBadges: 24,
+      },
+    ]
+  );
 }
 
   useEffect(() => {
@@ -639,7 +1077,7 @@ async function maybeCelebrateFirstPerformance(
   loadQueue();
 }
   )
-  .on(
+    .on(
     'postgres_changes',
     {
       event: 'UPDATE',
@@ -647,9 +1085,25 @@ async function maybeCelebrateFirstPerformance(
       table: 'events',
       filter: `id=eq.${eventId}`,
     },
-    () => {
+    (payload) => {
       loadEvent();
       loadQueue();
+
+      const updatedEvent =
+        payload.new as EventData;
+
+      const profileId =
+        singerProfileIdRef.current;
+
+      if (
+        updatedEvent.is_show_ended ===
+          true &&
+        profileId
+      ) {
+        void queueFinalCountdownCelebration(
+          profileId
+        );
+      }
     }
   )
   .subscribe();
@@ -1830,7 +2284,13 @@ device_id: deviceId,
           singer_profile_id:
   singerProfileId,
 
-  submission_id: submissionId,
+    submission_id: submissionId,
+
+  selection_source:
+    song.note ===
+    'StageVotes picked this one for you'
+      ? 'surprise_me'
+      : 'search',
         });
 
      if (error) {
@@ -3016,25 +3476,58 @@ currentArtist={
 
         </SVBottomSheet>
 
-      {firstPerformanceCelebration && (
+            {activeAchievementCelebration && (
         <SVFirstPerformanceCelebration
           singerName={
-            firstPerformanceCelebration.singerName
+            activeAchievementCelebration
+              .singerName
           }
           songTitle={
-            firstPerformanceCelebration.songTitle
+            activeAchievementCelebration
+              .songTitle
           }
           venueName={
-            firstPerformanceCelebration.venueName
+            activeAchievementCelebration
+              .venueName
+          }
+          achievementTitle={
+            activeAchievementCelebration
+              .achievementTitle
+          }
+          achievementDescription={
+            activeAchievementCelebration
+              .achievementDescription
+          }
+          achievementIcon={
+            activeAchievementCelebration
+              .achievementIcon
+          }
+          isSecret={
+            activeAchievementCelebration
+              .isSecret
+          }
+          earnedCount={
+            activeAchievementCelebration
+              .earnedCount
+          }
+          earnedPercentage={
+            activeAchievementCelebration
+              .earnedPercentage
+          }
+          earnedBadges={
+            activeAchievementCelebration
+              .earnedBadges
+          }
+          totalBadges={
+            activeAchievementCelebration
+              .totalBadges
           }
           hasProfile={Boolean(
             singerProfile?.id
           )}
-          onDismiss={() => {
-            setFirstPerformanceCelebration(
-              null
-            );
-          }}
+          onDismiss={
+            dismissAchievementCelebration
+          }
           onSave={() => {
             if (singerProfile?.id) {
               window.location.href =

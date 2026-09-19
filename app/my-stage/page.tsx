@@ -48,8 +48,9 @@ function MyStageContent() {
 
   const eventId = searchParams.get('event');
 
-  const {
+    const {
   profile,
+  achievements,
   stats,
   monthlyStats,
   personalBests,
@@ -1261,7 +1262,8 @@ const active =
 
         <PersonalBests bests={personalBests} />
 
-        <AchievementGrid
+               <AchievementGrid
+          achievements={achievements}
           performances={stats.performances}
           venues={stats.venues}
           averageScore={stats.averageScore}

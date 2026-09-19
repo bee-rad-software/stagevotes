@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 import type {
+  AchievementCollectionItem,
   PersonalBests,
   SingerProfile,
   SingerStats,
@@ -31,6 +32,9 @@ function isTestEntry(value?: string | null) {
 export default function useMyStage() {
   const [profile, setProfile] =
     useState<SingerProfile | null>(null);
+
+    const [achievements, setAchievements] =
+    useState<AchievementCollectionItem[]>([]);
 
   const [stats, setStats] = useState<SingerStats>({
     performances: 0,
@@ -140,6 +144,153 @@ export default function useMyStage() {
     }
 
     setProfile(profileData);
+
+        const [
+      definitionResult,
+      earnedResult,
+      badgeStatsResult,
+    ] = await Promise.all([
+      supabase
+        .from('achievement_definitions')
+        .select(`
+          id,
+          slug,
+          title,
+          description,
+          unlocked_description,
+          icon,
+          category,
+          is_secret,
+          criteria_type,
+          criteria_config,
+          points,
+          sort_order
+        `)
+        .eq('is_active', true)
+        .order('sort_order', {
+          ascending: true,
+        }),
+
+      supabase
+        .from('singer_achievements')
+        .select(`
+          achievement_id,
+          earned_at,
+          triggering_performance_id,
+          metadata
+        `)
+        .eq(
+          'singer_profile_id',
+          profileData.id
+        ),
+
+      supabase
+        .from('achievement_badge_stats')
+        .select(`
+          achievement_id,
+          earned_count,
+          total_singers,
+          earned_percentage
+        `),
+    ]);
+
+    if (definitionResult.error) {
+      console.error(
+        'Unable to load achievement definitions:',
+        definitionResult.error.message
+      );
+    }
+
+    if (earnedResult.error) {
+      console.error(
+        'Unable to load singer achievements:',
+        earnedResult.error.message
+      );
+    }
+
+    if (badgeStatsResult.error) {
+      console.error(
+        'Unable to load achievement statistics:',
+        badgeStatsResult.error.message
+      );
+    }
+
+    const earnedMap = new Map(
+      (earnedResult.data || []).map(
+        (earned: any) => [
+          earned.achievement_id,
+          earned,
+        ]
+      )
+    );
+
+    const badgeStatsMap = new Map(
+      (badgeStatsResult.data || []).map(
+        (badgeStats: any) => [
+          badgeStats.achievement_id,
+          badgeStats,
+        ]
+      )
+    );
+
+    const achievementCollection:
+      AchievementCollectionItem[] =
+      (definitionResult.data || []).map(
+        (definition: any) => {
+          const earned = earnedMap.get(
+            definition.id
+          );
+
+          const badgeStats =
+            badgeStatsMap.get(
+              definition.id
+            );
+
+          return {
+            id: definition.id,
+            slug: definition.slug,
+            title: definition.title,
+            description:
+              definition.description,
+            unlockedDescription:
+              definition.unlocked_description,
+            icon: definition.icon,
+            category: definition.category,
+            isSecret:
+              definition.is_secret,
+            criteriaType:
+              definition.criteria_type,
+            criteriaConfig:
+              definition.criteria_config || {},
+            points: definition.points,
+            sortOrder:
+              definition.sort_order,
+            earned: Boolean(earned),
+            earnedAt:
+              earned?.earned_at || null,
+            triggeringPerformanceId:
+              earned
+                ?.triggering_performance_id ||
+              null,
+            metadata:
+              earned?.metadata || {},
+            earnedCount: Number(
+              badgeStats?.earned_count || 0
+            ),
+            totalSingers: Number(
+              badgeStats?.total_singers || 0
+            ),
+            earnedPercentage: Number(
+              badgeStats
+                ?.earned_percentage || 0
+            ),
+          };
+        }
+      );
+
+    setAchievements(
+      achievementCollection
+    );
 
     const {
   data: tournamentEntries,
@@ -312,6 +463,29 @@ if (upcomingStageVotesEventId) {
       'Waiting for more performances';
 
     if (profileData?.id) {
+            const {
+        count: competitionWinCount,
+        error: competitionWinError,
+      } = await supabase
+        .from('singer_competition_wins')
+        .select('id', {
+          count: 'exact',
+          head: true,
+        })
+        .eq(
+          'singer_profile_id',
+          profileData.id
+        );
+
+      if (competitionWinError) {
+        console.error(
+          'Unable to load competition wins:',
+          competitionWinError.message
+        );
+      } else {
+        totalWins =
+          competitionWinCount || 0;
+      }
       const {
         data: completedPerformances,
         error: performanceError,
@@ -759,6 +933,7 @@ setTimeline(timelineEntries);
 
 return {
   profile,
+  achievements,
   stats,
   monthlyStats,
   personalBests,

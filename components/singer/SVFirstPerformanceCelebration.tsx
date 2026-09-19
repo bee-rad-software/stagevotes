@@ -12,6 +12,14 @@ type Props = {
   songTitle: string;
   venueName: string;
   hasProfile: boolean;
+  achievementTitle?: string;
+  achievementDescription?: string;
+  achievementIcon?: string;
+  isSecret?: boolean;
+  earnedCount?: number;
+  earnedPercentage?: number;
+  earnedBadges?: number;
+  totalBadges?: number;
   onSave: () => void;
   onDismiss: () => void;
 };
@@ -39,9 +47,32 @@ export default function SVFirstPerformanceCelebration({
   songTitle,
   venueName,
   hasProfile,
+  achievementTitle =
+    'First Performance',
+  achievementDescription,
+  achievementIcon = '🎤',
+  isSecret = false,
+  earnedCount,
+  earnedPercentage,
+  earnedBadges = 1,
+  totalBadges = 24,
   onSave,
   onDismiss,
 }: Props) {
+  const collectionPercent = Math.min(
+    Math.max(
+      (earnedBadges / totalBadges) * 100,
+      0
+    ),
+    100
+  );
+
+  const headline =
+    achievementDescription ||
+    `You officially took the stage${
+      singerName ? `, ${singerName}` : ''
+    }!`;
+
   return (
     <div
       className="sv-achievement-overlay"
@@ -79,27 +110,26 @@ export default function SVFirstPerformanceCelebration({
       </button>
 
       <section className="sv-achievement-card">
-        <div className="sv-achievement-kicker">
+               <div className="sv-achievement-kicker">
           <Sparkles size={16} />
-          Achievement unlocked
+
+          {isSecret
+            ? 'Secret badge discovered'
+            : 'Achievement unlocked'}
         </div>
 
         <div className="sv-achievement-badge">
           <div className="sv-achievement-badge-ring">
-            🎤
+            {achievementIcon}
           </div>
         </div>
 
         <h1 id="achievement-title">
-          First Performance
+          {achievementTitle}
         </h1>
 
         <p className="sv-achievement-headline">
-          You officially took the stage
-          {singerName
-            ? `, ${singerName}`
-            : ''}
-          !
+          {headline}
         </p>
 
         <div className="sv-achievement-details">
@@ -107,19 +137,53 @@ export default function SVFirstPerformanceCelebration({
           <span>{venueName}</span>
         </div>
 
-        <div className="sv-achievement-progress">
+                <div className="sv-achievement-progress">
           <div className="sv-achievement-progress-copy">
-            <span>Your karaoke journey</span>
-            <strong>1 performance</strong>
+            <span>Your badge collection</span>
+
+            <strong>
+              {earnedBadges} of {totalBadges}
+            </strong>
           </div>
 
           <div className="sv-achievement-progress-track">
-            <div />
+            <div
+              style={
+                {
+                  '--achievement-progress':
+                    `${collectionPercent}%`,
+                } as CSSProperties
+              }
+            />
           </div>
 
           <p>
-            24 more performances until
-            <strong> ⭐ Regular Performer</strong>
+            {earnedCount !== undefined ? (
+              <>
+                <strong>
+                  {earnedCount.toLocaleString()}
+                </strong>{' '}
+                {earnedCount === 1
+                  ? 'singer has'
+                  : 'singers have'}{' '}
+                this badge
+              </>
+            ) : (
+              <>
+                Keep singing to unlock the
+                rest of your collection.
+              </>
+            )}
+
+            {earnedPercentage !== undefined && (
+              <>
+                {' · '}
+                <strong>
+                  {earnedPercentage.toFixed(1)}%
+                </strong>{' '}
+                of singers
+              </>
+            )}
           </p>
         </div>
 
@@ -345,8 +409,11 @@ padding:
           background: rgba(148,163,184,.16);
         }
 
-        .sv-achievement-progress-track div {
-          width: 4%;
+                .sv-achievement-progress-track div {
+          width: var(
+            --achievement-progress,
+            4%
+          );
           height: 100%;
           min-width: 12px;
           border-radius: inherit;
@@ -455,9 +522,14 @@ padding:
           }
         }
 
-        @keyframes svProgressGrow {
+                @keyframes svProgressGrow {
           from { width: 0; }
-          to { width: 4%; }
+          to {
+            width: var(
+              --achievement-progress,
+              4%
+            );
+          }
         }
 
         @media (max-height: 720px) {

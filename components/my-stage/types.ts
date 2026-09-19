@@ -37,3 +37,25 @@ export type TimelineEntry = {
   performedAt: string;
   averageScore: number | null;
 };
+
+export type AchievementCollectionItem = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  unlockedDescription: string;
+  icon: string;
+  category: string;
+  isSecret: boolean;
+  criteriaType: string;
+  criteriaConfig: Record<string, unknown>;
+  points: number;
+  sortOrder: number;
+  earned: boolean;
+  earnedAt: string | null;
+  triggeringPerformanceId: string | null;
+  metadata: Record<string, unknown>;
+  earnedCount: number;
+  totalSingers: number;
+  earnedPercentage: number;
+};
