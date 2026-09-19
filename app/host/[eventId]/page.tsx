@@ -54,6 +54,20 @@ import { CSS } from '@dnd-kit/utilities';
 
 import { GripVertical } from 'lucide-react';
 
+function getKaraFunSingerName(
+  performance?: Pick<
+    PerformanceRow,
+    'singer_name' | 'duet_partner_name'
+  > | null
+) {
+  return [
+    performance?.singer_name?.trim(),
+    performance?.duet_partner_name?.trim(),
+  ]
+    .filter(Boolean)
+    .join(' & ');
+}
+
 export default function HostPage() {
   const params = useParams();
   const eventId = params.eventId as string;
@@ -1509,9 +1523,11 @@ if (
   const next = new Set<string>();
 
   performances.forEach((performance) => {
-    const singer =
-      performance.singer_name
-        ?.trim()
+       const singer =
+      getKaraFunSingerName(
+        performance
+      )
+        .trim()
         .toLowerCase();
 
     const title =
@@ -1641,7 +1657,9 @@ const recoveredOnStageVotesCurrent =
     recoveryCurrent &&
     normalize(karaFunSinger) ===
       normalize(
-        recoveryCurrent.singer_name
+                getKaraFunSingerName(
+          recoveryCurrent
+        )
       ) &&
     normalize(karaFunTitle) ===
       normalize(
@@ -1654,7 +1672,9 @@ const recoveredOnExpectedNext =
     recoveryExpectedNext &&
     normalize(karaFunSinger) ===
       normalize(
-        recoveryExpectedNext.singer_name
+                getKaraFunSingerName(
+          recoveryExpectedNext
+        )
       ) &&
     normalize(karaFunTitle) ===
       normalize(
@@ -1800,7 +1820,9 @@ if (
       pendingSkipPerformance &&
       normalize(karaFunSinger) ===
         normalize(
-          pendingSkipPerformance.singer_name
+          getKaraFunSingerName(
+  pendingSkipPerformance
+)
         ) &&
       normalize(karaFunTitle) ===
         normalize(
@@ -1904,7 +1926,9 @@ if (!expectedNext) {
 
 const karaFunMatchesExpectedNext =
   normalize(karaFunSinger) ===
-    normalize(expectedNext.singer_name) &&
+    normalize(getKaraFunSingerName(
+  expectedNext
+)) &&
   normalize(karaFunTitle) ===
     normalize(expectedNext.song_title);
 
@@ -1915,7 +1939,9 @@ if (!karaFunMatchesExpectedNext) {
       karaFunSinger,
       karaFunTitle,
       expectedSinger:
-        expectedNext.singer_name,
+        getKaraFunSingerName(
+  expectedNext
+),
       expectedTitle:
         expectedNext.song_title,
     }
@@ -1935,7 +1961,9 @@ if (!advanceSinger) {
 
 console.log(
   '✅ KaraFun started the expected next singer — advancing StageVotes:',
-  expectedNext.singer_name,
+  getKaraFunSingerName(
+  expectedNext
+),
   expectedNext.song_title
 );
 
@@ -2222,11 +2250,11 @@ if (
   karaFunRecoveringRef.current &&
   current &&
   karaFunCurrentItemIdRef.current &&
-  karaFunCurrentSingerRef.current
+    karaFunCurrentSingerRef.current
     .trim()
     .toLowerCase() ===
-    current.singer_name
-      ?.trim()
+    getKaraFunSingerName(current)
+      .trim()
       .toLowerCase() &&
   karaFunCurrentTitleRef.current
     .trim()
@@ -2283,8 +2311,10 @@ const normalize = (
     performance.song_title?.trim()
   );
 
-  const stageVotesCurrentSinger =
-  normalize(current?.singer_name);
+    const stageVotesCurrentSinger =
+    normalize(
+      getKaraFunSingerName(current)
+    );
 
 const stageVotesCurrentTitle =
   normalize(current?.song_title);
@@ -2338,7 +2368,9 @@ const pendingSkipIsAlreadyCurrent =
       karaFunCurrentSingerRef.current
     ) ===
       normalize(
-        pendingSkipPerformance.singer_name
+        getKaraFunSingerName(
+  pendingSkipPerformance
+)
       ) &&
     normalize(
       karaFunCurrentTitleRef.current
@@ -2461,7 +2493,9 @@ if (!desiredKaraFunNext) {
 
 const desiredNextSinger =
   normalize(
-    desiredKaraFunNext.singer_name
+    getKaraFunSingerName(
+  desiredKaraFunNext
+)
   );
 
 const desiredNextTitle =
@@ -2610,7 +2644,9 @@ const karaFunNextItem =
     ) {
       console.log(
   '✅ KaraFun skip target is ready:',
-  pendingSkipPerformance.singer_name,
+  getKaraFunSingerName(
+  pendingSkipPerformance
+),
   pendingSkipPerformance.song_title,
 );
 
@@ -2635,7 +2671,9 @@ const karaFunNextItem =
 
   console.log(
     '⏭️ KaraFun advancing to skipped target:',
-    pendingSkipPerformance.singer_name
+    getKaraFunSingerName(
+  pendingSkipPerformance
+)
   );
 }
 
@@ -2704,7 +2742,9 @@ return;
 
   console.log(
     'Moving KaraFun next singer:',
-    desiredKaraFunNext.singer_name,
+    getKaraFunSingerName(
+  desiredKaraFunNext
+),
     desiredKaraFunNext.song_title,
     'to position',
     targetPosition
@@ -2766,7 +2806,9 @@ return;
 
     console.log(
       'Adding correct KaraFun next singer:',
-      desiredKaraFunNext.singer_name,
+      getKaraFunSingerName(
+  desiredKaraFunNext
+),
       desiredKaraFunNext.song_title,
       'at position',
       targetPosition
@@ -2801,12 +2843,8 @@ finally {
     .replace(/\s+/g, ' ')
     .trim();
 
-const performanceSingerName = [
-  performance.singer_name?.trim(),
-  performance.duet_partner_name?.trim(),
-]
-  .filter(Boolean)
-  .join(' & ');
+const performanceSingerName =
+  getKaraFunSingerName(performance);
 
     const performanceAlreadyInKaraFun =
   karafunQueueItems.some(
@@ -3194,42 +3232,21 @@ async function moveSingerSong(
 
   if (!accountId) return;
 
-  const selectedRound =
-    selectedPerformance.round || 1;
+    const { error: swapError } =
+    await supabase.rpc(
+      'swap_singer_performance_rounds',
+      {
+        p_event_id: eventId,
+        p_first_id:
+          selectedPerformance.id,
+        p_second_id:
+          targetPerformance.id,
+      }
+    );
 
-  const targetRound =
-    targetPerformance.round || 1;
-
-  const [
-    selectedUpdate,
-    targetUpdate,
-  ] = await Promise.all([
-    supabase
-      .from('performances')
-      .update({
-        round: targetRound,
-      })
-      .eq('id', selectedPerformance.id)
-      .eq('event_id', eventId)
-      .eq('account_id', accountId),
-
-    supabase
-      .from('performances')
-      .update({
-        round: selectedRound,
-      })
-      .eq('id', targetPerformance.id)
-      .eq('event_id', eventId)
-      .eq('account_id', accountId),
-  ]);
-
-  const updateError =
-    selectedUpdate.error ||
-    targetUpdate.error;
-
-  if (updateError) {
+  if (swapError) {
     alert(
-      updateError.message ||
+      swapError.message ||
         'Unable to reorder these songs.'
     );
     return;

@@ -2739,10 +2739,22 @@ function openCompetitionSong() {
   setSongSheetOpen(true);
 }
 
-  async function moveMySong(
+    async function moveMySong(
     performanceIndex: number,
     direction: 'earlier' | 'later'
   ) {
+    /*
+     * Once a show is running, KaraFun may
+     * already have buffered upcoming songs.
+     * The host can safely manage live changes.
+     */
+    if (event?.current_performance_id) {
+      setMessage(
+        'Song order can only be changed before the show starts. Ask the host if you need help.'
+      );
+      return;
+    }
+
     const targetIndex =
       direction === 'earlier'
         ? performanceIndex - 1
@@ -2761,55 +2773,23 @@ function openCompetitionSong() {
       return;
     }
 
-    if (
-      performance.id ===
-        event?.current_performance_id ||
-      targetPerformance.id ===
-        event?.current_performance_id
-    ) {
-      setMessage(
-        'The song currently being performed cannot be reordered.'
-      );
-      return;
-    }
-
-    const performanceRound =
-      performance.round || 1;
-
-    const targetRound =
-      targetPerformance.round || 1;
-
     setSubmitting(true);
     setMessage('');
 
-    const [
-      performanceUpdate,
-      targetUpdate,
-    ] = await Promise.all([
-      supabase
-        .from('performances')
-        .update({
-          round: targetRound,
-        })
-        .eq('id', performance.id)
-        .eq('event_id', eventId),
+    const { error: swapError } =
+      await supabase.rpc(
+        'swap_singer_performance_rounds',
+        {
+          p_event_id: eventId,
+          p_first_id: performance.id,
+          p_second_id:
+            targetPerformance.id,
+        }
+      );
 
-      supabase
-        .from('performances')
-        .update({
-          round: performanceRound,
-        })
-        .eq('id', targetPerformance.id)
-        .eq('event_id', eventId),
-    ]);
-
-    const updateError =
-      performanceUpdate.error ||
-      targetUpdate.error;
-
-    if (updateError) {
+    if (swapError) {
       setMessage(
-        updateError.message ||
+        swapError.message ||
           'We could not reorder your songs.'
       );
 
