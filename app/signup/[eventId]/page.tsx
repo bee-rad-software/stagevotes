@@ -117,6 +117,9 @@ export default function SignupPage() {
   const [singerName, setSingerName] = useState('');
   const [savedSingerName, setSavedSingerName] = useState('');
 
+   const [isDuet, setIsDuet] =
+    useState(false);
+
   const [
     duetPartnerName,
     setDuetPartnerName,
@@ -2151,6 +2154,16 @@ return false;
       return;
     }
 
+        if (
+      isDuet &&
+      !duetPartnerName.trim()
+    ) {
+      setPickerError(
+        'Please enter your duet partner’s name.'
+      );
+      return;
+    }
+
     if (!event?.account_id) {
       setMessage(
         'The event is still loading. Please try again.'
@@ -2271,8 +2284,10 @@ if (singerOriginalOrder !== null) {
           account_id: event.account_id,
           singer_name: singerName.trim(),
 
-          duet_partner_name:
-            duetPartnerName.trim() || null,
+                    duet_partner_name:
+            isDuet
+              ? duetPartnerName.trim()
+              : null,
 
           song_title: song.title.trim(),
           artist: song.artist.trim(),
@@ -2448,6 +2463,7 @@ device_id: deviceId,
 
       setSingerName(cleanName);
       setSavedSingerName(cleanName);
+      setIsDuet(false);
       setDuetPartnerName('');
       setNotifiedOnDeck(false);
       setNotifiedCurrent(false);
@@ -3556,7 +3572,7 @@ currentArtist={
         onClose={closeSongSheet}
       >
 
-                {!editingPerformanceId && (
+                      {!editingPerformanceId && (
           <div
             style={{
               marginBottom: 16,
@@ -3569,38 +3585,72 @@ currentArtist={
             }}
           >
             <label
-              htmlFor="duet-partner-name"
+              htmlFor="is-duet"
               style={{
-                display: 'grid',
-                gap: 7,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
                 color: '#e2e8f0',
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 800,
+                cursor: 'pointer',
               }}
             >
-              Duet partner
-              <span
+              <input
+                id="is-duet"
+                type="checkbox"
+                checked={isDuet}
+                onChange={(event) => {
+                  const checked =
+                    event.target.checked;
+
+                  setIsDuet(checked);
+
+                  if (!checked) {
+                    setDuetPartnerName('');
+                  }
+                }}
                 style={{
-                  color: '#94a3b8',
-                  fontSize: 11,
-                  fontWeight: 500,
+                  width: 22,
+                  height: 22,
+                  accentColor: '#38bdf8',
+                  cursor: 'pointer',
+                }}
+              />
+
+              <span>
+                This is a duet
+              </span>
+            </label>
+
+            {isDuet && (
+              <label
+                htmlFor="duet-partner-name"
+                style={{
+                  display: 'grid',
+                  gap: 7,
+                  marginTop: 14,
+                  color: '#e2e8f0',
+                  fontSize: 13,
+                  fontWeight: 800,
                 }}
               >
-                Optional—leave blank for a solo
-              </span>
+                Duet partner’s name
 
-              <input
-                id="duet-partner-name"
-                value={duetPartnerName}
-                onChange={(event) =>
-                  setDuetPartnerName(
-                    event.target.value
-                  )
-                }
-                placeholder="Enter your partner’s name"
-                autoComplete="off"
-              />
-            </label>
+                <input
+                  id="duet-partner-name"
+                  value={duetPartnerName}
+                  onChange={(event) =>
+                    setDuetPartnerName(
+                      event.target.value
+                    )
+                  }
+                  placeholder="Enter your partner’s name"
+                  autoComplete="off"
+                  autoFocus
+                />
+              </label>
+            )}
           </div>
         )}
        
