@@ -35,6 +35,7 @@ export type PerformanceRow = {
   account_id: string;
   event_id: string;
   singer_name: string;
+  duet_partner_name?: string | null;
   song_title: string;
   artist: string | null;
   queue_order: number;

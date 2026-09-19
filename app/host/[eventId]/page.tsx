@@ -63,6 +63,10 @@ export default function HostPage() {
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
   const [singerName, setSingerName] = useState('');
+  const [
+    duetPartnerName,
+    setDuetPartnerName,
+  ] = useState('');
   const [songTitle, setSongTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [pickerSongs, setPickerSongs] =
@@ -98,6 +102,7 @@ const [
   const [singerView, setSingerView] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 const [editSingerName, setEditSingerName] = useState('');
+const [editDuetPartnerName, setEditDuetPartnerName] = useState('');
 const [editSongTitle, setEditSongTitle] = useState('');
 const [editArtist, setEditArtist] = useState('');
 const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
@@ -1211,7 +1216,11 @@ if (!accountId) return false;
 const { error } = await supabase.from('performances').insert({
   event_id: eventId,
   account_id: accountId,
-  singer_name: singerName.trim(),
+    singer_name: singerName.trim(),
+
+  duet_partner_name:
+    duetPartnerName.trim() || null,
+
   song_title: songTitle.trim(),
   artist: artist.trim(),
 
@@ -1238,6 +1247,7 @@ if (error) {
 }
 
     setSingerName('');
+    setDuetPartnerName('');
     setSongTitle('');
     setArtist('');
     setPickerSongs([]);
@@ -2791,13 +2801,20 @@ finally {
     .replace(/\s+/g, ' ')
     .trim();
 
-const performanceAlreadyInKaraFun =
+const performanceSingerName = [
+  performance.singer_name?.trim(),
+  performance.duet_partner_name?.trim(),
+]
+  .filter(Boolean)
+  .join(' & ');
+
+    const performanceAlreadyInKaraFun =
   karafunQueueItems.some(
     (item: any) =>
       normalizeKaraFunText(item.singer) ===
         normalizeKaraFunText(
-          performance.singer_name
-        ) &&
+  performanceSingerName
+) &&
       normalizeKaraFunText(item.title) ===
         normalizeKaraFunText(
           performance.song_title
@@ -2827,7 +2844,7 @@ karafunSendingPerformanceIdsRef.current.add(
     return;
   }
 
-  const singer = performance.singer_name?.trim();
+    const singer = performanceSingerName;
   const title = performance.song_title?.trim();
   const performanceArtist =
     performance.artist?.trim() || '';
@@ -3059,7 +3076,12 @@ async function toggleCheckinRequired(required: boolean) {
   
   function startEditing(p: PerformanceRow) {
   setEditingId(p.id);
-  setEditSingerName(p.singer_name);
+    setEditSingerName(p.singer_name);
+
+  setEditDuetPartnerName(
+    p.duet_partner_name || ''
+  );
+
   setEditSongTitle(p.song_title);
   setEditArtist(p.artist || '');
 }
@@ -3067,6 +3089,7 @@ async function toggleCheckinRequired(required: boolean) {
 function cancelEditing() {
   setEditingId(null);
   setEditSingerName('');
+  setEditDuetPartnerName('');
   setEditSongTitle('');
   setEditArtist('');
 }
@@ -3109,6 +3132,112 @@ function useCurrentLocationForCheckin() {
   );
 }
   
+async function moveSingerSong(
+  performanceId: string,
+  direction: 'earlier' | 'later'
+) {
+  const selectedPerformance =
+    rotatedQueue.find(
+      (performance) =>
+        performance.id === performanceId
+    );
+
+  if (!selectedPerformance) {
+    alert('Performance not found.');
+    return;
+  }
+
+  const singerIdentity =
+    getRotationIdentity(
+      selectedPerformance
+    );
+
+  const singerSongs =
+    rotatedQueue.filter(
+      (performance) =>
+        getRotationIdentity(
+          performance
+        ) === singerIdentity
+    );
+
+  const selectedIndex =
+    singerSongs.findIndex(
+      (performance) =>
+        performance.id === performanceId
+    );
+
+  const targetIndex =
+    direction === 'earlier'
+      ? selectedIndex - 1
+      : selectedIndex + 1;
+
+  const targetPerformance =
+    singerSongs[targetIndex];
+
+  if (!targetPerformance) {
+    return;
+  }
+
+  if (
+    performanceId ===
+      event?.current_performance_id ||
+    targetPerformance.id ===
+      event?.current_performance_id
+  ) {
+    alert(
+      'The currently performing song cannot be reordered.'
+    );
+    return;
+  }
+
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return;
+
+  const selectedRound =
+    selectedPerformance.round || 1;
+
+  const targetRound =
+    targetPerformance.round || 1;
+
+  const [
+    selectedUpdate,
+    targetUpdate,
+  ] = await Promise.all([
+    supabase
+      .from('performances')
+      .update({
+        round: targetRound,
+      })
+      .eq('id', selectedPerformance.id)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId),
+
+    supabase
+      .from('performances')
+      .update({
+        round: selectedRound,
+      })
+      .eq('id', targetPerformance.id)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId),
+  ]);
+
+  const updateError =
+    selectedUpdate.error ||
+    targetUpdate.error;
+
+  if (updateError) {
+    alert(
+      updateError.message ||
+        'Unable to reorder these songs.'
+    );
+    return;
+  }
+
+  await loadAll();
+}
+
 async function saveEdit(
   performanceId: string
 ) {
@@ -3217,7 +3346,11 @@ async function saveEdit(
   const { error: songError } =
     await supabase
       .from('performances')
-      .update({
+            .update({
+        duet_partner_name:
+          editDuetPartnerName.trim() ||
+          null,
+
         song_title: editSongTitle.trim(),
         artist: editArtist.trim(),
       })
@@ -4221,8 +4354,12 @@ const hostQueueItems: SVHostQueueItem[] =
 
     return {
       id: performance.id,
-      singerName:
+            singerName:
         performance.singer_name,
+
+      duetPartnerName:
+        performance.duet_partner_name ||
+        undefined,
 
       songTitle: needsSong
         ? 'Song Needed'
@@ -4968,7 +5105,22 @@ karafunPlayerOnline={karafunPlayerOnline}
     onStartEdit={(item) =>
       startEditing(item.performance)
     }
-    onSaveEdit={saveEdit}
+        onSaveEdit={saveEdit}
+
+    onMoveSongEarlier={(performanceId) =>
+      moveSingerSong(
+        performanceId,
+        'earlier'
+      )
+    }
+
+    onMoveSongLater={(performanceId) =>
+      moveSingerSong(
+        performanceId,
+        'later'
+      )
+    }
+
     onCancelEdit={cancelEditing}
     onChooseEditSong={() => {
     setPickerSongs([]);
@@ -5318,6 +5470,43 @@ karafunPlayerOnline={karafunPlayerOnline}
       </div>
     )}
 </div>
+
+<div>
+  <label
+    htmlFor="host-duet-partner-name"
+    style={{
+      display: 'block',
+      marginBottom: 7,
+      fontSize: 13,
+      fontWeight: 700,
+    }}
+  >
+    Duet partner
+    <span
+      style={{
+        marginLeft: 6,
+        color: '#94a3b8',
+        fontSize: 11,
+        fontWeight: 500,
+      }}
+    >
+      Optional
+    </span>
+  </label>
+
+  <input
+    id="host-duet-partner-name"
+    value={duetPartnerName}
+    onChange={(event) =>
+      setDuetPartnerName(
+        event.target.value
+      )
+    }
+    placeholder="Enter partner’s name"
+    autoComplete="off"
+  />
+</div>
+
   <label
     style={{
       display: 'block',

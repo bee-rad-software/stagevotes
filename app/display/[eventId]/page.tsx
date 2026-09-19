@@ -9,6 +9,21 @@ import {
 } from '@/lib/rotationQueue';
 
 
+function getPerformanceName(
+  performance: any
+) {
+  const singerName =
+    performance?.singer_name?.trim() ||
+    'Singer';
+
+  const partnerName =
+    performance?.duet_partner_name?.trim();
+
+  return partnerName
+    ? `${singerName} & ${partnerName}`
+    : singerName;
+}
+
 export default function DisplayPage() {
   const params = useParams();
   const eventId = params.eventId as string;
@@ -495,7 +510,7 @@ if (tiebreakerVotes.length > 0) {
         {current ? (
           <>
             <h1 style={{ fontSize: 92, margin: '28px 0 10px', textTransform: 'uppercase' }}>
-              {current.singer_name}
+              {getPerformanceName(current)}
             </h1>
 
             <div style={{ fontSize: 44, opacity: 0.95 }}>

@@ -43,10 +43,27 @@ import { CSS } from '@dnd-kit/utilities';
     .join(' ');
 }
 
+function formatPerformanceName(
+  singerName: string,
+  duetPartnerName?: string
+) {
+  const primaryName =
+    formatSingerName(singerName);
+
+  const partnerName =
+    duetPartnerName?.trim();
+
+  return partnerName
+    ? `${primaryName} & ${formatSingerName(
+        partnerName
+      )}`
+    : primaryName;
+}
 
 export type SVHostQueueItem = {
   id: string;
   singerName: string;
+  duetPartnerName?: string;
   songTitle: string;
   artist?: string;
   photoUrl?: string | null;
@@ -70,6 +87,7 @@ type Props = {
 
   editingId?: string | null;
   editSingerName?: string;
+  editDuetPartnerName?: string;
   editSongTitle?: string;
   editArtist?: string;
   
@@ -77,12 +95,24 @@ type Props = {
   onToggleSingerView?: () => void;
 
   onEditSingerName?: (value: string) => void;
+
+  onEditDuetPartnerName?: (
+    value: string
+  ) => void;
+
   onEditSongTitle?: (value: string) => void;
   onEditArtist?: (value: string) => void;
   onChooseEditSong?: () => void;
 
  onStartEdit?: (performance: SVHostQueueItem) => void;
   onSaveEdit?: (id: string) => void;
+  onMoveSongEarlier?: (
+    performanceId: string
+  ) => void;
+
+  onMoveSongLater?: (
+    performanceId: string
+  ) => void;
   onCancelEdit?: () => void;
 
   onSkip?: (id: string) => void;
@@ -278,8 +308,11 @@ const rowStyle: React.CSSProperties = {
 
         <div className="sv-host-queue-copy">
   <div className="sv-host-queue-name-line">
-    <strong className="sv-queue-singer-name">
-      {formatSingerName(item.singerName)}
+        <strong className="sv-queue-singer-name">
+      {formatPerformanceName(
+        item.singerName,
+        item.duetPartnerName
+      )}
     </strong>
 
 {item.tournamentReadiness && (
@@ -427,15 +460,19 @@ export default function SVHostQueue({
   singerView = false,
   editingId,
   editSingerName = '',
+  editDuetPartnerName = '',
   editSongTitle = '',
   editArtist = '',
   onToggleSingerView,
   onEditSingerName,
+  onEditDuetPartnerName,
   onEditSongTitle,
   onEditArtist,
   onChooseEditSong,
   onStartEdit,
   onSaveEdit,
+  onMoveSongEarlier,
+  onMoveSongLater,
   onCancelEdit,
   onSkip,
   onMoveToNextRound,
@@ -553,14 +590,20 @@ const uniqueSingerCount = singerGroups.length;
         <span className="badge">
           🎙 Now •{' '}
 {currentSinger
-  ? formatSingerName(currentSinger.singerName)
+  ? formatPerformanceName(
+      currentSinger.singerName,
+      currentSinger.duetPartnerName
+    )
   : 'Show not started'}
         </span>
 
         <span className="badge">
           ⏭ Next •{' '}
 {nextSinger
-  ? formatSingerName(nextSinger.singerName)
+  ? formatPerformanceName(
+      nextSinger.singerName,
+      nextSinger.duetPartnerName
+    )
   : 'No one waiting'}
         </span>
 
@@ -581,6 +624,58 @@ const uniqueSingerCount = singerGroups.length;
           {editSingerName}
         </h3>
       </div>
+    </div>
+
+        <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns:
+          'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 12,
+        marginBottom: 16,
+      }}
+    >
+      <label
+        style={{
+          display: 'grid',
+          gap: 7,
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        Singer name
+
+        <input
+          value={editSingerName}
+          onChange={(event) =>
+            onEditSingerName?.(
+              event.target.value
+            )
+          }
+          placeholder="Singer name"
+        />
+      </label>
+
+      <label
+        style={{
+          display: 'grid',
+          gap: 7,
+          fontSize: 13,
+          fontWeight: 700,
+        }}
+      >
+        Duet partner (optional)
+
+        <input
+          value={editDuetPartnerName}
+          onChange={(event) =>
+            onEditDuetPartnerName?.(
+              event.target.value
+            )
+          }
+          placeholder="Partner’s name"
+        />
+      </label>
     </div>
 
     <div className="sv-host-editor-song-card">
@@ -616,6 +711,27 @@ const uniqueSingerCount = singerGroups.length;
     </div>
 
     <div className="sv-host-queue-editor-actions">
+
+            <button
+        type="button"
+        className="btn-small"
+        onClick={() =>
+          onMoveSongEarlier?.(editingId)
+        }
+      >
+        ↑ Move Earlier
+      </button>
+
+      <button
+        type="button"
+        className="btn-small"
+        onClick={() =>
+          onMoveSongLater?.(editingId)
+        }
+      >
+        ↓ Move Later
+      </button>
+
       <button
         type="button"
         className="btn-small primary"

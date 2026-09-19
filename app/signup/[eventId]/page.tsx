@@ -53,6 +53,7 @@ type Performance = {
   event_id: string;
   account_id?: string | null;
   singer_name: string;
+  duet_partner_name?: string | null;
   song_title: string;
   artist?: string | null;
   queue_order?: number | null;
@@ -115,6 +116,11 @@ export default function SignupPage() {
 
   const [singerName, setSingerName] = useState('');
   const [savedSingerName, setSavedSingerName] = useState('');
+
+  const [
+    duetPartnerName,
+    setDuetPartnerName,
+  ] = useState('');
 
   const [singerProfile, setSingerProfile] =
     useState<SingerProfile | null>(null);
@@ -2264,6 +2270,10 @@ if (singerOriginalOrder !== null) {
           event_id: eventId,
           account_id: event.account_id,
           singer_name: singerName.trim(),
+
+          duet_partner_name:
+            duetPartnerName.trim() || null,
+
           song_title: song.title.trim(),
           artist: song.artist.trim(),
           karafun_song_id:
@@ -2438,6 +2448,7 @@ device_id: deviceId,
 
       setSingerName(cleanName);
       setSavedSingerName(cleanName);
+      setDuetPartnerName('');
       setNotifiedOnDeck(false);
       setNotifiedCurrent(false);
 
@@ -2728,6 +2739,94 @@ function openCompetitionSong() {
   setSongSheetOpen(true);
 }
 
+  async function moveMySong(
+    performanceIndex: number,
+    direction: 'earlier' | 'later'
+  ) {
+    const targetIndex =
+      direction === 'earlier'
+        ? performanceIndex - 1
+        : performanceIndex + 1;
+
+    const performance =
+      myPerformances[performanceIndex];
+
+    const targetPerformance =
+      myPerformances[targetIndex];
+
+    if (
+      !performance ||
+      !targetPerformance
+    ) {
+      return;
+    }
+
+    if (
+      performance.id ===
+        event?.current_performance_id ||
+      targetPerformance.id ===
+        event?.current_performance_id
+    ) {
+      setMessage(
+        'The song currently being performed cannot be reordered.'
+      );
+      return;
+    }
+
+    const performanceRound =
+      performance.round || 1;
+
+    const targetRound =
+      targetPerformance.round || 1;
+
+    setSubmitting(true);
+    setMessage('');
+
+    const [
+      performanceUpdate,
+      targetUpdate,
+    ] = await Promise.all([
+      supabase
+        .from('performances')
+        .update({
+          round: targetRound,
+        })
+        .eq('id', performance.id)
+        .eq('event_id', eventId),
+
+      supabase
+        .from('performances')
+        .update({
+          round: performanceRound,
+        })
+        .eq('id', targetPerformance.id)
+        .eq('event_id', eventId),
+    ]);
+
+    const updateError =
+      performanceUpdate.error ||
+      targetUpdate.error;
+
+    if (updateError) {
+      setMessage(
+        updateError.message ||
+          'We could not reorder your songs.'
+      );
+
+      setSubmitting(false);
+      return;
+    }
+
+    setMessage(
+      direction === 'earlier'
+        ? `"${performance.song_title}" was moved earlier.`
+        : `"${performance.song_title}" was moved later.`
+    );
+
+    await loadQueue();
+    setSubmitting(false);
+  }
+
   function openAddSong() {
     setEditingPerformanceId(null);
     setPickerSongs([]);
@@ -2756,6 +2855,7 @@ function openCompetitionSong() {
   function closeSongSheet() {
     setSongSheetOpen(false);
     setEditingPerformanceId(null);
+    setDuetPartnerName('');
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
@@ -3167,6 +3267,24 @@ currentArtist={
                     </div>
                   )}
 
+                                    {performance
+                    .duet_partner_name && (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: '#7dd3fc',
+                        fontSize: 13,
+                        fontWeight: 800,
+                      }}
+                    >
+                      🎤 Duet with{' '}
+                      {
+                        performance
+                          .duet_partner_name
+                      }
+                    </div>
+                  )}
+
                   <div className="sv-song-status">
                     {isCurrent
                       ? 'Currently Performing'
@@ -3183,6 +3301,57 @@ currentArtist={
       flexWrap: 'wrap',
     }}
   >
+
+    <button
+      type="button"
+      className="sv-change-song"
+      disabled={
+        submitting ||
+        index === 0 ||
+        myPerformances[index - 1]
+          ?.id ===
+          event?.current_performance_id
+      }
+      onClick={() =>
+        moveMySong(index, 'earlier')
+      }
+      title="Move this song earlier"
+      style={{
+        opacity:
+          index === 0 ||
+          myPerformances[index - 1]
+            ?.id ===
+            event?.current_performance_id
+            ? 0.4
+            : 1,
+      }}
+    >
+      ↑ Earlier
+    </button>
+
+    <button
+      type="button"
+      className="sv-change-song"
+      disabled={
+        submitting ||
+        index ===
+          myPerformances.length - 1
+      }
+      onClick={() =>
+        moveMySong(index, 'later')
+      }
+      title="Move this song later"
+      style={{
+        opacity:
+          index ===
+          myPerformances.length - 1
+            ? 0.4
+            : 1,
+      }}
+    >
+      ↓ Later
+    </button>
+
     <button
       type="button"
       className="sv-change-song"
@@ -3406,6 +3575,54 @@ currentArtist={
         }
         onClose={closeSongSheet}
       >
+
+                {!editingPerformanceId && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 14,
+              border:
+                '1px solid rgba(56,189,248,.22)',
+              borderRadius: 14,
+              background:
+                'rgba(14,165,233,.08)',
+            }}
+          >
+            <label
+              htmlFor="duet-partner-name"
+              style={{
+                display: 'grid',
+                gap: 7,
+                color: '#e2e8f0',
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              Duet partner
+              <span
+                style={{
+                  color: '#94a3b8',
+                  fontSize: 11,
+                  fontWeight: 500,
+                }}
+              >
+                Optional—leave blank for a solo
+              </span>
+
+              <input
+                id="duet-partner-name"
+                value={duetPartnerName}
+                onChange={(event) =>
+                  setDuetPartnerName(
+                    event.target.value
+                  )
+                }
+                placeholder="Enter your partner’s name"
+                autoComplete="off"
+              />
+            </label>
+          </div>
+        )}
        
                {pickerError && (
   <div

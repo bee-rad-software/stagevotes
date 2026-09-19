@@ -12,6 +12,21 @@ type VoteCategory = {
   category_name: string;
 };
 
+function getPerformanceName(
+  performance: any
+) {
+  const singerName =
+    performance?.singer_name?.trim() ||
+    'Singer';
+
+  const partnerName =
+    performance?.duet_partner_name?.trim();
+
+  return partnerName
+    ? `${singerName} & ${partnerName}`
+    : singerName;
+}
+
 function getDeviceId() {
   if (typeof window === 'undefined') return '';
 
@@ -286,7 +301,7 @@ const allCategoriesScored = completed === categories.length;
   {singerPhotoUrl ? (
     <img
       src={singerPhotoUrl}
-      alt={current.singer_name}
+      alt={getPerformanceName(current)}
       className={styles.performerPhoto}
     />
   ) : (
@@ -299,7 +314,7 @@ const allCategoriesScored = completed === categories.length;
         Now Performing
       </span>
 
-      <h2>{current.singer_name}</h2>
+      <h2>{getPerformanceName(current)}</h2>
 
       <p className={styles.songTitle}>
         {current.song_title}
@@ -486,7 +501,7 @@ const allCategoriesScored = completed === categories.length;
 
         <p>
           Review your scores for{' '}
-          <strong>{current.singer_name}</strong>.
+          <strong>{getPerformanceName(current)}</strong>.
         </p>
       </div>
     </div>
@@ -554,7 +569,7 @@ const allCategoriesScored = completed === categories.length;
 
             <p className={styles.ballotNote}>
               Once submitted, this ballot is locked and counts as
-one official judge score for {current.singer_name}.
+one official judge score for {getPerformanceName(current)}.
             </p>
 
             {message && (

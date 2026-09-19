@@ -192,8 +192,9 @@ export default function PeoplesChoicePage() {
     } = await supabase
       .from('performances')
       .select(`
-        id,
+                id,
         singer_name,
+        duet_partner_name,
         singer_profile_id,
         singer_profiles (
           photo_url
@@ -215,13 +216,23 @@ export default function PeoplesChoicePage() {
 
     (data || []).forEach(
       (performance: any) => {
-        const singerName =
+                const primarySingerName =
           performance.singer_name
             ?.trim();
 
-        if (!singerName) {
+        const duetPartnerName =
+          performance
+            .duet_partner_name
+            ?.trim();
+
+        if (!primarySingerName) {
           return;
         }
+
+        const singerName =
+          duetPartnerName
+            ? `${primarySingerName} & ${duetPartnerName}`
+            : primarySingerName;
 
         const profile =
           Array.isArray(
@@ -240,9 +251,12 @@ export default function PeoplesChoicePage() {
          * Fall back to the normalized name
          * for walk-up singers.
          */
-        const key =
-          performance.singer_profile_id ||
-          singerName.toLowerCase();
+               const key =
+          duetPartnerName
+            ? `duet:${primarySingerName.toLowerCase()}::${duetPartnerName.toLowerCase()}`
+            : performance
+                .singer_profile_id ||
+              primarySingerName.toLowerCase();
 
         const existing =
           performerMap.get(key);

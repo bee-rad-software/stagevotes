@@ -123,7 +123,22 @@ const upcoming = activeQueue
   .filter((p) => p.id !== event?.current_performance_id)
   .slice(0, 5);
 
-function SingerAvatar({
+function getPerformanceName(
+  performance
+) {
+  const singerName =
+    performance?.singer_name?.trim() ||
+    'Waiting';
+
+  const partnerName =
+    performance?.duet_partner_name?.trim();
+
+  return partnerName
+    ? `${singerName} & ${partnerName}`
+    : singerName;
+}
+
+  function SingerAvatar({
   performance,
   size = 48,
 }) {
@@ -339,8 +354,9 @@ function SingerAvatar({
               }}
               className="kf-singer"
             >
-              {current?.singer_name ||
-                'Waiting'}
+                            {getPerformanceName(
+                current
+              )}
             </motion.h1>
 
             {current?.song_title && (
@@ -427,8 +443,10 @@ function SingerAvatar({
 
                     <div className="kf-queue-copy">
                       <div className="kf-queue-singer">
-                        {
-                          performance.singer_name
+                                                {
+                          getPerformanceName(
+                            performance
+                          )
                         }
                       </div>
 
