@@ -2762,6 +2762,73 @@ function openCompetitionSong() {
     setPickerError('');
   }
 
+    async function updateSingerNameForTonight() {
+    const currentName = (
+      savedSingerName ||
+      singerName
+    ).trim();
+
+    const correctedName = window.prompt(
+      'Enter the correct name for tonight:',
+      currentName
+    )?.trim();
+
+    if (
+      !correctedName ||
+      correctedName === currentName
+    ) {
+      return;
+    }
+
+    const performanceIds =
+      myPerformances.map(
+        (performance) => performance.id
+      );
+
+    if (performanceIds.length === 0) {
+      setMessage(
+        'We could not find your songs tonight.'
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage('');
+
+    const { error } = await supabase
+      .from('performances')
+      .update({
+        singer_name: correctedName,
+      })
+      .in('id', performanceIds)
+      .eq('event_id', eventId);
+
+    if (error) {
+      setMessage(
+        error.message ||
+          'We could not update your name.'
+      );
+      setSubmitting(false);
+      return;
+    }
+
+    window.localStorage.setItem(
+      'karavote_singer_name',
+      correctedName
+    );
+
+    setSingerName(correctedName);
+    setSavedSingerName(correctedName);
+
+    await loadQueue();
+
+    setMessage(
+      `Your name has been updated to ${correctedName}.`
+    );
+
+    setSubmitting(false);
+  }
+
   const venueName =
     event?.venue_name ||
     event?.venue ||
@@ -2820,6 +2887,34 @@ function openCompetitionSong() {
         >
           <Trophy size={18} />
           Open My Stage
+        </button>
+      )}
+
+            {hasJoined && (
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={
+            updateSingerNameForTonight
+          }
+          style={{
+            width: '100%',
+            margin: '0 0 18px',
+            padding: '13px 18px',
+            border:
+              '1px solid rgba(148,163,184,.25)',
+            borderRadius: 16,
+            color: '#cbd5e1',
+            background:
+              'rgba(15,23,42,.72)',
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: submitting
+              ? 'not-allowed'
+              : 'pointer',
+          }}
+        >
+          ✏️ Correct My Name
         </button>
       )}
 

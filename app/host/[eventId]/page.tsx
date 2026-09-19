@@ -3109,28 +3109,127 @@ function useCurrentLocationForCheckin() {
   );
 }
   
-async function saveEdit(performanceId: string) {
-  if (!editSingerName.trim() || !editSongTitle.trim()) {
-    alert('Singer name and song title are required.');
+async function saveEdit(
+  performanceId: string
+) {
+  const correctedSingerName =
+    editSingerName.trim();
+
+  if (
+    !correctedSingerName ||
+    !editSongTitle.trim()
+  ) {
+    alert(
+      'Singer name and song title are required.'
+    );
     return;
   }
 
   const accountId = await getMyAccountId();
-if (!accountId) return;
 
-const { error } = await supabase
-  .from('performances')
-  .update({
-    singer_name: editSingerName.trim(),
-    song_title: editSongTitle.trim(),
-    artist: editArtist.trim()
-  })
-  .eq('id', performanceId)
-  .eq('account_id', accountId);
+  if (!accountId) return;
 
-  if (error) {
-    alert(error.message);
-    return false;
+  const {
+    data: targetPerformance,
+    error: targetError,
+  } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      singer_profile_id,
+      device_id
+    `)
+    .eq('id', performanceId)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId)
+    .single();
+
+  if (targetError || !targetPerformance) {
+    alert(
+      targetError?.message ||
+        'Performance not found.'
+    );
+    return;
+  }
+
+  /*
+   * Find every song belonging to this singer
+   * during the current show. Profile ID is the
+   * strongest identity, followed by device ID,
+   * with the original name as the legacy fallback.
+   */
+  const {
+    data: eventPerformances,
+    error: eventPerformancesError,
+  } = await supabase
+    .from('performances')
+    .select(`
+      id,
+      singer_name,
+      singer_profile_id,
+      device_id
+    `)
+    .eq('event_id', eventId)
+    .eq('account_id', accountId);
+
+  if (eventPerformancesError) {
+    alert(eventPerformancesError.message);
+    return;
+  }
+
+  const targetIdentity =
+    getRotationIdentity(targetPerformance);
+
+  const singerPerformanceIds =
+    (eventPerformances || [])
+      .filter(
+        (performance) =>
+          getRotationIdentity(performance) ===
+          targetIdentity
+      )
+      .map((performance) => performance.id);
+
+  if (singerPerformanceIds.length === 0) {
+    singerPerformanceIds.push(performanceId);
+  }
+
+  const { error: renameError } =
+    await supabase
+      .from('performances')
+      .update({
+        singer_name: correctedSingerName,
+      })
+      .in('id', singerPerformanceIds)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (renameError) {
+    alert(renameError.message);
+    return;
+  }
+
+  /*
+   * The singer rename applies to every one of
+   * their songs. Song and artist edits apply only
+   * to the selected performance.
+   */
+  const { error: songError } =
+    await supabase
+      .from('performances')
+      .update({
+        song_title: editSongTitle.trim(),
+        artist: editArtist.trim(),
+      })
+      .eq('id', performanceId)
+      .eq('event_id', eventId)
+      .eq('account_id', accountId);
+
+  if (songError) {
+    alert(
+      `The singer was renamed, but the song could not be updated: ${songError.message}`
+    );
+    return;
   }
 
   cancelEditing();
