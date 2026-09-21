@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 
 export type SVSongStatus = 'available' | 'queued' | 'favorite';
@@ -27,6 +28,7 @@ type Props = {
   onSearch?: (searchText: string) => void;
   onSurpriseMe?: () => void;
   loading?: boolean;
+  alertContent?: ReactNode;
 };
 
 export default function SVSongPicker({
@@ -36,6 +38,7 @@ export default function SVSongPicker({
   onSearch,
   onSurpriseMe,
   loading = false,
+  alertContent,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -138,6 +141,15 @@ return songs;
     </button>
   )}
 </div>
+
+{alertContent && (
+  <div
+    aria-live="polite"
+    style={{ marginTop: 10 }}
+  >
+    {alertContent}
+  </div>
+)}
 
 {!searching && onSurpriseMe && (
   <div className="sv-brave-card">
