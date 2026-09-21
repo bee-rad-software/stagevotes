@@ -76,6 +76,7 @@ type EventData = {
   competition_mode?: string | null;
   tournament_event_id?: string | null;
   signups_open?: boolean | null;
+  additional_songs_open?: boolean | null;
   is_show_ended?: boolean | null;
   judging_enabled?: boolean | null;
 };
@@ -1208,6 +1209,12 @@ return Boolean(
   const signupsAreOpen =
   event?.signups_open !== false;
 
+  const additionalSongsAreOpen =
+  event?.additional_songs_open !== false;
+
+  const additionalSongsPaused =
+  hasJoined && !additionalSongsAreOpen;
+
   const hasReachedSongLimit =
   !isTournament &&
   myPerformances.length >=
@@ -2269,6 +2276,15 @@ return false;
   closeSongSheet();
   return;
 }
+
+    if (additionalSongsPaused) {
+      setMessage(
+        'The host has paused additional songs. Your songs already in the queue are unchanged.'
+      );
+
+      closeSongSheet();
+      return;
+    }
     
     if (hasReachedSongLimit) {
   setMessage(
@@ -3627,16 +3643,19 @@ currentArtist={
       disabled={
         submitting ||
         !signupsAreOpen ||
+        additionalSongsPaused ||
         hasReachedSongLimit
       }
       style={{
         opacity:
           !signupsAreOpen ||
+          additionalSongsPaused ||
           hasReachedSongLimit
             ? 0.55
             : 1,
         cursor:
           !signupsAreOpen ||
+          additionalSongsPaused ||
           hasReachedSongLimit
             ? 'not-allowed'
             : 'pointer',
@@ -3646,6 +3665,8 @@ currentArtist={
 
       {!signupsAreOpen
         ? 'Signups closed'
+        : additionalSongsPaused
+          ? 'Additional songs paused'
         : hasReachedSongLimit
           ? 'Queue limit reached'
           : myPerformances.length > 0
@@ -3665,6 +3686,19 @@ currentArtist={
         Signups are closed for tonight.
         You can still change or remove songs
         already in your queue.
+      </p>
+    ) : additionalSongsPaused ? (
+      <p
+        className="sv-mobile-helper"
+        style={{
+          marginTop: 10,
+          textAlign: 'center',
+          color: '#fde68a',
+        }}
+      >
+        The host has paused additional songs
+        to keep tonight&apos;s show on schedule.
+        Your current songs are still in the queue.
       </p>
     ) : hasReachedSongLimit ? (
       <p
