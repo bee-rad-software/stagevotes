@@ -113,7 +113,9 @@ const [
   showManualSongFields,
   setShowManualSongFields,
 ] = useState(false);
-  const [singerView, setSingerView] = useState(false);
+const [singerView, setSingerView] = useState(false);
+const [singerRecoveryRequests, setSingerRecoveryRequests] =
+  useState<any[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 const [editSingerName, setEditSingerName] = useState('');
 const [editDuetPartnerName, setEditDuetPartnerName] = useState('');
@@ -473,7 +475,17 @@ checkAuth();
   'postgres_changes',
   { event: '*', schema: 'public', table: 'event_checkins', filter: `event_id=eq.${eventId}` },
   loadCheckins
-) 
+)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'singer_recovery_requests',
+          filter: `event_id=eq.${eventId}`,
+        },
+        loadSingerRecoveryRequests
+      )
       .subscribe();
 
 const interval = setInterval(() => {
@@ -501,7 +513,109 @@ async function loadAll() {
     loadCategories(),
     loadCheckins(),
     loadRememberedSingerNames(),
+    loadSingerRecoveryRequests(),
   ]);
+}
+
+async function loadSingerRecoveryRequests() {
+  const { data, error } = await supabase
+    .from('singer_recovery_requests')
+    .select(`
+      id,
+      requested_name,
+      requested_device_id,
+      singer_profile_id,
+      status,
+      created_at
+    `)
+    .eq('event_id', eventId)
+    .eq('status', 'pending')
+    .order('created_at', {
+      ascending: true,
+    });
+
+  if (error) {
+    // The migration may not have been applied yet.
+    console.debug(
+      'Singer recovery requests unavailable:',
+      error.message
+    );
+    return;
+  }
+
+  setSingerRecoveryRequests(data || []);
+}
+
+async function resolveSingerRecovery(
+  request: any,
+  approve: boolean
+) {
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return;
+
+  if (approve) {
+    const normalizedName = request.requested_name
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+
+    const matchingIds = performances
+      .filter(
+        (performance) =>
+          performance.singer_name
+            .trim()
+            .replace(/\s+/g, ' ')
+            .toLowerCase() === normalizedName
+      )
+      .map((performance) => performance.id);
+
+    if (matchingIds.length === 0) {
+      alert(
+        `No songs were found for ${request.requested_name}.`
+      );
+      return;
+    }
+
+    const identityUpdate: Record<string, string> = {
+      device_id: request.requested_device_id,
+    };
+
+    if (request.singer_profile_id) {
+      identityUpdate.singer_profile_id =
+        request.singer_profile_id;
+    }
+
+    const { error: performanceError } =
+      await supabase
+        .from('performances')
+        .update(identityUpdate)
+        .in('id', matchingIds)
+        .eq('event_id', eventId)
+        .eq('account_id', accountId);
+
+    if (performanceError) {
+      alert(performanceError.message);
+      return;
+    }
+  }
+
+  const { error } = await supabase
+    .from('singer_recovery_requests')
+    .update({
+      status: approve ? 'approved' : 'rejected',
+      resolved_at: new Date().toISOString(),
+    })
+    .eq('id', request.id)
+    .eq('event_id', eventId);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  await loadSingerRecoveryRequests();
+  await loadPerformances();
 }
 
 async function loadCheckins() {
@@ -4499,6 +4613,20 @@ const hostQueueItems: SVHostQueueItem[] =
     };
   });
 
+const estimatedQueueMinutes =
+  hostQueueItems.length * 4;
+
+const projectedQueueEndTime =
+  estimatedQueueMinutes > 0
+    ? new Date(
+        Date.now() +
+          estimatedQueueMinutes * 60_000
+      ).toLocaleTimeString([], {
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : '';
+
 const fairQueue = useMemo(() => {
   const sorted = [...performances].sort((a, b) => a.queue_order - b.queue_order);
   const singerCounts = new Map<string, number>();
@@ -5115,6 +5243,84 @@ account?.subscription_status &&
   </div>
 </section>
 
+{singerRecoveryRequests.length > 0 && (
+  <section
+    className="sv-card"
+    style={{
+      marginBottom: 18,
+      border:
+        '1px solid rgba(249, 115, 22, 0.45)',
+      background:
+        'linear-gradient(145deg, rgba(124,45,18,.22), rgba(15,23,42,.96))',
+    }}
+  >
+    <div className="sv-mobile-kicker">
+      Singer Access Requests
+    </div>
+
+    <h2 style={{ margin: '6px 0 12px' }}>
+      {singerRecoveryRequests.length}{' '}
+      {singerRecoveryRequests.length === 1
+        ? 'singer needs'
+        : 'singers need'}{' '}
+      help reconnecting
+    </h2>
+
+    <div style={{ display: 'grid', gap: 10 }}>
+      {singerRecoveryRequests.map((request) => (
+        <div
+          key={request.id}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+            padding: 12,
+            borderRadius: 12,
+            background: 'rgba(2, 8, 23, .5)',
+          }}
+        >
+          <div>
+            <strong>{request.requested_name}</strong>
+            <div
+              style={{
+                marginTop: 3,
+                color: '#94a3b8',
+                fontSize: 13,
+              }}
+            >
+              New browser wants access to this singer’s songs
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              className="btn-small"
+              onClick={() =>
+                resolveSingerRecovery(request, false)
+              }
+            >
+              Deny
+            </button>
+
+            <button
+              type="button"
+              className="btn-small primary"
+              onClick={() =>
+                resolveSingerRecovery(request, true)
+              }
+            >
+              Approve & Restore
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
 <SVMissionControl
   onStartShow={startShow}
   onEndShow={endShow}
@@ -5202,6 +5408,8 @@ karafunPlayerOnline={karafunPlayerOnline}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
+    estimatedQueueMinutes={estimatedQueueMinutes}
+    projectedEndTime={projectedQueueEndTime}
     singerView={singerView}
     editingId={editingId}
     editSingerName={editSingerName}
