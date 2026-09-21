@@ -1855,6 +1855,77 @@ background:rgba(56,189,248,.22);
   transform: translateY(-1px);
 }
 
+.sv-ai-song-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(56, 189, 248, 0.2), transparent 36%),
+    rgba(15, 23, 42, 0.92);
+}
+
+.sv-ai-song-card-header {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.sv-ai-song-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.13);
+  font-size: 23px;
+}
+
+.sv-ai-song-copy h3 {
+  margin: 4px 0;
+  font-size: 18px;
+}
+
+.sv-ai-song-copy p {
+  margin: 0;
+  color: var(--sv-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sv-ai-song-button {
+  width: 100%;
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 14px;
+  background: var(--sv-blue);
+  color: #04111f;
+  padding: 12px 14px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.sv-ai-song-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.sv-ai-song-message {
+  border-radius: 12px;
+  background: rgba(56, 189, 248, 0.09);
+  color: #bae6fd;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sv-ai-song-results {
+  display: grid;
+  gap: 10px;
+}
+
 .sv-song-add-button,
 .sv-song-submit-button {
   width: 100%;
