@@ -13,6 +13,7 @@ export type SVSongOption = {
   id?: string | number;
   note?: string;
   karafunSongId?: number | null;
+  selectionSource?: 'search' | 'surprise_me' | 'ai_recommendation';
 };
 
 export type SVSongSection = {
@@ -29,6 +30,10 @@ type Props = {
   onSurpriseMe?: () => void;
   loading?: boolean;
   alertContent?: ReactNode;
+  recommendations?: SVSongOption[];
+  recommendationsLoading?: boolean;
+  recommendationsMessage?: string;
+  onGenerateRecommendations?: () => void;
 };
 
 export default function SVSongPicker({
@@ -39,6 +44,10 @@ export default function SVSongPicker({
   onSurpriseMe,
   loading = false,
   alertContent,
+  recommendations = [],
+  recommendationsLoading = false,
+  recommendationsMessage = '',
+  onGenerateRecommendations,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -171,6 +180,44 @@ return songs;
       Surprise Me
     </button>
   </div>
+)}
+
+{!searching && onGenerateRecommendations && (
+  <section className="sv-ai-song-card">
+    <div className="sv-ai-song-card-header">
+      <div className="sv-ai-song-icon">✨</div>
+      <div className="sv-ai-song-copy">
+        <div className="sv-mobile-kicker">For your voice &amp; style</div>
+        <h3>AI song recommendations</h3>
+        <p>Fresh ideas based on songs you’ve completed with your StageVotes account.</p>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      className="sv-ai-song-button"
+      onClick={onGenerateRecommendations}
+      disabled={recommendationsLoading}
+    >
+      {recommendationsLoading
+        ? 'Finding your songs…'
+        : recommendations.length > 0
+          ? 'Refresh recommendations'
+          : 'Recommend songs for me'}
+    </button>
+
+    {recommendationsMessage && (
+      <div className="sv-ai-song-message" aria-live="polite">
+        {recommendationsMessage}
+      </div>
+    )}
+
+    {recommendations.length > 0 && (
+      <div className="sv-ai-song-results">
+        {recommendations.map(renderSong)}
+      </div>
+    )}
+  </section>
 )}
 
 <div className="sv-picker-section-title">
