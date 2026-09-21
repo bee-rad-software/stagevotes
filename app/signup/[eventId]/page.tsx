@@ -33,6 +33,9 @@ import SVFirstPerformanceCelebration from '@/components/singer/SVFirstPerformanc
 import {
   buildRotationQueue,
 } from '@/lib/rotationQueue';
+import type {
+  AISongRecommendationsResponse,
+} from '@/lib/aiSongRecommendations';
 
 type QueueState =
   | 'waiting'
@@ -204,6 +207,15 @@ useEffect(() => {
 
   const [pickerLoading, setPickerLoading] =
     useState(false);
+
+  const [aiRecommendations, setAIRecommendations] =
+    useState<SVSongOption[]>([]);
+
+  const [aiRecommendationsLoading, setAIRecommendationsLoading] =
+    useState(false);
+
+  const [aiRecommendationsMessage, setAIRecommendationsMessage] =
+    useState('');
 
   const [
   karafunChannel,
@@ -1630,6 +1642,73 @@ const needsCompetitionSong =
   }
 }
 
+  async function generateAIRecommendations() {
+    if (!singerProfile?.id) return;
+
+    setAIRecommendationsLoading(true);
+    setAIRecommendationsMessage('');
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setAIRecommendationsMessage(
+          'Sign in again to get recommendations from your song history.'
+        );
+        return;
+      }
+
+      const response = await fetch('/api/singer/song-recommendations', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ eventId }),
+      });
+
+      const payload = (await response.json()) as
+        | AISongRecommendationsResponse
+        | { error?: string };
+
+      if (!response.ok || !('recommendations' in payload)) {
+        throw new Error(
+          'error' in payload && payload.error
+            ? payload.error
+            : 'We could not create recommendations right now.'
+        );
+      }
+
+      setAIRecommendations(
+        payload.recommendations.map((song) => ({
+          id: song.id,
+          title: song.title,
+          artist: song.artist,
+          status: 'available',
+          note: song.reason,
+          karafunSongId: song.karafunSongId ?? null,
+          selectionSource: 'ai_recommendation',
+        }))
+      );
+      setAIRecommendationsMessage(
+        `Based on ${payload.historyCount} song${
+          payload.historyCount === 1 ? '' : 's'
+        } from your performance history.`
+      );
+    } catch (error) {
+      setAIRecommendations([]);
+      setAIRecommendationsMessage(
+        error instanceof Error
+          ? error.message
+          : 'We could not create recommendations right now.'
+      );
+    } finally {
+      setAIRecommendationsLoading(false);
+    }
+  }
+
   async function checkDuplicateSong(
   songTitle: string
 ) {
@@ -2466,10 +2545,11 @@ device_id: deviceId,
     submission_id: submissionId,
 
   selection_source:
-    song.note ===
+    song.selectionSource ||
+    (song.note ===
     'StageVotes picked this one for you'
       ? 'surprise_me'
-      : 'search',
+      : 'search'),
         });
 
      if (error) {
@@ -3907,6 +3987,14 @@ currentArtist={
           songs={pickerSongs}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
+          recommendations={aiRecommendations}
+          recommendationsLoading={aiRecommendationsLoading}
+          recommendationsMessage={aiRecommendationsMessage}
+          onGenerateRecommendations={
+            singerProfile?.id
+              ? generateAIRecommendations
+              : undefined
+          }
           loading={pickerLoading}
           onSelect={handleSongSelection}
           alertContent={
