@@ -83,6 +83,8 @@ type Props = {
   items: SVHostQueueItem[];
 
   completedCount?: number;
+  estimatedQueueMinutes?: number;
+  projectedEndTime?: string;
   singerView?: boolean;
 
   editingId?: string | null;
@@ -457,6 +459,8 @@ const rowStyle: React.CSSProperties = {
 export default function SVHostQueue({
   items,
   completedCount = 0,
+  estimatedQueueMinutes = 0,
+  projectedEndTime,
   singerView = false,
   editingId,
   editSingerName = '',
@@ -609,6 +613,19 @@ const uniqueSingerCount = singerGroups.length;
 
         <span className="badge">
           ✅ Completed • {completedCount}
+        </span>
+
+        <span
+          className="badge"
+          title="Estimated at about four minutes per remaining song"
+        >
+          ⏱ Queue • {estimatedQueueMinutes}{' '}
+          {estimatedQueueMinutes === 1
+            ? 'minute'
+            : 'minutes'}
+          {projectedEndTime
+            ? ` • Ends ~${projectedEndTime}`
+            : ''}
         </span>
       </div>
 
