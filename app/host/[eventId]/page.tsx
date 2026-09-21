@@ -32,6 +32,12 @@ import {
 import {
   buildRotationQueue,
 } from '@/lib/rotationQueue';
+import {
+  buildHostIQRecommendation,
+  calculateAverageSongMinutes,
+  formatHostTime,
+} from '@/lib/hostIQ';
+import type { HostIQAction } from '@/lib/hostIQ';
 
 import {
   DndContext,
@@ -146,7 +152,6 @@ const [staticJudgeQr, setStaticJudgeQr] = useState(false);
 const [staticPeopleQr, setStaticPeopleQr] = useState(false);
 const [advancingSinger, setAdvancingSinger] =
   useState(false);
-const ENABLE_HOST_IQ = false;
 const [showFirstWelcome, setShowFirstWelcome] =
   useState(false);
 const [karafunChannel, setKarafunChannel] = useState('');
@@ -4421,6 +4426,82 @@ async function toggleSignups() {
   await loadAll();
 }
 
+async function updateHostIQControls(
+  updates: Partial<
+    Pick<
+      EventRow,
+      | 'host_target_end_time'
+      | 'host_iq_buffer_minutes'
+      | 'signups_open'
+      | 'additional_songs_open'
+    >
+  >
+) {
+  const accountId = await getMyAccountId();
+
+  if (!accountId) return false;
+
+  const { error } = await supabase
+    .from('events')
+    .update(updates)
+    .eq('id', eventId)
+    .eq('account_id', accountId);
+
+  if (error) {
+    alert(error.message);
+    return false;
+  }
+
+  setEvent((currentEvent) =>
+    currentEvent
+      ? { ...currentEvent, ...updates }
+      : currentEvent
+  );
+
+  return true;
+}
+
+async function saveHostIQSettings(
+  targetEndTime: string,
+  bufferMinutes: number
+) {
+  await updateHostIQControls({
+    host_target_end_time: targetEndTime,
+    host_iq_buffer_minutes: bufferMinutes,
+  });
+}
+
+async function handleHostIQAction(
+  action: Exclude<HostIQAction, null>
+) {
+  if (action === 'close_additional_songs') {
+    await updateHostIQControls({
+      additional_songs_open: false,
+    });
+    return;
+  }
+
+  if (action === 'close_all_signups') {
+    await updateHostIQControls({
+      signups_open: false,
+      additional_songs_open: false,
+    });
+    return;
+  }
+
+  await updateHostIQControls({
+    signups_open: true,
+    additional_songs_open: true,
+  });
+}
+
+async function toggleAdditionalSongs() {
+  await updateHostIQControls({
+    additional_songs_open:
+      event?.additional_songs_open === false,
+  });
+}
+
 async function toggleQrSetting(
   field: 'show_signup_qr' | 'show_voting_qr' | 'show_peoples_choice_qr' | 'show_checkin_qr',
   value: boolean
@@ -4613,8 +4694,45 @@ const hostQueueItems: SVHostQueueItem[] =
     };
   });
 
-const estimatedQueueMinutes =
-  hostQueueItems.length * 4;
+const pace = calculateAverageSongMinutes(
+  performances.filter(
+    (performance) =>
+      performance.status === 'completed'
+  )
+);
+
+const currentElapsedMinutes =
+  current &&
+  event?.current_performance_started_at
+    ? Math.max(
+        0,
+        (Date.now() -
+          new Date(
+            event.current_performance_started_at
+          ).getTime()) /
+          60_000
+      )
+    : 0;
+
+const waitingSongCount = hostQueueItems.filter(
+  (item) => item.status !== 'current'
+).length;
+
+const currentSongMinutes = current
+  ? Math.max(
+      1,
+      pace.averageMinutes -
+        currentElapsedMinutes
+    )
+  : 0;
+
+const estimatedQueueMinutes = Math.max(
+  0,
+  Math.round(
+    waitingSongCount * pace.averageMinutes +
+      currentSongMinutes
+  )
+);
 
 const projectedQueueEndTime =
   estimatedQueueMinutes > 0
@@ -4626,6 +4744,28 @@ const projectedQueueEndTime =
         minute: '2-digit',
       })
     : '';
+
+const remainingSingerCount = new Set(
+  hostQueueItems.map((item) =>
+    item.singerName.trim().toLowerCase()
+  )
+).size;
+
+const hostIQRecommendation =
+  buildHostIQRecommendation({
+    targetTime:
+      event?.host_target_end_time || '',
+    now: new Date(),
+    projectedQueueMinutes:
+      estimatedQueueMinutes,
+    averageMinutes: pace.averageMinutes,
+    bufferMinutes:
+      event?.host_iq_buffer_minutes ?? 10,
+    signupsOpen:
+      event?.signups_open !== false,
+    additionalSongsOpen:
+      event?.additional_songs_open !== false,
+  });
 
 const fairQueue = useMemo(() => {
   const sorted = [...performances].sort((a, b) => a.queue_order - b.queue_order);
@@ -4942,18 +5082,6 @@ async function handleQueueReorder(
   }
 }
 
-const hostIQ = ENABLE_HOST_IQ
-  ? [
-      {
-        id: 'duplicates',
-        title: 'Duplicate song detected',
-        message:
-          '"Tennessee Whiskey" appears twice tonight.',
-        severity: 'warning' as const,
-      },
-    ]
-  : [];
-
 if (
 account?.subscription_status &&
 !isSubscribed
@@ -5210,36 +5338,60 @@ account?.subscription_status &&
       >
         {event?.signups_open === false
           ? 'Singers cannot join or add songs. Host controls remain available.'
+          : event?.additional_songs_open === false
+          ? 'New singers can still join. Singers already in the queue cannot add another song.'
           : 'Singers can join and add songs within the venue queue limit.'}
       </p>
     </div>
 
-    <button
-      type="button"
-      onClick={toggleSignups}
-      style={{
-        padding: '11px 16px',
-        borderRadius: 10,
-        border:
-          event?.signups_open === false
-            ? '1px solid rgba(56, 189, 248, 0.55)'
-            : '1px solid rgba(239, 68, 68, 0.55)',
-        background:
-          event?.signups_open === false
-            ? 'rgba(14, 116, 144, 0.25)'
-            : 'rgba(127, 29, 29, 0.25)',
-        color:
-          event?.signups_open === false
-            ? '#7dd3fc'
-            : '#fca5a5',
-        fontWeight: 800,
-        cursor: 'pointer',
-      }}
-    >
-      {event?.signups_open === false
-        ? 'Reopen Signups'
-        : 'Close Signups'}
-    </button>
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {event?.signups_open !== false && (
+        <button
+          type="button"
+          onClick={toggleAdditionalSongs}
+          style={{
+            padding: '11px 16px',
+            borderRadius: 10,
+            border: '1px solid rgba(245, 158, 11, 0.55)',
+            background: 'rgba(120, 53, 15, 0.22)',
+            color: '#fde68a',
+            fontWeight: 800,
+            cursor: 'pointer',
+          }}
+        >
+          {event?.additional_songs_open === false
+            ? 'Allow Additional Songs'
+            : 'Pause Additional Songs'}
+        </button>
+      )}
+
+      <button
+        type="button"
+        onClick={toggleSignups}
+        style={{
+          padding: '11px 16px',
+          borderRadius: 10,
+          border:
+            event?.signups_open === false
+              ? '1px solid rgba(56, 189, 248, 0.55)'
+              : '1px solid rgba(239, 68, 68, 0.55)',
+          background:
+            event?.signups_open === false
+              ? 'rgba(14, 116, 144, 0.25)'
+              : 'rgba(127, 29, 29, 0.25)',
+          color:
+            event?.signups_open === false
+              ? '#7dd3fc'
+              : '#fca5a5',
+          fontWeight: 800,
+          cursor: 'pointer',
+        }}
+      >
+        {event?.signups_open === false
+          ? 'Reopen Signups'
+          : 'Close Signups'}
+      </button>
+    </div>
   </div>
 </section>
 
@@ -5375,9 +5527,24 @@ karafunPlayerOnline={karafunPlayerOnline}
   nextSingerName={upNext?.singer_name}
 />
 
-{ENABLE_HOST_IQ && (
-  <SVHostIQ items={hostIQ} />
-)}
+<SVHostIQ
+  targetEndTime={
+    event?.host_target_end_time || ''
+  }
+  bufferMinutes={
+    event?.host_iq_buffer_minutes ?? 10
+  }
+  averageMinutes={pace.averageMinutes}
+  isLiveEstimate={pace.isLiveEstimate}
+  sampleSize={pace.sampleSize}
+  queueMinutes={estimatedQueueMinutes}
+  projectedEndTime={projectedQueueEndTime}
+  remainingSongs={hostQueueItems.length}
+  remainingSingers={remainingSingerCount}
+  recommendation={hostIQRecommendation}
+  onSaveSettings={saveHostIQSettings}
+  onAction={handleHostIQAction}
+/>
 
 {isBrandNewEmptyShow ? (
   <SVEmptyQueueState
