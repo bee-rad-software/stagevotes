@@ -77,6 +77,7 @@ type EventData = {
   tournament_event_id?: string | null;
   signups_open?: boolean | null;
   is_show_ended?: boolean | null;
+  judging_enabled?: boolean | null;
 };
 
 const CURRENT_SHOW_KEY =
@@ -240,7 +241,15 @@ const [songConflictWarning, setSongConflictWarning] =
 ] = useState<{
   name: string;
   performanceIds: string[];
+  requiresHostApproval?: boolean;
 } | null>(null);
+
+const [recoveryRequest, setRecoveryRequest] =
+  useState<{
+    id: string;
+    name: string;
+    status: 'pending' | 'approved' | 'rejected';
+  } | null>(null);
 
   const [tipsEnabled, setTipsEnabled] =
     useState(false);
@@ -2014,6 +2023,121 @@ async function claimExistingSinger() {
   }
 }
 
+async function requestSingerRecovery() {
+  if (!claimableSinger) return;
+
+  const deviceId = getDeviceId();
+
+  if (!deviceId) {
+    setMessage(
+      'Unable to identify this browser. Please try again.'
+    );
+    return;
+  }
+
+  setSubmitting(true);
+  setMessage('');
+
+  const { data, error } = await supabase
+    .from('singer_recovery_requests')
+    .insert({
+      event_id: eventId,
+      requested_name: claimableSinger.name,
+      requested_device_id: deviceId,
+      singer_profile_id:
+        singerProfile?.id || null,
+    })
+    .select('id, status')
+    .single();
+
+  if (error || !data) {
+    setMessage(
+      error?.message ||
+        'Unable to ask the host for access.'
+    );
+    setSubmitting(false);
+    return;
+  }
+
+  const request = {
+    id: data.id,
+    name: claimableSinger.name,
+    status: data.status as
+      | 'pending'
+      | 'approved'
+      | 'rejected',
+  };
+
+  localStorage.setItem(
+    `stagevotes_recovery_${eventId}`,
+    request.id
+  );
+
+  setRecoveryRequest(request);
+  setClaimableSinger(null);
+  setSubmitting(false);
+}
+
+useEffect(() => {
+  const savedRequestId = localStorage.getItem(
+    `stagevotes_recovery_${eventId}`
+  );
+
+  if (!savedRequestId && !recoveryRequest?.id) {
+    return;
+  }
+
+  const requestId =
+    recoveryRequest?.id || savedRequestId;
+
+  async function checkRecoveryStatus() {
+    const { data } = await supabase
+      .from('singer_recovery_requests')
+      .select('id, requested_name, status')
+      .eq('id', requestId)
+      .maybeSingle();
+
+    if (!data) return;
+
+    const status = data.status as
+      | 'pending'
+      | 'approved'
+      | 'rejected';
+
+    setRecoveryRequest({
+      id: data.id,
+      name: data.requested_name,
+      status,
+    });
+
+    if (status === 'approved') {
+      localStorage.setItem(
+        'karavote_singer_name',
+        data.requested_name
+      );
+      localStorage.removeItem(
+        `stagevotes_recovery_${eventId}`
+      );
+      setSingerName(data.requested_name);
+      setSavedSingerName(data.requested_name);
+      setMessage(
+        `Welcome back, ${data.requested_name}. The host restored your songs.`
+      );
+      await loadQueue();
+      setRecoveryRequest(null);
+    }
+  }
+
+  void checkRecoveryStatus();
+
+  const timer = window.setInterval(
+    checkRecoveryStatus,
+    2500
+  );
+
+  return () => window.clearInterval(timer);
+}, [eventId, recoveryRequest?.id]);
+
  async function verifySingerNameAvailable() {
   const cleanName = singerName
     .trim()
@@ -2117,11 +2241,16 @@ async function claimExistingSinger() {
    * Same name exists, but it already belongs
    * to another identified singer.
    */
-  setClaimableSinger(null);
+  setClaimableSinger({
+    name: cleanName,
+    performanceIds:
+      matchingPerformances.map(
+        (performance) => performance.id
+      ),
+    requiresHostApproval: true,
+  });
 
-setMessage(
-  `"${cleanName}" is already signed up for this show. Please use another name or claim the existing singer if it belongs to you.`
-);
+setMessage('');
 
 closeSongSheet();
 
@@ -3127,8 +3256,9 @@ currentArtist={
 </h3>
 
 <p>
-  Did the host already add you? Claim this spot to connect
-  it to your StageVotes profile. If not, please use a unique name.
+  {claimableSinger.requiresHostApproval
+    ? 'If this is you, ask the host to reconnect this browser to your existing songs.'
+    : 'Did the host already add you? Claim this spot to connect it to your StageVotes profile. If not, please use a unique name.'}
 </p>
 
     <div
@@ -3142,9 +3272,15 @@ currentArtist={
         type="button"
         className="sv-full-button"
         disabled={submitting}
-        onClick={claimExistingSinger}
+        onClick={
+          claimableSinger.requiresHostApproval
+            ? requestSingerRecovery
+            : claimExistingSinger
+        }
       >
-        Claim My Spot
+        {claimableSinger.requiresHostApproval
+          ? 'Ask Host to Restore My Songs'
+          : 'Claim My Spot'}
       </button>
 
       <button
@@ -3160,6 +3296,55 @@ currentArtist={
         No, use another name
       </button>
     </div>
+  </section>
+)}
+
+{recoveryRequest?.status === 'pending' && (
+  <section
+    className="sv-mobile-card"
+    aria-live="polite"
+    style={{
+      border: '1px solid rgba(56, 189, 248, 0.45)',
+      textAlign: 'center',
+    }}
+  >
+    <div className="sv-mobile-kicker">
+      Waiting for host
+    </div>
+
+    <h3>Restore {recoveryRequest.name}?</h3>
+
+    <p>
+      Your request is on the host dashboard. This page
+      will reconnect automatically when they approve it.
+    </p>
+  </section>
+)}
+
+{recoveryRequest?.status === 'rejected' && (
+  <section className="sv-mobile-card">
+    <div className="sv-mobile-kicker">
+      Request not approved
+    </div>
+
+    <p>
+      Please check the stage name with the host or use a
+      different name.
+    </p>
+
+    <button
+      type="button"
+      className="sv-change-song"
+      onClick={() => {
+        localStorage.removeItem(
+          `stagevotes_recovery_${eventId}`
+        );
+        setRecoveryRequest(null);
+        setSingerName('');
+      }}
+    >
+      Try Another Name
+    </button>
   </section>
 )}
 
@@ -3537,13 +3722,34 @@ currentArtist={
 
           <button
             type="button"
+            disabled={!event?.judging_enabled}
+            aria-disabled={!event?.judging_enabled}
+            title={
+              event?.judging_enabled
+                ? 'View competition results'
+                : 'Leaderboard is available only when judging is enabled'
+            }
+            style={{
+              opacity: event?.judging_enabled
+                ? 1
+                : 0.45,
+              cursor: event?.judging_enabled
+                ? 'pointer'
+                : 'not-allowed',
+            }}
             onClick={() => {
+              if (!event?.judging_enabled) {
+                return;
+              }
+
               window.location.href =
                 `/leaderboard/${eventId}`;
             }}
           >
             <Trophy size={22} />
-            Leaderboard
+            {event?.judging_enabled
+              ? 'Leaderboard'
+              : 'No Judging'}
           </button>
 
           <button
@@ -3663,55 +3869,86 @@ currentArtist={
           </div>
         )}
        
-               {pickerError && (
-  <div
-    style={{
-      marginTop: 12,
-      padding: '12px 14px',
-      borderRadius: 12,
-      border: '1px solid rgba(249, 115, 22, 0.55)',
-      background: 'rgba(249, 115, 22, 0.12)',
-      color: '#fed7aa',
-      fontSize: 14,
-      fontWeight: 600,
-      lineHeight: 1.45,
-    }}
-  >
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 9,
-      }}
-    >
-      <span aria-hidden="true">⚠️</span>
-
-      <div>
-        <div
-          style={{
-            color: '#f97316',
-            fontSize: 12,
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            marginBottom: 3,
-          }}
-        >
-          Something went wrong
-        </div>
-
-        {pickerError}
-      </div>
-    </div>
-  </div>
-)}
-       
         <SVSongPicker
           songs={pickerSongs}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
           loading={pickerLoading}
           onSelect={handleSongSelection}
+          alertContent={
+            pickerError || duplicateWarning || songConflictWarning ? (
+              <div
+                style={{
+                  padding: '12px 14px',
+                  borderRadius: 12,
+                  border: '1px solid rgba(249, 115, 22, 0.55)',
+                  background: 'rgba(249, 115, 22, 0.12)',
+                  color: '#fed7aa',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  lineHeight: 1.45,
+                }}
+              >
+                <strong
+                  style={{
+                    display: 'block',
+                    color: '#f97316',
+                    fontSize: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    marginBottom: 4,
+                  }}
+                >
+                  ⚠️ {duplicateWarning
+                    ? 'Song already selected'
+                    : songConflictWarning
+                      ? 'Heads up'
+                      : 'Something went wrong'}
+                </strong>
+
+                <div>
+                  {pickerError ||
+                    duplicateWarning ||
+                    songConflictWarning}
+                </div>
+
+                {pendingConflictSong &&
+                  songConflictWarning && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        flexWrap: 'wrap',
+                        marginTop: 12,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="sv-secondary-button"
+                        onClick={() => {
+                          setPendingConflictSong(null);
+                          setSongConflictWarning('');
+                        }}
+                      >
+                        Choose Another
+                      </button>
+
+                      <button
+                        type="button"
+                        className="sv-primary-button"
+                        onClick={() =>
+                          confirmSongSelection(
+                            pendingConflictSong
+                          )
+                        }
+                      >
+                        Add Anyway
+                      </button>
+                    </div>
+                  )}
+              </div>
+            ) : null
+          }
         />
 
         {surpriseSong && (
@@ -3758,72 +3995,6 @@ currentArtist={
             </div>
           </div>
         )}
-
-        {duplicateWarning && (
-          <p className="sv-duplicate-warning">
-            {duplicateWarning}
-          </p>
-        )}
-
-        {songConflictWarning &&
-  !duplicateWarning && (
-    <div className="sv-song-conflict-warning">
-      <strong>Heads up</strong>
-
-      <p>{songConflictWarning}</p>
-
-      <span>
-        You can still choose this song if
-        you want.
-      </span>
-    </div>
-  )}
-
-{pendingConflictSong &&
-  songConflictWarning && (
-    <div className="sv-song-conflict-confirm">
-      <div className="sv-song-conflict-icon">
-        ⚠️
-      </div>
-
-      <div>
-        <strong>Song already used tonight</strong>
-
-        <p>{songConflictWarning}</p>
-
-        <span>
-          You can still add it, but choosing
-          another song will keep the show
-          more varied.
-        </span>
-      </div>
-
-      <div className="sv-song-conflict-actions">
-        <button
-          type="button"
-          className="sv-secondary-button"
-          onClick={() => {
-            setPendingConflictSong(null);
-            setSongConflictWarning('');
-          }}
-        >
-          Choose Another
-        </button>
-
-        <button
-          type="button"
-          className="sv-primary-button"
-          onClick={() =>
-            confirmSongSelection(
-              pendingConflictSong
-            )
-          }
-        >
-          Add Anyway
-        </button>
-      </div>
-    </div>
-  )}
 
         </SVBottomSheet>
 
