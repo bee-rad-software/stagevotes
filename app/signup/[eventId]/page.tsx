@@ -1820,9 +1820,7 @@ const needsCompetitionSong =
     device_id,
     status
   `)
-  .eq('event_id', eventId)
-  .neq('status', 'completed')
-  .neq('status', 'skipped');
+  .eq('event_id', eventId);
 
   if (error) {
     throw new Error(error.message);
@@ -1844,10 +1842,21 @@ const needsCompetitionSong =
       );
     });
 
+  // Completed songs still count toward a singer's
+  // rounds. Otherwise, after singing once, that singer
+  // can look brand-new and receive another song in the
+  // current round. Skipped songs do not reserve a round,
+  // but they do preserve the permanent rotation position.
+  const roundPerformances =
+    singerPerformances.filter(
+      (performance) =>
+        performance.status !== 'skipped'
+    );
+
   const highestRound =
-    singerPerformances.length > 0
+    roundPerformances.length > 0
       ? Math.max(
-          ...singerPerformances.map(
+          ...roundPerformances.map(
             (performance) =>
               performance.round || 1
           )
