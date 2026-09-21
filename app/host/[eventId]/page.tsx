@@ -201,6 +201,9 @@ const karafunSocketRef = useRef<WebSocket | null>(null);
 const karafunSendingPerformanceIdsRef =
   useRef<Set<string>>(new Set());
 
+const karaFunIntentionallyClosedSocketsRef =
+  useRef<WeakSet<WebSocket>>(new WeakSet());
+
 const karaFunLastAutoAdvancedItemIdRef =
   useRef<string | null>(null);
 
@@ -1164,8 +1167,6 @@ const newPerformanceIdentity =
 
 const singerExistingSongs = performances.filter(
   (performance: any) =>
-    performance.status !== 'completed' &&
-    performance.status !== 'skipped' &&
     getRotationIdentity(performance) ===
       newPerformanceIdentity
 );
@@ -1174,12 +1175,20 @@ const currentRound =
   getCurrentActiveRound();
 
 const singerHighestRound =
-  singerExistingSongs.length > 0
+  singerExistingSongs.some(
+    (performance: any) =>
+      performance.status !== 'skipped'
+  )
     ? Math.max(
-        ...singerExistingSongs.map(
-          (performance: any) =>
-            performance.round || 1
-        )
+        ...singerExistingSongs
+          .filter(
+            (performance: any) =>
+              performance.status !== 'skipped'
+          )
+          .map(
+            (performance: any) =>
+              performance.round || 1
+          )
       )
     : null;
 
@@ -1331,6 +1340,11 @@ function isTournamentPerformanceReady(
   async function connectKaraFun() {
   karaFunManualDisconnectRef.current = false;
 
+  if (karaFunReconnectTimerRef.current) {
+    clearTimeout(karaFunReconnectTimerRef.current);
+    karaFunReconnectTimerRef.current = null;
+  }
+
   if (!karafunChannel) {
     setKarafunConnected(false);
     setKarafunConnectionError(
@@ -1346,6 +1360,27 @@ function isTournamentPerformanceReady(
   ) {
     return;
   }
+
+  // Retire any half-closed socket before reconnecting.
+  // Its eventual onclose must not clear the fresh socket.
+  const staleSocket = karafunSocketRef.current;
+
+  if (staleSocket) {
+    karaFunIntentionallyClosedSocketsRef.current.add(
+      staleSocket
+    );
+    karafunSocketRef.current = null;
+
+    if (
+      staleSocket.readyState === WebSocket.OPEN ||
+      staleSocket.readyState === WebSocket.CONNECTING
+    ) {
+      staleSocket.close();
+    }
+  }
+
+  karaFunQueueSyncInFlightRef.current = false;
+  karafunSendingPerformanceIdsRef.current.clear();
 
 karaFunRecoveringRef.current = true;
 
@@ -2048,7 +2083,25 @@ if (message.type === 'remote.AppLeftEvent') {
     };
 
     ws.onclose = () => {
-  karafunSocketRef.current = null;
+  const wasIntentionallyClosed =
+    karaFunIntentionallyClosedSocketsRef.current.has(ws);
+
+  if (wasIntentionallyClosed) {
+    karaFunIntentionallyClosedSocketsRef.current.delete(ws);
+  }
+
+  // A newer connection can already exist by the time an
+  // older socket finishes closing. Ignore that stale event.
+  if (
+    karafunSocketRef.current &&
+    karafunSocketRef.current !== ws
+  ) {
+    return;
+  }
+
+  if (karafunSocketRef.current === ws) {
+    karafunSocketRef.current = null;
+  }
 
   karaFunAutoAdvancingRef.current = false;
   karaFunLastAutoAdvancedItemIdRef.current =
@@ -2063,7 +2116,10 @@ if (message.type === 'remote.AppLeftEvent') {
     'KaraFun bridge disconnected.'
   );
 
-  if (karaFunManualDisconnectRef.current) {
+  if (
+    wasIntentionallyClosed ||
+    karaFunManualDisconnectRef.current
+  ) {
   karaFunManualDisconnectRef.current =
     false;
 
@@ -2170,6 +2226,10 @@ function disconnectKaraFun() {
   }
 
   const ws = karafunSocketRef.current;
+
+  if (ws) {
+    karaFunIntentionallyClosedSocketsRef.current.add(ws);
+  }
 
   karafunSocketRef.current = null;
 
@@ -2868,9 +2928,6 @@ if (
   return;
 }
 
-karafunSendingPerformanceIdsRef.current.add(
-  performance.id
-);
   const ws = karafunSocketRef.current;
 
   if (
@@ -2891,6 +2948,12 @@ karafunSendingPerformanceIdsRef.current.add(
     alert('This performance is missing a singer or song.');
     return;
   }
+
+  karafunSendingPerformanceIdsRef.current.add(
+    performance.id
+  );
+
+  let requestSent = false;
 
   try {
   /*
@@ -3023,6 +3086,8 @@ karafunSendingPerformanceIdsRef.current.add(
       })
     );
 
+    requestSent = true;
+
     console.log(
       'Sent performance to KaraFun:',
       {
@@ -3044,10 +3109,21 @@ karafunSendingPerformanceIdsRef.current.add(
     alert(
       'StageVotes could not send this song to KaraFun.'
     );
-  }finally {
-  karafunSendingPerformanceIdsRef.current.delete(
-    performance.id
-  );
+  } finally {
+  if (requestSent) {
+    // Queue events can lag behind the add response. Keep
+    // this performance locked long enough that repeated
+    // sync passes cannot enqueue it again in that window.
+    setTimeout(() => {
+      karafunSendingPerformanceIdsRef.current.delete(
+        performance.id
+      );
+    }, 5000);
+  } else {
+    karafunSendingPerformanceIdsRef.current.delete(
+      performance.id
+    );
+  }
 }
 }
 
@@ -3370,6 +3446,14 @@ async function saveEdit(
 
         song_title: editSongTitle.trim(),
         artist: editArtist.trim(),
+
+        // A free-text host edit is no longer tied to the
+        // previously selected KaraFun catalog result.
+        // Clear the complete catalog identity atomically so
+        // sync cannot replay the old song ID under a new title.
+        karafun_song_id: null,
+        karafun_title: null,
+        karafun_artist: null,
       })
       .eq('id', performanceId)
       .eq('event_id', eventId)
@@ -3381,6 +3465,16 @@ async function saveEdit(
     );
     return;
   }
+
+  karafunSendingPerformanceIdsRef.current.delete(
+    performanceId
+  );
+
+  setKarafunSentPerformanceIds((currentIds) => {
+    const nextIds = new Set(currentIds);
+    nextIds.delete(performanceId);
+    return nextIds;
+  });
 
   cancelEditing();
   await loadAll();
