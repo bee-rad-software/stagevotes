@@ -28,6 +28,9 @@ show_voting_qr?: boolean;
 show_peoples_choice_qr?: boolean;
   show_checkin_qr?: boolean;
   signups_open?: boolean | null;
+  additional_songs_open?: boolean | null;
+  host_target_end_time?: string | null;
+  host_iq_buffer_minutes?: number | null;
   judging_enabled?: boolean | null;
 };
 
@@ -50,7 +53,8 @@ export type PerformanceRow = {
 round?: number | null;
 device_id?: string | null;
 submission_id?: string | null;
-manual_queue_order?: number | null;
+  manual_queue_order?: number | null;
+  completed_at?: string | null;
 };
 
 export type VoteRow = {
