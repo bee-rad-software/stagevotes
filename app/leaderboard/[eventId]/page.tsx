@@ -9,10 +9,12 @@ export default function LeaderboardPage() {
   const eventId = params.eventId;
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
-  const [event, setEvent] = useState<{
+const [event, setEvent] = useState<{
   name: string;
   venue: string | null;
+  judging_enabled?: boolean | null;
 } | null>(null);
+const [eventLoaded, setEventLoaded] = useState(false);
 
 const [peoplesChoice, setPeoplesChoice] = useState<{
   singerName: string;
@@ -55,7 +57,7 @@ const [peoplesChoice, setPeoplesChoice] = useState<{
 async function loadEvent() {
   const { data, error } = await supabase
     .from('events')
-    .select('name, venue')
+    .select('name, venue, judging_enabled')
     .eq('id', eventId)
     .maybeSingle();
 
@@ -64,10 +66,12 @@ async function loadEvent() {
       'Unable to load event:',
       error
     );
+    setEventLoaded(true);
     return;
   }
 
   setEvent(data);
+  setEventLoaded(true);
 }
 
   async function loadPerformances() {
@@ -147,6 +151,36 @@ const uniqueSingerCount = new Set(
       .toLowerCase()
   )
 ).size;
+
+  if (
+    eventLoaded &&
+    event?.judging_enabled === false
+  ) {
+    return (
+      <main className="sv-results-page">
+        <section className="sv-results-hero">
+          <div className="sv-results-eyebrow">
+            Regular Karaoke Night
+          </div>
+
+          <h1>Leaderboard unavailable</h1>
+
+          <p>
+            Judging was not enabled for this show, so
+            there are no scored rankings to display.
+          </p>
+
+          <button
+            type="button"
+            className="sv-primary-button"
+            onClick={() => window.history.back()}
+          >
+            Go Back
+          </button>
+        </section>
+      </main>
+    );
+  }
 
   return (
   <main className="sv-results-page">
