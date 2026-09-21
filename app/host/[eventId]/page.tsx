@@ -38,6 +38,10 @@ import {
   formatHostTime,
 } from '@/lib/hostIQ';
 import type { HostIQAction } from '@/lib/hostIQ';
+import type {
+  AIHostBriefing,
+  AIHostBriefingRequest,
+} from '@/lib/aiHostIQ';
 
 import {
   DndContext,
@@ -4495,6 +4499,60 @@ async function handleHostIQAction(
   });
 }
 
+async function generateAIHostBriefing(): Promise<AIHostBriefing> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error('Please sign in again to generate an AI briefing.');
+  }
+
+  const requestBody: AIHostBriefingRequest = {
+    eventId,
+    targetEndTime: event?.host_target_end_time || '',
+    bufferMinutes: event?.host_iq_buffer_minutes ?? 10,
+    averageMinutes: pace.averageMinutes,
+    isLiveEstimate: pace.isLiveEstimate,
+    sampleSize: pace.sampleSize,
+    queueMinutes: estimatedQueueMinutes,
+    projectedEndTime: projectedQueueEndTime,
+    remainingSongs: hostQueueItems.length,
+    remainingSingers: remainingSingerCount,
+    signupsOpen: event?.signups_open !== false,
+    additionalSongsOpen: event?.additional_songs_open !== false,
+    showStarted: Boolean(current),
+    votingOpen: Boolean(event?.is_voting_open),
+    karaFunConnected: karafunConnected,
+    recommendation: {
+      status: hostIQRecommendation.status,
+      title: hostIQRecommendation.title,
+      message: hostIQRecommendation.message,
+      capacitySongs: hostIQRecommendation.capacitySongs,
+    },
+  };
+
+  const response = await fetch('/api/host-iq/briefing', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  const data = (await response.json()) as {
+    briefing?: AIHostBriefing;
+    error?: string;
+  };
+
+  if (!response.ok || !data.briefing) {
+    throw new Error(data.error || 'The AI briefing is temporarily unavailable.');
+  }
+
+  return data.briefing;
+}
+
 async function toggleAdditionalSongs() {
   await updateHostIQControls({
     additional_songs_open:
@@ -5544,6 +5602,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   recommendation={hostIQRecommendation}
   onSaveSettings={saveHostIQSettings}
   onAction={handleHostIQAction}
+  onGenerateBriefing={generateAIHostBriefing}
 />
 
 {isBrandNewEmptyShow ? (
