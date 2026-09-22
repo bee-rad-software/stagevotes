@@ -346,7 +346,7 @@ const rowStyle: React.CSSProperties = {
 
      <button
   type="button"
-  title={
+  data-tooltip={
     sentToKaraFun
       ? 'Sent to KaraFun'
       : karafunConnected
@@ -379,10 +379,10 @@ const rowStyle: React.CSSProperties = {
 
       <button
   type="button"
-  title={
+  data-tooltip={
     item.tournamentReadiness === 'song_needed'
       ? 'Choose Song'
-      : 'Edit'
+      : 'Edit singer or song'
   }
   aria-label={`Edit ${formatSingerName(
     item.singerName
@@ -399,7 +399,7 @@ const rowStyle: React.CSSProperties = {
   'not_checked_in' && (
   <button
     type="button"
-    title="Check In"
+    data-tooltip="Check in singer"
     aria-label={`Check in ${formatSingerName(
       item.singerName
     )}`}
@@ -414,7 +414,7 @@ const rowStyle: React.CSSProperties = {
 
           <button
             type="button"
-            title="Skip"
+            data-tooltip="Skip singer"
             aria-label={`Skip ${formatSingerName(item.singerName)}`}
             onClick={(event) => {
               event.stopPropagation();
@@ -426,7 +426,7 @@ const rowStyle: React.CSSProperties = {
 
           <button
   type="button"
-  title="Move to Next Round"
+  data-tooltip="Move to next round"
   aria-label={`Move ${formatSingerName(
     item.singerName
   )} to next round`}
@@ -440,7 +440,7 @@ const rowStyle: React.CSSProperties = {
 
           <button
             type="button"
-            title="Remove"
+            data-tooltip="Remove from queue"
             aria-label={`Remove ${formatSingerName(item.singerName)}`}
             className="sv-host-queue-remove"
             onClick={(event) => {
