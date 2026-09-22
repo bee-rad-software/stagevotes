@@ -156,7 +156,8 @@ export default function PlanStep({
 
       <p className="onboarding-plan-note">
         You will review the subscription price before
-        confirming your trial.
+        confirming. Your payment method will be charged
+        when the 7-day trial ends unless you cancel first.
       </p>
     </div>
   );
