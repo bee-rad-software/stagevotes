@@ -8,12 +8,10 @@ import {
 } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  Bell,
   History,
   ListMusic,
   Plus,
   Trophy,
-  Vote,
 } from 'lucide-react';
 
 import { supabase } from '@/lib/supabase';
@@ -227,15 +225,6 @@ useEffect(() => {
 
   const [duplicateWarning, setDuplicateWarning] =
     useState('');
-
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission | null>(null);
-
-  const [notifiedOnDeck, setNotifiedOnDeck] =
-    useState(false);
-
-  const [notifiedCurrent, setNotifiedCurrent] =
-    useState(false);
 
    const [pendingConflictSong, setPendingConflictSong] =
   useState<any | null>(null);
@@ -1084,12 +1073,6 @@ async function maybeCelebrateFirstPerformance(
     loadQueue();
     loadSingerProfile();
 
-    if ('Notification' in window) {
-      setNotificationPermission(
-        Notification.permission
-      );
-    }
-
    const channel = supabase
   .channel(`signup-${eventId}`)
   .on(
@@ -1297,67 +1280,6 @@ const needsCompetitionSong =
     ? (myPosition - 1) *
       averageMinutesPerSong
     : 0;
-
-  useEffect(() => {
-    if (
-      notificationPermission !== 'granted'
-    ) {
-      return;
-    }
-
-    if (
-      isOnDeckSinger &&
-      !notifiedOnDeck
-    ) {
-      new Notification('🎤 StageVotes', {
-        body: "You're on deck! Get ready to sing.",
-      });
-
-      setNotifiedOnDeck(true);
-    }
-
-    if (
-      isCurrentSinger &&
-      !notifiedCurrent
-    ) {
-      new Notification('🎤 StageVotes', {
-        body: "You're up now! Head to the stage.",
-      });
-
-      setNotifiedCurrent(true);
-    }
-  }, [
-    isOnDeckSinger,
-    isCurrentSinger,
-    notificationPermission,
-    notifiedOnDeck,
-    notifiedCurrent,
-  ]);
-
-  async function requestNotifications() {
-    if (!('Notification' in window)) {
-      setMessage(
-        'Notifications are not supported on this device.'
-      );
-
-      return;
-    }
-
-    const permission =
-      await Notification.requestPermission();
-
-    setNotificationPermission(permission);
-
-    if (permission === 'granted') {
-      setMessage(
-        'Notifications are on. We will let you know when you are up!'
-      );
-    } else {
-      setMessage(
-        'Notifications were not enabled. You can still follow your position here.'
-      );
-    }
-  }
 
   async function searchPickerSongs(
   searchText: string
@@ -2699,8 +2621,6 @@ device_id: deviceId,
       setSavedSingerName(cleanName);
       setIsDuet(false);
       setDuetPartnerName('');
-      setNotifiedOnDeck(false);
-      setNotifiedCurrent(false);
 
       setMessage(
         myPerformances.length === 0
@@ -3811,29 +3731,6 @@ currentArtist={
 
       {hasJoined && (
         <section className="sv-mobile-actions">
-          <button
-            type="button"
-            onClick={requestNotifications}
-          >
-            <Bell size={22} />
-
-            {notificationPermission ===
-            'granted'
-              ? 'Notifications On'
-              : 'Notify Me'}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              window.location.href =
-                `/vote/${eventId}`;
-            }}
-          >
-            <Vote size={22} />
-            Vote
-          </button>
-
           <button
             type="button"
             disabled={!event?.judging_enabled}
