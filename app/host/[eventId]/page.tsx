@@ -3301,8 +3301,6 @@ if (
     return false;
   }
 
-  window.open(`/display/${eventId}`, '_blank');
-
   await loadAll();
 }
 
