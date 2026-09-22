@@ -61,6 +61,7 @@ export async function signupHost({
     .insert({
       id: accountId,
       name: cleanAccountName || 'My StageVotes Account',
+      subscription_status: 'incomplete',
     });
 
   if (accountError) {
