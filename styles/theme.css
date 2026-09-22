@@ -2828,6 +2828,7 @@ background:
 }
 
 .sv-host-queue-actions button {
+  position: relative;
   width: 36px;
   height: 36px;
   display: grid;
@@ -2837,6 +2838,62 @@ background:
   background: rgba(2, 6, 23, 0.4);
   color: var(--sv-muted);
   cursor: pointer;
+}
+
+.sv-host-queue-actions button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  z-index: 40;
+  right: 50%;
+  bottom: calc(100% + 9px);
+  width: max-content;
+  max-width: 190px;
+  transform: translateX(50%) translateY(4px);
+  padding: 7px 9px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 9px;
+  background: #020617;
+  color: #f8fafc;
+  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.14s ease,
+    transform 0.14s ease,
+    visibility 0.14s ease;
+}
+
+.sv-host-queue-actions button:hover::after,
+.sv-host-queue-actions button:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(50%) translateY(0);
+}
+
+.sv-host-queue-actions button:first-child::after {
+  left: 0;
+  right: auto;
+  transform: translateY(4px);
+}
+
+.sv-host-queue-actions button:first-child:hover::after,
+.sv-host-queue-actions button:first-child:focus-visible::after {
+  transform: translateY(0);
+}
+
+.sv-host-queue-actions button:last-child::after {
+  right: 0;
+  transform: translateY(4px);
+}
+
+.sv-host-queue-actions button:last-child:hover::after,
+.sv-host-queue-actions button:last-child:focus-visible::after {
+  transform: translateY(0);
 }
 
 .sv-host-queue-actions button:hover {
