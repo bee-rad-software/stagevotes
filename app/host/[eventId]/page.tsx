@@ -776,7 +776,14 @@ async function dismissFirstWelcome() {
 }
 
 async function endShow() {
-  if (!confirm('End the show and show awards?')) {
+  const judgingEnabled =
+    event?.judging_enabled === true;
+
+  const confirmationMessage = judgingEnabled
+    ? 'End the show and view the results?'
+    : 'End this show? This will close the show and mark it complete.';
+
+  if (!confirm(confirmationMessage)) {
     return;
   }
 
@@ -815,11 +822,13 @@ async function endShow() {
           event_name: event?.name || null,
           venue_name: event?.venue || null,
 
-          judge_winner_name:
-            judgeWinner?.singer_name || null,
+          judge_winner_name: judgingEnabled
+            ? judgeWinner?.singer_name || null
+            : null,
 
-          judge_score:
-            judgeWinner?.averageScore || null,
+          judge_score: judgingEnabled
+            ? judgeWinner?.averageScore || null
+            : null,
 
           peoples_choice_name:
             peoplesChoiceWinner?.singer_name ||
@@ -831,8 +840,9 @@ async function endShow() {
           total_performers:
             uniqueSingerCount,
 
-          total_judge_votes:
-            judgeBallotCount,
+          total_judge_votes: judgingEnabled
+            ? judgeBallotCount
+            : 0,
 
           total_people_votes:
             totalPeopleVotes,
@@ -973,7 +983,9 @@ const isTournament =
 router.push(
   isTournament
     ? `/tournament-results/${eventId}`
-    : `/leaderboard/${eventId}`
+    : judgingEnabled
+    ? `/leaderboard/${eventId}`
+    : '/history'
 );
 }
  
