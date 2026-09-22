@@ -139,10 +139,10 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
 >([]);
   const [checkinCount, setCheckinCount] = useState(0);
   const [account, setAccount] = useState<any>(null);
+  const [accountLoaded, setAccountLoaded] = useState(false);
   const isSubscribed =
-  !account?.subscription_status ||
-  account.subscription_status === 'active' ||
-  account.subscription_status === 'trialing';
+  account?.subscription_status === 'active' ||
+  account?.subscription_status === 'trialing';
   const [showSingerSignup, setShowSingerSignup] = useState(false);
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   const [showCheckinStats, setShowCheckinStats] = useState(false);
@@ -711,6 +711,8 @@ const { data: accountData } = await supabase
   .eq('id', accountId)
   .single();
 
+setAccountLoaded(true);
+
 if (accountData) {
   setAccount(accountData);
 
@@ -1092,15 +1094,22 @@ async function loadPeoplesChoice() {
 }
 
 async function manageBilling() {
-  const accountId = await getMyAccountId();
-  if (!accountId) return;
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    alert('Please sign in again to manage billing.');
+    return;
+  }
 
   const response = await fetch('/api/stripe/portal', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ accountId })
+    body: JSON.stringify({})
   });
 
   const data = await response.json();
@@ -5140,10 +5149,23 @@ async function handleQueueReorder(
   }
 }
 
-if (
-account?.subscription_status &&
-!isSubscribed
-) {
+if (!accountLoaded) {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#020c2b',
+        color: 'white',
+        display: 'grid',
+        placeItems: 'center',
+      }}
+    >
+      Verifying subscription...
+    </div>
+  );
+}
+
+if (!isSubscribed) {
 
 
   return (

@@ -1,45 +1,17 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import {
+  AuthError,
+  requireStageVotesAccount,
+} from '@/lib/server/stageVotesAuth';
 
 const stripe = new Stripe(
   process.env.STRIPE_SECRET_KEY!
 );
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: Request) {
   try {
-    const { accountId } = await req.json();
-
-    if (!accountId) {
-      return NextResponse.json(
-        { error: 'Missing StageVotes account ID.' },
-        { status: 400 }
-      );
-    }
-
-    const { data: account, error } =
-      await supabase
-        .from('accounts')
-        .select('stripe_customer_id')
-        .eq('id', accountId)
-        .single();
-
-    if (error) {
-      console.error(
-        'Account lookup failed:',
-        error
-      );
-
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
+    const { account } = await requireStageVotesAccount(req);
 
     if (!account?.stripe_customer_id) {
       return NextResponse.json(
@@ -70,7 +42,7 @@ export async function POST(req: Request) {
             ? error.message
             : 'Unable to open billing portal',
       },
-      { status: 500 }
+      { status: error instanceof AuthError ? error.status : 500 }
     );
   }
 }

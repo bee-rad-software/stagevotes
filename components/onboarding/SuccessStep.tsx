@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 type CheckoutDetails = {
   status: string | null;
@@ -33,10 +34,23 @@ export default function SuccessStep({
 
     async function loadCheckout() {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.access_token) {
+          throw new Error('Please sign in again to verify your trial.');
+        }
+
         const response = await fetch(
           `/api/stripe/checkout-session?session_id=${encodeURIComponent(
             sessionId
-          )}`
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
         );
 
         const data = await response.json();

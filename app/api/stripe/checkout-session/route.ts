@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  AuthError,
+  requireStageVotesAccount,
+} from '@/lib/server/stageVotesAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function GET(req: Request) {
   try {
+    const { account } = await requireStageVotesAccount(req);
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('session_id');
 
@@ -17,6 +22,20 @@ export async function GET(req: Request) {
 
     const session =
       await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.metadata?.account_id !== account.id) {
+      return NextResponse.json(
+        { error: 'This checkout does not belong to your StageVotes account.' },
+        { status: 403 }
+      );
+    }
+
+    if (session.status !== 'complete' || !session.subscription) {
+      return NextResponse.json(
+        { error: 'Stripe has not completed this checkout yet.' },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       id: session.id,
@@ -46,7 +65,7 @@ export async function GET(req: Request) {
             ? error.message
             : 'Unable to verify checkout session.',
       },
-      { status: 500 }
+      { status: error instanceof AuthError ? error.status : 500 }
     );
   }
 }

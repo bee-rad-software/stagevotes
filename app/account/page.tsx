@@ -143,12 +143,22 @@ if (venue?.id) {
 
   setMessage('');
 
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    setMessage('Please sign in again to manage billing.');
+    return;
+  }
+
   const response = await fetch('/api/stripe/portal', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ accountId }),
+    body: JSON.stringify({}),
   });
 
   const data = await response.json();

@@ -1,19 +1,25 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import {
+  AuthError,
+  getSupabaseAdmin,
+  requireStageVotesAccount,
+} from '@/lib/server/stageVotesAuth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: Request) {
   try {
-    const { email, accountId } = await req.json();
+    const supabaseAdmin = getSupabaseAdmin();
+    const { user, account } = await requireStageVotesAccount(req);
 
-    if (!email || !accountId) {
+    if (
+      account.subscription_status === 'active' ||
+      account.subscription_status === 'trialing'
+    ) {
       return NextResponse.json(
-        {
-          error:
-            'An email address and StageVotes account are required.',
-        },
-        { status: 400 }
+        { error: 'This StageVotes account already has an active subscription.' },
+        { status: 409 }
       );
     }
 
@@ -25,18 +31,79 @@ export async function POST(req: Request) {
       );
     }
 
-    const session =
-      await stripe.checkout.sessions.create({
+    let customerId = account.stripe_customer_id as string | null;
+
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: account.name || undefined,
+        metadata: {
+          account_id: account.id,
+        },
+      });
+
+      customerId = customer.id;
+
+      const { error: customerUpdateError } = await supabaseAdmin
+        .from('accounts')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', account.id);
+
+      if (customerUpdateError) {
+        throw customerUpdateError;
+      }
+    }
+
+    const existingSessions = await stripe.checkout.sessions.list({
+      customer: customerId,
+      status: 'open',
+      limit: 1,
+    });
+
+    const existingSession = existingSessions.data[0];
+
+    if (existingSession?.url) {
+      return NextResponse.json({ url: existingSession.url });
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 100,
+    });
+
+    const existingSubscription = subscriptions.data.find((subscription) =>
+      [
+        'active',
+        'trialing',
+        'past_due',
+        'unpaid',
+        'incomplete',
+        'paused',
+      ].includes(subscription.status)
+    );
+
+    if (existingSubscription) {
+      return NextResponse.json(
+        {
+          error:
+            'A subscription already exists for this account. Use Manage Subscription to update its billing information.',
+        },
+        { status: 409 }
+      );
+    }
+
+    const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
-        customer_email: email,
+        customer: customerId,
 
         metadata: {
-          account_id: accountId,
+          account_id: account.id,
         },
 
         subscription_data: {
           metadata: {
-            account_id: accountId,
+            account_id: account.id,
           },
           trial_period_days: 7,
         },
@@ -74,7 +141,7 @@ export async function POST(req: Request) {
             ? error.message
             : 'Unable to create checkout session.',
       },
-      { status: 500 }
+      { status: error instanceof AuthError ? error.status : 500 }
     );
   }
 }
