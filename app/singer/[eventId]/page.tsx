@@ -38,10 +38,6 @@ const [onDeckSinger, setOnDeckSinger] = useState<any>(null);
 const [activeSongIndex, setActiveSongIndex] = useState<number | null>(null);
   const [artistSuggestions, setArtistSuggestions] = useState<any[]>([]);
  const [duplicateWarning, setDuplicateWarning] = useState('');
-  const [notificationPermission, setNotificationPermission] =
-  useState<NotificationPermission | null>(null);
-  const [notifiedOnDeck, setNotifiedOnDeck] = useState(false);
-const [notifiedCurrent, setNotifiedCurrent] = useState(false);
   const [venmoUrl, setVenmoUrl] = useState('');
 const [cashappUrl, setCashappUrl] = useState('');
 const [applePayUrl, setApplePayUrl] = useState('');
@@ -97,16 +93,6 @@ useEffect(() => {
   loadEvent();
   loadQueue();
 
-if ('Notification' in window) {
-  setNotificationPermission(Notification.permission);
-
-  if (Notification.permission === 'default') {
-    Notification.requestPermission().then((permission) => {
-      setNotificationPermission(permission);
-    });
-  }
-}
-  
   const channel = supabase
     .channel(`signup-${eventId}`)
     .on(
@@ -132,32 +118,6 @@ const isOnDeckSinger =
   savedSingerName &&
   onDeckSinger.singer_name.trim().toLowerCase() ===
     savedSingerName.trim().toLowerCase();
-  
-useEffect(() => {
-  if (notificationPermission !== 'granted') return;
-
-  if (isOnDeckSinger && !notifiedOnDeck) {
-    new Notification('🎤 StageVotes', {
-      body: "You're on deck! Get ready to sing."
-    });
-
-    setNotifiedOnDeck(true);
-  }
-
-  if (isCurrentSinger && !notifiedCurrent) {
-    new Notification('🎤 StageVotes', {
-      body: "You're up now! Head to the stage."
-    });
-
-    setNotifiedCurrent(true);
-  }
-}, [
-  isOnDeckSinger,
-  isCurrentSinger,
-  notificationPermission,
-  notifiedOnDeck,
-  notifiedCurrent
-]);
   
  function getDeviceId() {
   if (typeof window === 'undefined') return '';
@@ -421,9 +381,6 @@ async function addSelectedSongToRotation(selected: SVSongOption) {
   localStorage.setItem('karavote_singer_name', cleanName);
   setSavedSingerName(cleanName);
 
-  setNotifiedOnDeck(false);
-  setNotifiedCurrent(false);
-
   await loadQueue();
 
   setPickerLoading(false);
@@ -451,8 +408,6 @@ localStorage.setItem(
 
 setSavedSingerName(singerName.trim());
 
-setNotifiedOnDeck(false);
-setNotifiedCurrent(false);
     
     const deviceId = getDeviceId();
 
@@ -635,24 +590,6 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
 
 {hasJoined && (
   <SVSingerActions
-    notificationsEnabled={notificationPermission === 'granted'}
-    onNotify={() => {
-      if (!('Notification' in window)) {
-        setMessage('Notifications are not supported on this device.');
-        return;
-      }
-
-      Notification.requestPermission().then((permission) => {
-        setNotificationPermission(permission);
-
-        if (permission === 'granted') {
-          setMessage('Notifications are turned on!');
-        }
-      });
-    }}
-    onVote={() => {
-      window.location.href = `/vote/${eventId}`;
-    }}
     onLeaderboard={() => {
       window.location.href = `/leaderboard/${eventId}`;
     }}
