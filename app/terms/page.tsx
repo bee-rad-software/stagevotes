@@ -3,7 +3,7 @@ export default function TermsPage() {
     <main className="container">
       <div className="card">
         <h1>Terms of Service</h1>
-        <p><strong>Last updated:</strong> June 26, 2026</p>
+        <p><strong>Last updated:</strong> September 23, 2026</p>
 
         <p>
           StageVotes is a karaoke contest management and voting platform. By using StageVotes,
@@ -32,6 +32,23 @@ export default function TermsPage() {
         <p>
           We aim to keep StageVotes available, but we do not guarantee uninterrupted or error-free
           service.
+        </p>
+
+        <h2>SMS Terms</h2>
+        <p>
+          StageVotes offers optional, time-sensitive karaoke queue notifications by SMS. If you
+          opt in through a StageVotes singer signup form, you may receive an on-deck notification
+          and a notification when it is your turn to perform, up to two messages per queued song.
+          Message frequency depends on the number of songs you submit.
+        </p>
+        <p>
+          Message and data rates may apply. Consent to receive SMS messages is optional and is not
+          a condition of participating in karaoke or using StageVotes. Reply STOP to cancel future
+          messages. Reply HELP for help. Carriers are not liable for delayed or undelivered messages.
+        </p>
+        <p>
+          For details about how StageVotes handles mobile numbers and SMS consent, review our{' '}
+          <a href="/privacy">Privacy Policy</a>.
         </p>
 
         <h2>Contact</h2>
