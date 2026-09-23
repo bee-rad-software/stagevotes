@@ -3178,9 +3178,20 @@ function openCompetitionSong() {
     event?.name ||
     "Tonight's Karaoke";
 
+  const isGuestEntry =
+    !profileLoading &&
+    !singerProfile &&
+    !hasJoined;
+
   return (
     <main className="sv-mobile-page">
-      <SVSingerHero
+      {isGuestEntry ? (
+        <div className="sv-guest-venue-heading">
+          <div className="sv-mobile-kicker">Welcome to StageVotes</div>
+          <p>{venueName}</p>
+        </div>
+      ) : (
+        <SVSingerHero
         singerName={
           singerName ||
           (profileLoading
@@ -3200,7 +3211,8 @@ function openCompetitionSong() {
         onPhotoClick={() => {
           window.location.href = `/my-stage?event=${eventId}`;
         }}
-      />
+        />
+      )}
 
             {singerProfile?.id && (
         <button
@@ -3261,19 +3273,6 @@ function openCompetitionSong() {
         </button>
       )}
 
-      {!profileLoading && !singerProfile && (
-  <SVSingerProfilePrompt
-    onCreateProfile={() => {
-      window.location.href =
-        `/singer-signup?event=${eventId}`;
-    }}
-    onSignIn={() => {
-  window.location.href =
-    `/singer-login?event=${eventId}`;
-}}
-  />
-)}
-
       {hasJoined && myPosition && (
         <SVQueueStatusCard
           queueState={queueState}
@@ -3305,14 +3304,21 @@ currentArtist={
       )}
 
       {!hasJoined && (
-        <section className="sv-mobile-card">
+        <section className={`sv-mobile-card${isGuestEntry ? ' sv-guest-entry-card' : ''}`}>
+          {isGuestEntry && (
+            <div className="sv-guest-entry-heading">
+              <div className="sv-mobile-kicker">Tonight’s karaoke</div>
+              <h1>Get on the list</h1>
+              <p>Enter your name, pick a song, and you’re in.</p>
+            </div>
+          )}
           <div className="sv-singer-name-field">
             <div className="sv-mobile-kicker">
-              Singer Info
+              {isGuestEntry ? 'Step 1 · Your name' : 'Singer Info'}
             </div>
 
             <label htmlFor="singer-name">
-              Your Name
+              Your name
             </label>
 
             <input
@@ -3334,13 +3340,53 @@ currentArtist={
 )}
           </div>
 
-          <div
-            style={{
-              marginTop: 20,
-              paddingTop: 20,
-              borderTop: '1px solid rgba(148,163,184,.2)',
-            }}
+          {isGuestEntry && (
+            <div className="sv-guest-entry-action">
+              <div className="sv-mobile-kicker">Step 2 · Choose a song</div>
+              <button
+                type="button"
+                className="sv-full-button sv-guest-entry-button"
+                onClick={() => {
+                  if (!singerName.trim()) {
+                    document.getElementById('singer-name')?.focus();
+                    return;
+                  }
+                  openAddSong();
+                }}
+                disabled={
+                  submitting ||
+                  !signupsAreOpen ||
+                  additionalSongsPaused ||
+                  hasReachedSongLimit
+                }
+              >
+                <Plus size={21} />
+                {!signupsAreOpen
+                  ? 'Signups closed'
+                  : additionalSongsPaused
+                    ? 'Additional songs paused'
+                    : 'Choose a song & join'}
+              </button>
+              <p>
+                {signupsAreOpen
+                  ? singerName.trim()
+                    ? 'No account needed. Selecting a song adds you to tonight’s queue.'
+                    : 'Enter your name above to get started. No account needed.'
+                  : 'The host has closed signups for tonight.'}
+              </p>
+              {message && (
+                <p className="sv-mobile-message" role="alert">{message}</p>
+              )}
+            </div>
+          )}
+
+          <details
+            key={isGuestEntry ? 'guest-alerts' : 'member-alerts'}
+            className="sv-guest-alert-details"
+            open={!isGuestEntry || smsConsent}
           >
+            <summary>Want text alerts? <span>Optional</span></summary>
+            <div className="sv-guest-alert-content">
             <div className="sv-mobile-kicker">Optional Text Alerts</div>
 
             <label htmlFor="sms-phone">Mobile Number</label>
@@ -3380,7 +3426,8 @@ currentArtist={
                 <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
               </span>
             </label>
-          </div>
+            </div>
+          </details>
         </section>
  )}
 
@@ -3505,6 +3552,7 @@ currentArtist={
   </section>
 )}
 
+      {(!isGuestEntry || myPerformances.length > 0) && (
       <section className="sv-mobile-card">
         <div className="sv-mobile-card-header">
           <div>
@@ -3786,8 +3834,8 @@ currentArtist={
           </div>
         )}
 
-       {(!isTournament ||
-  myPerformances.length === 0) && (
+       {(!isGuestEntry && (!isTournament ||
+  myPerformances.length === 0)) && (
   <>
     <button
       type="button"
@@ -3881,6 +3929,20 @@ currentArtist={
           </p>
         )}
       </section>
+      )}
+
+      {!profileLoading && !singerProfile && (
+        <SVSingerProfilePrompt
+          onCreateProfile={() => {
+            window.location.href =
+              `/singer-signup?event=${eventId}`;
+          }}
+          onSignIn={() => {
+            window.location.href =
+              `/singer-login?event=${eventId}`;
+          }}
+        />
+      )}
 
       {hasJoined && (
         <section className="sv-mobile-actions">

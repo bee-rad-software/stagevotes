@@ -7652,6 +7652,111 @@ a.atlas-live-venue-logo {
     rgba(15, 23, 42, 0.72);
 }
 
+.sv-guest-venue-heading {
+  margin: 4px 0 18px;
+  padding: 0 3px;
+}
+
+.sv-guest-venue-heading .sv-mobile-kicker {
+  color: #7dd3fc;
+}
+
+.sv-guest-venue-heading p {
+  margin: 4px 0 0;
+  color: #e2e8f0;
+  font-size: 19px;
+  font-weight: 850;
+}
+
+.sv-guest-entry-card {
+  border-color: rgba(249, 115, 22, 0.48);
+  background: linear-gradient(155deg, rgba(249, 115, 22, 0.12), rgba(15, 23, 42, 0.94) 38%);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(249, 115, 22, 0.12);
+}
+
+.sv-guest-entry-heading {
+  margin-bottom: 20px;
+}
+
+.sv-guest-entry-heading .sv-mobile-kicker,
+.sv-guest-entry-action .sv-mobile-kicker {
+  color: #fdba74;
+}
+
+.sv-guest-entry-heading h1 {
+  margin: 6px 0;
+  color: #fff;
+  font-size: clamp(29px, 7vw, 36px);
+  line-height: 1.1;
+}
+
+.sv-guest-entry-heading p,
+.sv-guest-entry-action > p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sv-guest-entry-card .sv-singer-name-field label {
+  display: block;
+  margin: 7px 0;
+  font-weight: 800;
+}
+
+.sv-guest-entry-card .sv-singer-name-field input {
+  width: 100%;
+  min-height: 52px;
+}
+
+.sv-guest-entry-action {
+  margin-top: 20px;
+}
+
+.sv-guest-entry-button {
+  min-height: 60px;
+  margin: 10px 0;
+  border: 0;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(234, 88, 12, 0.22);
+}
+
+.sv-guest-entry-button:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+.sv-guest-alert-details {
+  margin-top: 21px;
+  border-top: 1px solid rgba(148, 163, 184, 0.23);
+  color: #cbd5e1;
+}
+
+.sv-guest-alert-details summary {
+  padding: 16px 0 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.sv-guest-alert-details summary span {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.sv-guest-alert-content {
+  padding-top: 16px;
+}
+
+.sv-guest-alert-content > label:not(:first-of-type) {
+  margin-top: 10px;
+}
+
 .sv-singer-profile-prompt-icon {
   display: grid;
   width: 48px;
