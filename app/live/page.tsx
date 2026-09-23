@@ -1255,10 +1255,10 @@ const otherVenues = liveVenues.slice(1);
 
               <div className="atlas-results-actions">
                 <Link
-                  href={`/awards/${show.id}`}
+                  href={`/shows/${show.id}`}
                   className="atlas-results-primary"
                 >
-                  View Results
+                  Relive Show
                 </Link>
 
                 <Link

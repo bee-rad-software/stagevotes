@@ -22,6 +22,7 @@ import SVBottomSheet from '@/components/ui/SVBottomSheet';
 import SVSongPicker, {
   type SVSongOption,
 } from '@/components/singer/SVSongPicker';
+import { getSingerFavoriteSongs } from '@/lib/singerSongFavorites';
 import SVTipCard from '@/components/singer/SVTipCard';
 import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
 import {
@@ -227,6 +228,7 @@ useEffect(() => {
 
   const [pickerSongs, setPickerSongs] =
     useState<SVSongOption[]>([]);
+  const [favoriteSongs, setFavoriteSongs] = useState<SVSongOption[]>([]);
 
   const [pickerLoading, setPickerLoading] =
     useState(false);
@@ -3059,6 +3061,7 @@ function openCompetitionSong() {
   }
 
   function openAddSong() {
+    setFavoriteSongs(getSingerFavoriteSongs().map((song) => ({ ...song, status: 'favorite' })));
     setEditingPerformanceId(null);
     setPerformanceNote('');
     setPickerSongs([]);
@@ -3072,6 +3075,7 @@ function openCompetitionSong() {
   function openChangeSong(
     performanceId: string
   ) {
+    setFavoriteSongs(getSingerFavoriteSongs().map((song) => ({ ...song, status: 'favorite' })));
     setEditingPerformanceId(
       performanceId
     );
@@ -4108,6 +4112,7 @@ currentArtist={
             </>
           }
           songs={pickerSongs}
+          sections={favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
           recommendations={aiRecommendations}

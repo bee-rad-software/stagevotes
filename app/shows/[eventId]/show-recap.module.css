@@ -1,0 +1,118 @@
+.page {
+  width: min(100%, 960px);
+  margin: 0 auto;
+  padding: 28px 18px 96px;
+  color: #f7f9ff;
+}
+
+.back {
+  display: inline-flex;
+  margin-bottom: 24px;
+  color: #85d4fb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.back:hover, .hero a:hover { text-decoration: underline; }
+
+.state {
+  color: #bac7d9;
+  line-height: 1.6;
+  margin: 24px 0;
+}
+
+.hero, .personal, .setlist {
+  border: 1px solid #324156;
+  border-radius: 24px;
+  padding: clamp(24px, 5vw, 44px);
+  margin-bottom: 24px;
+  background: #151e30;
+}
+
+.hero {
+  background: radial-gradient(circle at top right, #204464, transparent 55%), linear-gradient(130deg, #1c273c, #121b2b);
+}
+
+.kicker {
+  display: block;
+  color: #65cbff;
+  font-size: .8rem;
+  font-weight: 850;
+  letter-spacing: .16em;
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  font-size: clamp(2.3rem, 6vw, 4.5rem);
+  line-height: 1.04;
+  letter-spacing: -.04em;
+  margin: 0 0 18px;
+}
+
+.hero p, .personal p, .setlist p { color: #b6c4d7; line-height: 1.55; }
+.hero p { font-size: 1.15rem; margin: 0 0 22px; }
+.hero a { color: #8dd6fa; font-weight: 750; text-decoration: none; }
+
+.personal {
+  border-color: #82512b;
+  background: radial-gradient(circle at top right, #442d28, transparent 60%), #1b2232;
+}
+
+.personal h2, .setlist h2 {
+  font-size: clamp(1.6rem, 4vw, 2.3rem);
+  line-height: 1.15;
+  margin: 0 0 12px;
+}
+
+.highlight { color: #ffc28d !important; font-weight: 750; }
+.badges { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0; }
+.badges span { border: 1px solid #856233; border-radius: 999px; padding: 8px 12px; background: #362d26; color: #ffe0b0; }
+
+.personalSongs, .setlist ol { list-style: none; padding: 0; margin: 22px 0 0; }
+.personalSongs li, .setlist li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid #354256;
+  padding: 17px 0;
+}
+
+.personalSongs li > div, .setlist li > div { display: grid; gap: 5px; min-width: 0; flex: 1; }
+.personalSongs strong, .setlist strong { font-size: 1.07rem; overflow-wrap: anywhere; }
+.personalSongs li > div span, .setlist li > div span { color: #aab8ca; }
+.personalSongs button {
+  border: 1px solid #905830;
+  border-radius: 12px;
+  background: #392922;
+  color: #ffd1a0;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.personalSongs button:disabled { opacity: .74; cursor: default; }
+.feedback { color: #9de8bb !important; }
+.share {
+  border: 0;
+  border-radius: 13px;
+  background: #ff791b;
+  color: #151b28;
+  padding: 14px 22px;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+  margin-top: 20px;
+}
+.share:hover { background: #ff9c50; }
+.number { color: #69ceff; font-size: 1.5rem; width: 28px; text-align: center; }
+.singer { color: #ffbe8c; font-weight: 700; text-align: right; }
+
+@media (max-width: 600px) {
+  .page { padding: 20px 14px 90px; }
+  .hero, .personal, .setlist { border-radius: 20px; padding: 24px 20px; }
+  .personalSongs li { align-items: flex-start; flex-direction: column; }
+  .setlist li { align-items: flex-start; flex-wrap: wrap; }
+  .singer { width: 100%; text-align: left; padding-left: 44px; }
+  .personalSongs button { width: 100%; }
+  .share { width: 100%; }
+}

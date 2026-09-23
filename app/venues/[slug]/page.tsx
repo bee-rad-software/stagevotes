@@ -1311,9 +1311,9 @@ async function toggleFollowVenue() {
             </span>
 
             <a
-              href={`/leaderboard/${result.event_id}`}
+              href={`/shows/${result.event_id}`}
             >
-              View Results →
+              Relive Show →
             </a>
           </div>
         </article>
