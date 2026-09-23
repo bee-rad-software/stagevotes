@@ -64,6 +64,26 @@
   margin: 0 0 12px;
 }
 
+.scorecard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 25px;
+}
+
+.scorecard > div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #395169;
+  border-radius: 17px;
+  background: #192a40;
+  padding: 18px 22px;
+}
+
+.scorecard strong { color: #77d3ff; font-size: clamp(2rem, 5vw, 3rem); line-height: 1; }
+.scorecard span { color: #c7d6e6; font-weight: 700; }
+.badgeError { color: #ffc28d !important; }
+
 .highlight { color: #ffc28d !important; font-weight: 750; }
 .badges { display: flex; flex-wrap: wrap; gap: 9px; margin: 20px 0; }
 .badges span { border: 1px solid #856233; border-radius: 999px; padding: 8px 12px; background: #362d26; color: #ffe0b0; }
@@ -106,6 +126,16 @@
 .share:hover { background: #ff9c50; }
 .number { color: #69ceff; font-size: 1.5rem; width: 28px; text-align: center; }
 .singer { color: #ffbe8c; font-weight: 700; text-align: right; }
+.songBadges { display: flex !important; flex-wrap: wrap; gap: 7px !important; margin-top: 5px; }
+.songBadges span {
+  display: inline-block;
+  border: 1px solid #72532e;
+  border-radius: 999px;
+  background: #382d27;
+  color: #ffe0b0 !important;
+  font-size: .84rem;
+  padding: 6px 10px;
+}
 
 @media (max-width: 600px) {
   .page { padding: 20px 14px 90px; }
@@ -115,4 +145,5 @@
   .singer { width: 100%; text-align: left; padding-left: 44px; }
   .personalSongs button { width: 100%; }
   .share { width: 100%; }
+  .scorecard > div { padding: 16px; }
 }

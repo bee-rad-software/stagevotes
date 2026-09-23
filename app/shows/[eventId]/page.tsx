@@ -39,7 +39,7 @@ type Song = {
   completed_at: string | null;
 };
 
-type Badge = { title: string; icon: string };
+type Badge = { performanceId: string; title: string; icon: string };
 type Vote = { performance_id: string; score: number };
 
 function songKey(song: { title: string; artist: string }) {
@@ -53,6 +53,7 @@ export default function ShowRecapPage() {
   const [songs, setSongs] = useState<Song[]>([]);
   const [myIds, setMyIds] = useState<string[]>([]);
   const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeError, setBadgeError] = useState(false);
   const [votes, setVotes] = useState<Vote[]>([]);
   const [finishedAt, setFinishedAt] = useState<string | null>(null);
   const [winnerName, setWinnerName] = useState<string | null>(null);
@@ -68,6 +69,7 @@ export default function ShowRecapPage() {
     async function load() {
       setLoading(true);
       setError('');
+      setBadgeError(false);
 
       const { data: event, error: eventError } = await supabase
         .from('events')
@@ -94,7 +96,7 @@ export default function ShowRecapPage() {
         return;
       }
 
-      const [performanceResult, resultResult, authResult] = await Promise.all([
+      const [performanceResult, resultResult, authResult, badgeResult] = await Promise.all([
         supabase.from('performances')
           .select('id, singer_name, duet_partner_name, singer_profile_id, device_id, song_title, artist, created_at, completed_at')
           .eq('event_id', eventId).eq('status', 'completed'),
@@ -102,6 +104,7 @@ export default function ShowRecapPage() {
           .select('finished_at, judge_winner_name')
           .eq('event_id', eventId).maybeSingle(),
         supabase.auth.getUser(),
+        fetch(`/api/shows/${eventId}/badges`, { cache: 'no-store' }).catch(() => null),
       ]);
 
       if (performanceResult.error) {
@@ -129,17 +132,13 @@ export default function ShowRecapPage() {
 
       const ownIds = ownSongs.map((song) => song.id);
       let earned: Badge[] = [];
-      if (profileId && ownIds.length) {
-        const { data: badgeRows } = await supabase.from('singer_achievements')
-          .select('triggering_performance_id, achievement_definitions(title, icon)')
-          .eq('singer_profile_id', profileId)
-          .in('triggering_performance_id', ownIds);
-
-        earned = (badgeRows || []).flatMap((row) => {
-          const definition = Array.isArray(row.achievement_definitions)
-            ? row.achievement_definitions[0] : row.achievement_definitions;
-          return definition ? [{ title: definition.title, icon: definition.icon }] : [];
-        });
+      let badgesAvailable = false;
+      if (badgeResult?.ok) {
+        const payload: { badges?: Badge[] } = await badgeResult.json().catch(() => ({}));
+        badgesAvailable = Array.isArray(payload.badges);
+        earned = (payload.badges || []).filter((badge) =>
+          finishedSongs.some((song) => song.id === badge.performanceId)
+        );
       }
 
       let judgeVotes: Vote[] = [];
@@ -155,6 +154,7 @@ export default function ShowRecapPage() {
       setSongs(finishedSongs);
       setMyIds(ownIds);
       setBadges(earned);
+      setBadgeError(!badgesAvailable);
       setVotes(judgeVotes);
       setFinishedAt(resultResult.data?.finished_at || null);
       setWinnerName(resultResult.data?.judge_winner_name || null);
@@ -167,6 +167,12 @@ export default function ShowRecapPage() {
   }, [eventId]);
 
   const mySongs = useMemo(() => songs.filter((song) => myIds.includes(song.id)), [songs, myIds]);
+  const singerCount = useMemo(() => new Set(songs.flatMap((song) =>
+    [song.singer_name, song.duet_partner_name || '']
+      .map((name) => name.trim().toLocaleLowerCase())
+      .filter(Boolean)
+  )).size, [songs]);
+  const myBadges = badges.filter((badge) => myIds.includes(badge.performanceId));
   const scoredVotes = votes.filter((vote) => Number.isFinite(Number(vote.score)));
   const averageScore = scoredVotes.length
     ? scoredVotes.reduce((sum, vote) => sum + Number(vote.score), 0) / scoredVotes.length
@@ -277,9 +283,9 @@ export default function ShowRecapPage() {
                 {show.judging_enabled && winnerName?.trim().toLowerCase() === singerName.trim().toLowerCase() && (
                   <p className={styles.highlight}>🏆 Judge winner</p>
                 )}
-                {badges.length > 0 && (
+                {myBadges.length > 0 && (
                   <div className={styles.badges} aria-label="Badges earned this show">
-                    {badges.map((badge, index) => (
+                    {myBadges.map((badge, index) => (
                       <span key={`${badge.title}-${index}`}>{badge.icon} {badge.title}</span>
                     ))}
                   </div>
@@ -306,20 +312,35 @@ export default function ShowRecapPage() {
             <section className={styles.setlist}>
               <span className={styles.kicker}>EVERY SONG, IN ORDER</span>
               <h2>The full setlist</h2>
+              <div className={styles.scorecard} aria-label="Show scorecard">
+                <div><strong>{singerCount}</strong><span>{singerCount === 1 ? 'Singer' : 'Singers'}</span></div>
+                <div><strong>{songs.length}</strong><span>{songs.length === 1 ? 'Song sung' : 'Songs sung'}</span></div>
+              </div>
+              {badgeError && <p className={styles.badgeError}>Badges are unavailable right now.</p>}
               {songs.length === 0 ? <p>No completed songs were recorded for this show.</p> : (
                 <ol>
-                  {songs.map((song) => (
-                    <li key={song.id}>
-                      <span className={styles.number}>♪</span>
-                      <div>
-                        <strong>{song.song_title}</strong>
-                        <span>{song.artist || 'Artist not listed'}</span>
-                      </div>
-                      <span className={styles.singer}>
-                        {song.singer_name}{song.duet_partner_name ? ` & ${song.duet_partner_name}` : ''}
-                      </span>
-                    </li>
-                  ))}
+                  {songs.map((song) => {
+                    const earnedHere = badges.filter((badge) => badge.performanceId === song.id);
+                    return (
+                      <li key={song.id}>
+                        <span className={styles.number}>♪</span>
+                        <div>
+                          <strong>{song.song_title}</strong>
+                          <span>{song.artist || 'Artist not listed'}</span>
+                          {earnedHere.length > 0 && (
+                            <div className={styles.songBadges} aria-label="Badges earned for this song">
+                              {earnedHere.map((badge, index) => (
+                                <span key={`${badge.title}-${index}`}>{badge.icon} {badge.title}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span className={styles.singer}>
+                          {song.singer_name}{song.duet_partner_name ? ` & ${song.duet_partner_name}` : ''}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ol>
               )}
             </section>
