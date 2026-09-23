@@ -16,7 +16,8 @@ type AlertCandidate = {
 
 function twilioIsConfigured() {
   return Boolean(
-    process.env.TWILIO_ACCOUNT_SID &&
+    process.env.TWILIO_SMS_ENABLED === 'true' &&
+      process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_API_KEY &&
       process.env.TWILIO_API_KEY_SECRET &&
       process.env.TWILIO_MESSAGING_SERVICE_SID
