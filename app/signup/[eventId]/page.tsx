@@ -4013,7 +4013,10 @@ currentArtist={
         onClose={closeSongSheet}
       >
 
-                      {!editingPerformanceId && (
+        <SVSongPicker
+          optionsContent={
+            <>
+{!editingPerformanceId && (
           <div
             style={{
               marginBottom: 16,
@@ -4117,8 +4120,8 @@ currentArtist={
             Add any key, arrangement, duet, or intro instructions the host should know.
           </small>
         </label>
-       
-        <SVSongPicker
+            </>
+          }
           songs={pickerSongs}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}

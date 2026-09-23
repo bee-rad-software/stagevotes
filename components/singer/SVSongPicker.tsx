@@ -30,6 +30,7 @@ type Props = {
   onSurpriseMe?: () => void;
   loading?: boolean;
   alertContent?: ReactNode;
+  optionsContent?: ReactNode;
   recommendations?: SVSongOption[];
   recommendationsLoading?: boolean;
   recommendationsMessage?: string;
@@ -44,6 +45,7 @@ export default function SVSongPicker({
   onSurpriseMe,
   loading = false,
   alertContent,
+  optionsContent,
   recommendations = [],
   recommendationsLoading = false,
   recommendationsMessage = '',
@@ -128,10 +130,14 @@ return songs;
 
   return (
     <div className="sv-song-picker">
+    <label className="sv-picker-search-label" htmlFor="song-picker-search">
+      Find your song
+    </label>
      <div className="sv-song-search-wrap">
   <Search size={19} />
 
   <input
+    id="song-picker-search"
     ref={searchInputRef}
     className="sv-song-search"
     placeholder="Search by song or artist..."
@@ -157,6 +163,56 @@ return songs;
     style={{ marginTop: 10 }}
   >
     {alertContent}
+  </div>
+)}
+
+{searchTerm.trim().length >= 2 && (
+  <div className="sv-picker-section-title">
+    {loading
+      ? 'Searching karaoke library'
+      : `${filteredSongs.length} match${
+          filteredSongs.length === 1 ? '' : 'es'
+        }`}
+  </div>
+)}
+
+{searchTerm.trim().length < 2 && (
+  <div className="sv-picker-search-help">
+    Enter at least two letters of a song title or artist.
+  </div>
+)}
+
+{loading && searchTerm.trim().length >= 2 && (
+  <div className="sv-picker-empty sv-picker-loading">
+    <span className="sv-picker-spinner" />
+    Searching songs...
+  </div>
+)}
+
+{!loading && searchTerm.trim().length >= 2 && filteredSongs.length === 0 && (
+  <div className="sv-picker-empty">
+    No songs found. Try another title or artist.
+  </div>
+)}
+
+{searching && !loading && filteredSongs.map(renderSong)}
+
+{!searching && sections.map((section) => (
+  <section key={section.title} className="sv-picker-featured-section">
+    <div className="sv-picker-featured-header">
+      <span>{section.icon}</span>
+      <h3>{section.title}</h3>
+    </div>
+    <div className="sv-picker-featured-list">
+      {section.songs.map(renderSong)}
+    </div>
+  </section>
+))}
+
+{optionsContent && (
+  <div className="sv-picker-options">
+    <div className="sv-picker-section-title">Song options</div>
+    {optionsContent}
   </div>
 )}
 
@@ -220,55 +276,6 @@ return songs;
   </section>
 )}
 
-<div className="sv-picker-section-title">
-  {searchTerm.trim().length < 2
-    ? 'Find your song'
-    : loading
-    ? 'Searching karaoke library'
-    : `${filteredSongs.length} match${
-        filteredSongs.length === 1 ? '' : 'es'
-      }`}
-</div>
-
-{searchTerm.trim().length < 2 && (
-  <div className="sv-picker-empty">
-    Type at least two letters from the song title or artist.
-  </div>
-)}
-
-{loading && searchTerm.trim().length >= 2 && (
-  <div className="sv-picker-empty sv-picker-loading">
-    <span className="sv-picker-spinner" />
-    Searching songs...
-  </div>
-)}
-
-{!loading &&
-  searchTerm.trim().length >= 2 &&
-  filteredSongs.length === 0 && (
-    <div className="sv-picker-empty">
-      No songs found. Try another title or artist.
-    </div>
-  )}
-
-    {!searching &&
-  sections.map((section) => (
-    <section
-      key={section.title}
-      className="sv-picker-featured-section"
-    >
-      <div className="sv-picker-featured-header">
-        <span>{section.icon}</span>
-        <h3>{section.title}</h3>
-      </div>
-
-      <div className="sv-picker-featured-list">
-        {section.songs.map(renderSong)}
-      </div>
-    </section>
-  ))}
-
-{searching && !loading && filteredSongs.map(renderSong)}
     </div>
   );
 }
