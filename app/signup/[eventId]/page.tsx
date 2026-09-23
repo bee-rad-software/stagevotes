@@ -55,6 +55,7 @@ type Performance = {
   account_id?: string | null;
   singer_name: string;
   duet_partner_name?: string | null;
+  performance_note?: string | null;
   song_title: string;
   artist?: string | null;
   queue_order?: number | null;
@@ -145,6 +146,11 @@ export default function SignupPage() {
   const [
     duetPartnerName,
     setDuetPartnerName,
+  ] = useState('');
+
+  const [
+    performanceNote,
+    setPerformanceNote,
   ] = useState('');
 
   const [singerProfile, setSingerProfile] =
@@ -2486,6 +2492,8 @@ if (singerOriginalOrder !== null) {
 
           song_title: song.title.trim(),
           artist: song.artist.trim(),
+          performance_note:
+            performanceNote.trim() || null,
           karafun_song_id:
   song.karafunSongId ?? null,
 
@@ -2723,6 +2731,8 @@ device_id: deviceId,
       .update({
   song_title: song.title.trim(),
   artist: song.artist.trim(),
+  performance_note:
+    performanceNote.trim() || null,
 
   karafun_song_id:
     song.karafunSongId ?? null,
@@ -2969,6 +2979,9 @@ function openCompetitionSong() {
   setEditingPerformanceId(
     performanceNeedingSong.id
   );
+  setPerformanceNote(
+    performanceNeedingSong.performance_note || ''
+  );
 
   setPickerSongs([]);
   setSurpriseSong(null);
@@ -3048,6 +3061,7 @@ function openCompetitionSong() {
 
   function openAddSong() {
     setEditingPerformanceId(null);
+    setPerformanceNote('');
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
@@ -3063,6 +3077,15 @@ function openCompetitionSong() {
       performanceId
     );
 
+    const performance =
+      myPerformances.find(
+        (item) => item.id === performanceId
+      );
+
+    setPerformanceNote(
+      performance?.performance_note || ''
+    );
+
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
@@ -3075,6 +3098,7 @@ function openCompetitionSong() {
     setSongSheetOpen(false);
     setEditingPerformanceId(null);
     setDuetPartnerName('');
+    setPerformanceNote('');
     setPickerSongs([]);
     setSurpriseSong(null);
     setDuplicateWarning('');
@@ -3590,6 +3614,15 @@ currentArtist={
                     </div>
                   )}
 
+                  {performance.performance_note && (
+                    <div className="sv-singer-performance-note">
+                      <span aria-hidden="true">📝</span>
+                      <span>
+                        {performance.performance_note}
+                      </span>
+                    </div>
+                  )}
+
                                     {performance
                     .duet_partner_name && (
                     <div
@@ -3685,6 +3718,9 @@ currentArtist={
         ) {
           setEditingPerformanceId(
             performance.id
+          );
+          setPerformanceNote(
+            performance.performance_note || ''
           );
           setPickerSongs([]);
           setSurpriseSong(null);
@@ -3996,6 +4032,29 @@ currentArtist={
             )}
           </div>
         )}
+
+        <label className="sv-singer-note-field">
+          <span>
+            Note for the host
+            <small>Optional</small>
+          </span>
+
+          <textarea
+            value={performanceNote}
+            onChange={(event) =>
+              setPerformanceNote(
+                event.target.value.slice(0, 500)
+              )
+            }
+            rows={3}
+            maxLength={500}
+            placeholder="Example: Please lower the key, +2 semitones, or I sing the second verse"
+          />
+
+          <small>
+            Add any key, arrangement, duet, or intro instructions the host should know.
+          </small>
+        </label>
        
         <SVSongPicker
           songs={pickerSongs}

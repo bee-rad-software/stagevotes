@@ -131,6 +131,8 @@ const [editSingerName, setEditSingerName] = useState('');
 const [editDuetPartnerName, setEditDuetPartnerName] = useState('');
 const [editSongTitle, setEditSongTitle] = useState('');
 const [editArtist, setEditArtist] = useState('');
+const [performanceNote, setPerformanceNote] = useState('');
+const [editPerformanceNote, setEditPerformanceNote] = useState('');
 const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   { singer_name: string; votes: number }[]
 >([]);
@@ -1390,6 +1392,8 @@ const { error } = await supabase.from('performances').insert({
 
   song_title: songTitle.trim(),
   artist: artist.trim(),
+  performance_note:
+    performanceNote.trim() || null,
 
   karafun_song_id:
     selectedKaraFunSongId,
@@ -1417,6 +1421,7 @@ if (error) {
     setDuetPartnerName('');
     setSongTitle('');
     setArtist('');
+    setPerformanceNote('');
     setPickerSongs([]);
     setSelectedKaraFunSongId(null);
 setSelectedKaraFunTitle('');
@@ -3340,6 +3345,9 @@ async function toggleCheckinRequired(required: boolean) {
 
   setEditSongTitle(p.song_title);
   setEditArtist(p.artist || '');
+  setEditPerformanceNote(
+    p.performance_note || ''
+  );
 }
 
 function cancelEditing() {
@@ -3348,6 +3356,7 @@ function cancelEditing() {
   setEditDuetPartnerName('');
   setEditSongTitle('');
   setEditArtist('');
+  setEditPerformanceNote('');
 }
 
 function useCurrentLocationForCheckin() {
@@ -3588,6 +3597,9 @@ async function saveEdit(
 
         song_title: editSongTitle.trim(),
         artist: editArtist.trim(),
+        performance_note:
+          editPerformanceNote.trim() ||
+          null,
 
         // A free-text host edit is no longer tied to the
         // previously selected KaraFun catalog result.
@@ -4753,6 +4765,10 @@ const hostQueueItems: SVHostQueueItem[] =
         : performance.artist ||
           undefined,
 
+      performanceNote:
+        performance.performance_note ||
+        undefined,
+
       photoUrl:
         performance.singer_profiles
           ?.photo_url || null,
@@ -5712,12 +5728,14 @@ karafunPlayerOnline={karafunPlayerOnline}
     editSingerName={editSingerName}
     editSongTitle={editSongTitle}
     editArtist={editArtist}
+    editPerformanceNote={editPerformanceNote}
     onToggleSingerView={() =>
       setSingerView((current) => !current)
     }
     onEditSingerName={setEditSingerName}
     onEditSongTitle={setEditSongTitle}
     onEditArtist={setEditArtist}
+    onEditPerformanceNote={setEditPerformanceNote}
     onStartEdit={(item) =>
       startEditing(item.performance)
     }
@@ -5971,9 +5989,10 @@ karafunPlayerOnline={karafunPlayerOnline}
         <button
           type="button"
           aria-label="Close signup"
-          onClick={() =>
-            setShowSingerSignup(false)
-          }
+          onClick={() => {
+            setPerformanceNote('');
+            setShowSingerSignup(false);
+          }}
           style={{
             width: 36,
             height: 36,
@@ -6451,6 +6470,58 @@ karafunPlayerOnline={karafunPlayerOnline}
       </div>
     </div>
   )}
+
+  <div style={{ marginTop: 16 }}>
+    <label
+      htmlFor="host-performance-note"
+      style={{
+        display: 'block',
+        marginBottom: 7,
+        fontSize: 13,
+        fontWeight: 700,
+      }}
+    >
+      Performance note
+      <span
+        style={{
+          marginLeft: 6,
+          color: '#94a3b8',
+          fontSize: 11,
+          fontWeight: 500,
+        }}
+      >
+        Optional
+      </span>
+    </label>
+
+    <textarea
+      id="host-performance-note"
+      value={performanceNote}
+      onChange={(event) =>
+        setPerformanceNote(
+          event.target.value.slice(0, 500)
+        )
+      }
+      rows={3}
+      maxLength={500}
+      placeholder="Example: Lower key, +2 semitones, or start after the intro"
+      style={{
+        width: '100%',
+        resize: 'vertical',
+      }}
+    />
+
+    <div
+      style={{
+        marginTop: 6,
+        color: '#94a3b8',
+        fontSize: 12,
+        lineHeight: 1.45,
+      }}
+    >
+      Visible to the host and saved with this queued song.
+    </div>
+  </div>
 </div>
       </div>
 
@@ -6468,9 +6539,10 @@ karafunPlayerOnline={karafunPlayerOnline}
         <button
           type="button"
           className="secondary"
-          onClick={() =>
-            setShowSingerSignup(false)
-          }
+          onClick={() => {
+            setPerformanceNote('');
+            setShowSingerSignup(false);
+          }}
         >
           Cancel
         </button>

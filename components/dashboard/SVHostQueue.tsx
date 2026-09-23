@@ -66,6 +66,7 @@ export type SVHostQueueItem = {
   duetPartnerName?: string;
   songTitle: string;
   artist?: string;
+  performanceNote?: string;
   photoUrl?: string | null;
   round: number;
   status?: 'current' | 'next' | 'waiting';
@@ -92,6 +93,7 @@ type Props = {
   editDuetPartnerName?: string;
   editSongTitle?: string;
   editArtist?: string;
+  editPerformanceNote?: string;
   
 
   onToggleSingerView?: () => void;
@@ -104,6 +106,9 @@ type Props = {
 
   onEditSongTitle?: (value: string) => void;
   onEditArtist?: (value: string) => void;
+  onEditPerformanceNote?: (
+    value: string
+  ) => void;
   onChooseEditSong?: () => void;
 
  onStartEdit?: (performance: SVHostQueueItem) => void;
@@ -340,6 +345,13 @@ const rowStyle: React.CSSProperties = {
           {item.artist && (
             <small>by {item.artist}</small>
           )}
+
+          {item.performanceNote && (
+            <div className="sv-host-queue-note">
+              <span aria-hidden="true">📝</span>
+              <span>{item.performanceNote}</span>
+            </div>
+          )}
         </div>
 
         <div className="sv-host-queue-actions">
@@ -467,11 +479,13 @@ export default function SVHostQueue({
   editDuetPartnerName = '',
   editSongTitle = '',
   editArtist = '',
+  editPerformanceNote = '',
   onToggleSingerView,
   onEditSingerName,
   onEditDuetPartnerName,
   onEditSongTitle,
   onEditArtist,
+  onEditPerformanceNote,
   onChooseEditSong,
   onStartEdit,
   onSaveEdit,
@@ -726,6 +740,25 @@ const uniqueSingerCount = singerGroups.length;
           : 'Choose Song'}
       </button>
     </div>
+
+    <label className="sv-host-editor-note">
+      <span>
+        Performance note
+        <small>Optional</small>
+      </span>
+
+      <textarea
+        value={editPerformanceNote}
+        onChange={(event) =>
+          onEditPerformanceNote?.(
+            event.target.value.slice(0, 500)
+          )
+        }
+        rows={3}
+        maxLength={500}
+        placeholder="Example: Lower key, +2 semitones, or start after the intro"
+      />
+    </label>
 
     <div className="sv-host-queue-editor-actions">
 

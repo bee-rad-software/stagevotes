@@ -8529,6 +8529,83 @@ a.atlas-live-venue-logo {
   color: #94a3b8;
 }
 
+.sv-host-editor-note {
+  display: grid;
+  gap: 7px;
+  margin-top: 14px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sv-host-editor-note > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.sv-host-editor-note small {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sv-host-editor-note textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+}
+
+.sv-singer-note-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 14px;
+  background: rgba(249, 115, 22, 0.07);
+  color: #e2e8f0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sv-singer-note-field > span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.sv-singer-note-field > span small,
+.sv-singer-note-field > small {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.sv-singer-note-field textarea {
+  width: 100%;
+  min-height: 82px;
+  resize: vertical;
+}
+
+.sv-singer-performance-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 6px 9px;
+  border: 1px solid rgba(249, 115, 22, 0.22);
+  border-radius: 9px;
+  background: rgba(249, 115, 22, 0.08);
+  color: #fed7aa;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
 .sv-host-queue-editor-actions {
   display: flex;
   gap: 10px;
