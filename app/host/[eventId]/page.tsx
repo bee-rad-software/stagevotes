@@ -5892,19 +5892,23 @@ karafunPlayerOnline={karafunPlayerOnline}
     </div>
   </div>
 
-  <div className="card">
-   <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
-<div style={{ fontSize: 28, fontWeight: 900 }}>
-  {judgeBallotCount}
-</div>
-  </div>
+  {event?.judging_enabled === true && (
+    <>
+      <div className="card">
+        <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
+        <div style={{ fontSize: 28, fontWeight: 900 }}>
+          {judgeBallotCount}
+        </div>
+      </div>
 
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
-    <div style={{ fontSize: 28, fontWeight: 900, color: '#c2410c' }}>
-      {leaderboard[0]?.singer_name || 'No votes yet'}
-    </div>
-  </div>
+      <div className="card">
+        <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
+        <div style={{ fontSize: 28, fontWeight: 900, color: '#c2410c' }}>
+          {leaderboard[0]?.singer_name || 'No votes yet'}
+        </div>
+      </div>
+    </>
+  )}
 </div>
   
 {showSingerSignup && (
