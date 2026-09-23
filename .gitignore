@@ -18,3 +18,4 @@ out/
 .vercel
 .env*
 dist-electron/
+*.tsbuildinfo

@@ -4871,8 +4871,47 @@ const fairQueue = useMemo(() => {
  const upNext = rotatedQueue.find(
   p =>
     p.id !== event?.current_performance_id &&
-    p.status !== 'completed'
+    p.status !== 'completed' &&
+    p.status !== 'skipped'
 );
+
+useEffect(() => {
+  if (!event?.current_performance_id) return;
+
+  let cancelled = false;
+  const onDeckPerformanceId = upNext?.id || null;
+
+  async function syncSingerSmsAlerts() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token || cancelled) return;
+
+    try {
+      await fetch('/api/sms/sync-queue', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          eventId,
+          onDeckPerformanceId,
+        }),
+      });
+    } catch (error) {
+      // Queue operation must never be interrupted by an optional alert failure.
+      console.error('Unable to synchronize singer SMS alerts:', error);
+    }
+  }
+
+  void syncSingerSmsAlerts();
+
+  return () => {
+    cancelled = true;
+  };
+}, [eventId, event?.current_performance_id, upNext?.id]);
   const leaderboard = useMemo(() => {
   const singerScores = new Map<
     string,
