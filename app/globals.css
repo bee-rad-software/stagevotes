@@ -7730,33 +7730,6 @@ a.atlas-live-venue-logo {
   box-shadow: none;
 }
 
-.sv-guest-alert-details {
-  margin-top: 21px;
-  border-top: 1px solid rgba(148, 163, 184, 0.23);
-  color: #cbd5e1;
-}
-
-.sv-guest-alert-details summary {
-  padding: 16px 0 0;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 750;
-}
-
-.sv-guest-alert-details summary span {
-  color: #94a3b8;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.sv-guest-alert-content {
-  padding-top: 16px;
-}
-
-.sv-guest-alert-content > label:not(:first-of-type) {
-  margin-top: 10px;
-}
-
 .sv-singer-profile-prompt-icon {
   display: grid;
   width: 48px;
@@ -8745,6 +8718,63 @@ a.atlas-live-venue-logo {
 
 .sv-picker-options > .sv-singer-note-field {
   margin-bottom: 0;
+}
+
+.sv-song-sms-options {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  background: rgba(14, 165, 233, 0.08);
+  color: #e2e8f0;
+}
+
+.sv-song-sms-options h3,
+.sv-song-sms-options p {
+  margin: 0;
+}
+
+.sv-song-sms-options h3 {
+  color: #f8fafc;
+  font-size: 17px;
+}
+
+.sv-song-sms-options p {
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sv-song-sms-options > label:not(.sv-song-sms-consent) {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sv-song-sms-options > input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(2, 6, 23, 0.75);
+  color: #f8fafc;
+}
+
+.sv-song-sms-consent {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: start;
+  gap: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sv-song-sms-consent input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: #38bdf8;
 }
 
 .sv-singer-performance-note {
