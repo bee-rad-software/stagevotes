@@ -3971,7 +3971,7 @@ currentArtist={
               <div className="sv-mobile-kicker">Optional text alerts</div>
               <h3>Get notified when it&apos;s your turn</h3>
               <p>Get an on-deck text and a text when you&apos;re up for this song.</p>
-  
+
               <label htmlFor="sms-phone">Mobile number</label>
               <input
                 id="sms-phone"
@@ -3982,7 +3982,7 @@ currentArtist={
                 onChange={(inputEvent) => setSmsPhone(inputEvent.target.value)}
                 placeholder="(479) 555-0123"
               />
-  
+
               <label className="sv-song-sms-consent">
                 <input
                   type="checkbox"
