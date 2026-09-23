@@ -30,7 +30,7 @@ type Props = {
   onSurpriseMe?: () => void;
   loading?: boolean;
   alertContent?: ReactNode;
-  afterSearchContent?: ReactNode;
+  afterResultsContent?: ReactNode;
   optionsContent?: ReactNode;
   recommendations?: SVSongOption[];
   recommendationsLoading?: boolean;
@@ -46,7 +46,7 @@ export default function SVSongPicker({
   onSurpriseMe,
   loading = false,
   alertContent,
-  afterSearchContent,
+  afterResultsContent,
   optionsContent,
   recommendations = [],
   recommendationsLoading = false,
@@ -159,8 +159,6 @@ return songs;
   )}
 </div>
 
-{afterSearchContent}
-
 {alertContent && (
   <div
     aria-live="polite"
@@ -212,6 +210,8 @@ return songs;
     </div>
   </section>
 ))}
+
+{afterResultsContent}
 
 {optionsContent && (
   <div className="sv-picker-options">

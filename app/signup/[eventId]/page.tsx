@@ -3966,7 +3966,7 @@ currentArtist={
       >
 
         <SVSongPicker
-          afterSearchContent={!editingPerformanceId && (
+          afterResultsContent={!editingPerformanceId && (
             <div className="sv-song-sms-options">
               <div className="sv-mobile-kicker">Optional text alerts</div>
               <h3>Get notified when it&apos;s your turn</h3>
