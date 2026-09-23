@@ -900,7 +900,7 @@ return (
           fontSize: 13,
         }}
       >
-        Manage your Project Atlas venue page.
+        Manage your public venue page.
       </p>
     </div>
   </div>

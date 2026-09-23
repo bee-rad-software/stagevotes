@@ -436,12 +436,12 @@ all in one place.
             <h2>No followed venues yet</h2>
 
             <p>
-              Follow venues from Atlas to build
+              Follow venues to build
               your personal karaoke map.
             </p>
 
             <Link href="/live">
-              Explore Atlas
+              Explore Live Shows
             </Link>
           </div>
         )}

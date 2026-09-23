@@ -729,8 +729,8 @@ const otherVenues = liveVenues.slice(1);
 
   return (
   <SVSingerShell
-    title="Atlas"
-    subtitle="Discover karaoke near you"
+    title="Live Shows"
+    subtitle="Find karaoke near you"
   >
     <main className="atlas-page">
       <section className="atlas-live-hero">
@@ -742,6 +742,7 @@ const otherVenues = liveVenues.slice(1);
           Find a StageVotes venue, see who is
           singing, and join the queue.
         </p>
+        <p><Link href="/my-schedule">My Schedule →</Link>{' · '}<Link href="/my-history">My History →</Link></p>
       </section>
 
         {loading && (

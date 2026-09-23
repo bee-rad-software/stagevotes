@@ -2647,10 +2647,10 @@ background-repeat: no-repeat;
   right: 50%;
   bottom: 16px;
   z-index: 100;
-  width: min(560px, calc(100% - 28px));
+  width: min(620px, calc(100% - 28px));
   display: grid;
   grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+    repeat(5, minmax(0, 1fr));
   gap: 7px;
   padding: 8px;
   border: 1px solid

@@ -19,7 +19,7 @@ export default function SVSingerShell({
     <div className="sv-singer-shell">
       <header className="sv-singer-shell-header">
         <Link
-          href="/live"
+          href="/my-schedule"
           className="sv-singer-shell-brand"
         >
           <img

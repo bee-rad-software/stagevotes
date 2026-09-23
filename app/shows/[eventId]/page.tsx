@@ -260,7 +260,7 @@ export default function ShowRecapPage() {
   return (
     <SVSingerShell title="Show history" subtitle="Relive the night">
       <div className={styles.page}>
-        <Link className={styles.back} href="/live">← Back to Atlas</Link>
+        <Link className={styles.back} href="/my-history">← Back to My History</Link>
         {loading && <p className={styles.state}>Loading show history…</p>}
         {error && <p className={styles.state} role="alert">{error}</p>}
         {!loading && !error && show && venue && (

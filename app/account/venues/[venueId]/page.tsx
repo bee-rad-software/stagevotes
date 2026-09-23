@@ -383,7 +383,7 @@ export default function VenueEditorPage() {
       <header className={styles.header}>
         <div>
           <span className={styles.eyebrow}>
-            Project Atlas
+            Venue directory
           </span>
 
           <h1>Manage Venue</h1>

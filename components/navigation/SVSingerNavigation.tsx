@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Compass,
+  CalendarDays,
+  History,
   Mic2,
   Star,
   Trophy,
@@ -15,9 +16,14 @@ function getNavigationItems(
 ) {
   return [
     {
-      label: 'Atlas',
-      href: '/live',
-      icon: Compass,
+      label: 'My Schedule',
+      href: '/my-schedule',
+      icon: CalendarDays,
+    },
+    {
+      label: 'My History',
+      href: '/my-history',
+      icon: History,
     },
     {
       label: 'Tonight',
@@ -44,7 +50,7 @@ export default function SVSingerNavigation() {
 const tonightHref =
   currentShow.eventId
     ? `/signup/${currentShow.eventId}`
-    : '/live';
+    : '/my-schedule';
 
 const navigationItems =
   getNavigationItems(tonightHref);
