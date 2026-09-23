@@ -216,28 +216,6 @@ return songs;
   </div>
 )}
 
-{!searching && onSurpriseMe && (
-  <div className="sv-brave-card">
-    <div className="sv-brave-icon">🎲</div>
-
-    <div className="sv-brave-copy">
-      <div className="sv-mobile-kicker">Feeling brave?</div>
-      <h3>Let StageVotes pick for you</h3>
-      <p>
-        We’ll choose something similar to songs you enjoy singing.
-      </p>
-    </div>
-
-    <button
-      type="button"
-      className="sv-brave-button"
-      onClick={onSurpriseMe}
-    >
-      Surprise Me
-    </button>
-  </div>
-)}
-
 {!searching && onGenerateRecommendations && (
   <section className="sv-ai-song-card">
     <div className="sv-ai-song-card-header">
@@ -274,6 +252,28 @@ return songs;
       </div>
     )}
   </section>
+)}
+
+{!searching && onSurpriseMe && (
+  <div className="sv-brave-card">
+    <div className="sv-brave-icon">🎲</div>
+
+    <div className="sv-brave-copy">
+      <div className="sv-mobile-kicker">Feeling brave?</div>
+      <h3>Let StageVotes pick for you</h3>
+      <p>
+        We’ll choose something similar to songs you enjoy singing.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      className="sv-brave-button"
+      onClick={onSurpriseMe}
+    >
+      Surprise Me
+    </button>
+  </div>
 )}
 
     </div>
