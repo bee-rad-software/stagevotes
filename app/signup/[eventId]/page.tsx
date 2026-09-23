@@ -85,6 +85,22 @@ type EventData = {
 const CURRENT_SHOW_KEY =
   'stagevotes_current_event_id';
 
+const SMS_CONSENT_VERSION = '2026-09-23';
+
+function normalizeUsPhone(value: string) {
+  const digits = value.replace(/\D/g, '');
+
+  if (digits.length === 10) {
+    return `+1${digits}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `+${digits}`;
+  }
+
+  return null;
+}
+
 function rememberCurrentShow(
   eventId: string
 ) {
@@ -119,6 +135,9 @@ export default function SignupPage() {
 
   const [singerName, setSingerName] = useState('');
   const [savedSingerName, setSavedSingerName] = useState('');
+
+  const [smsPhone, setSmsPhone] = useState('');
+  const [smsConsent, setSmsConsent] = useState(false);
 
    const [isDuet, setIsDuet] =
     useState(false);
@@ -1067,6 +1086,15 @@ async function maybeCelebrateFirstPerformance(
     if (savedName) {
       setSingerName(savedName);
       setSavedSingerName(savedName);
+    }
+
+    const savedSmsPhone = localStorage.getItem(
+      `stagevotes_sms_phone_${eventId}`
+    );
+
+    if (savedSmsPhone) {
+      setSmsPhone(savedSmsPhone);
+      setSmsConsent(true);
     }
 
     loadEvent();
@@ -2309,6 +2337,18 @@ return false;
       return;
     }
 
+    const normalizedSmsPhone = smsConsent
+      ? normalizeUsPhone(smsPhone)
+      : null;
+
+    if (smsConsent && !normalizedSmsPhone) {
+      setMessage(
+        'Please enter a valid 10-digit U.S. mobile number for text alerts.'
+      );
+      closeSongSheet();
+      return;
+    }
+
         if (
       isDuet &&
       !duetPartnerName.trim()
@@ -2432,7 +2472,7 @@ if (singerOriginalOrder !== null) {
   nextOrder = maxSingerOrder + 1;
 }
 
-      const { error } = await supabase
+      const { data: createdPerformance, error } = await supabase
         .from('performances')
         .insert({
           event_id: eventId,
@@ -2472,7 +2512,9 @@ device_id: deviceId,
     'StageVotes picked this one for you'
       ? 'surprise_me'
       : 'search'),
-        });
+        })
+        .select('id')
+        .single();
 
      if (error) {
   setPickerError(
@@ -2481,6 +2523,31 @@ device_id: deviceId,
   );
   return;
 }
+
+      let smsEnrollmentFailed = false;
+
+      if (smsConsent && normalizedSmsPhone && createdPerformance?.id) {
+        const { error: smsError } = await supabase
+          .from('performance_sms_subscriptions')
+          .insert({
+            performance_id: createdPerformance.id,
+            event_id: eventId,
+            phone_e164: normalizedSmsPhone,
+            consented_at: new Date().toISOString(),
+            consent_version: SMS_CONSENT_VERSION,
+            consent_source: 'singer_web_form',
+          });
+
+        if (smsError) {
+          console.error('Unable to save SMS opt-in:', smsError);
+          smsEnrollmentFailed = true;
+        } else {
+          localStorage.setItem(
+            `stagevotes_sms_phone_${eventId}`,
+            smsPhone
+          );
+        }
+      }
 
       if (
   event.competition_mode === 'tournament' &&
@@ -2623,7 +2690,9 @@ device_id: deviceId,
       setDuetPartnerName('');
 
       setMessage(
-        myPerformances.length === 0
+        smsEnrollmentFailed
+          ? `"${song.title}" was added, but text alerts could not be enabled. Your browser will still show live queue updates.`
+          : myPerformances.length === 0
           ? `You're in! "${song.title}" was added to the queue.`
           : `"${song.title}" was added to your songs tonight.`
       );
@@ -3239,6 +3308,54 @@ currentArtist={
     your name for tonight if needed.
   </p>
 )}
+          </div>
+
+          <div
+            style={{
+              marginTop: 20,
+              paddingTop: 20,
+              borderTop: '1px solid rgba(148,163,184,.2)',
+            }}
+          >
+            <div className="sv-mobile-kicker">Optional Text Alerts</div>
+
+            <label htmlFor="sms-phone">Mobile Number</label>
+            <input
+              id="sms-phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={smsPhone}
+              onChange={(inputEvent) => setSmsPhone(inputEvent.target.value)}
+              placeholder="(479) 555-0123"
+            />
+
+            <label
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '26px 1fr',
+                gap: 12,
+                alignItems: 'start',
+                marginTop: 8,
+                lineHeight: 1.45,
+                color: '#cbd5e1',
+                fontSize: 14,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={smsConsent}
+                onChange={(inputEvent) => setSmsConsent(inputEvent.target.checked)}
+                style={{ width: 21, height: 21, margin: 1 }}
+              />
+              <span>
+                Text me when I&apos;m on deck and when it&apos;s my turn. Up to 2 messages per queued
+                song. Message and data rates may apply. Reply STOP to opt out or HELP for help.
+                Consent is optional and is not required to participate.{' '}
+                <a href="/terms" target="_blank" rel="noreferrer">Terms</a>{' · '}
+                <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
+              </span>
+            </label>
           </div>
         </section>
  )}
