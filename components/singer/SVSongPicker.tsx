@@ -30,6 +30,7 @@ type Props = {
   onSurpriseMe?: () => void;
   loading?: boolean;
   alertContent?: ReactNode;
+  afterSearchContent?: ReactNode;
   optionsContent?: ReactNode;
   recommendations?: SVSongOption[];
   recommendationsLoading?: boolean;
@@ -45,6 +46,7 @@ export default function SVSongPicker({
   onSurpriseMe,
   loading = false,
   alertContent,
+  afterSearchContent,
   optionsContent,
   recommendations = [],
   recommendationsLoading = false,
@@ -156,6 +158,8 @@ return songs;
     </button>
   )}
 </div>
+
+{afterSearchContent}
 
 {alertContent && (
   <div

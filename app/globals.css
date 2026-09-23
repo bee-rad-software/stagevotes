@@ -8723,6 +8723,7 @@ a.atlas-live-venue-logo {
 .sv-song-sms-options {
   display: grid;
   gap: 10px;
+  margin-top: 18px;
   padding: 16px;
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 14px;

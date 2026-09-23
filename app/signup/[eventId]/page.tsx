@@ -3966,6 +3966,39 @@ currentArtist={
       >
 
         <SVSongPicker
+          afterSearchContent={!editingPerformanceId && (
+            <div className="sv-song-sms-options">
+              <div className="sv-mobile-kicker">Optional text alerts</div>
+              <h3>Get notified when it&apos;s your turn</h3>
+              <p>Get an on-deck text and a text when you&apos;re up for this song.</p>
+  
+              <label htmlFor="sms-phone">Mobile number</label>
+              <input
+                id="sms-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={smsPhone}
+                onChange={(inputEvent) => setSmsPhone(inputEvent.target.value)}
+                placeholder="(479) 555-0123"
+              />
+  
+              <label className="sv-song-sms-consent">
+                <input
+                  type="checkbox"
+                  checked={smsConsent}
+                  onChange={(inputEvent) => setSmsConsent(inputEvent.target.checked)}
+                />
+                <span>
+                  Text me when I&apos;m on deck and when it&apos;s my turn. Up to 2 messages per queued
+                  song. Message and data rates may apply. Reply STOP to opt out or HELP for help.
+                  Consent is optional and is not required to participate.{' '}
+                  <a href="/terms" target="_blank" rel="noreferrer">Terms</a>{' · '}
+                  <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
+                </span>
+              </label>
+            </div>
+          )}
           optionsContent={
             <>
 {!editingPerformanceId && (
@@ -4072,39 +4105,6 @@ currentArtist={
             Add any key, arrangement, duet, or intro instructions the host should know.
           </small>
         </label>
-        {!editingPerformanceId && (
-          <div className="sv-song-sms-options">
-            <div className="sv-mobile-kicker">Optional text alerts</div>
-            <h3>Get notified when it&apos;s your turn</h3>
-            <p>Get an on-deck text and a text when you&apos;re up for this song.</p>
-
-            <label htmlFor="sms-phone">Mobile number</label>
-            <input
-              id="sms-phone"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              value={smsPhone}
-              onChange={(inputEvent) => setSmsPhone(inputEvent.target.value)}
-              placeholder="(479) 555-0123"
-            />
-
-            <label className="sv-song-sms-consent">
-              <input
-                type="checkbox"
-                checked={smsConsent}
-                onChange={(inputEvent) => setSmsConsent(inputEvent.target.checked)}
-              />
-              <span>
-                Text me when I&apos;m on deck and when it&apos;s my turn. Up to 2 messages per queued
-                song. Message and data rates may apply. Reply STOP to opt out or HELP for help.
-                Consent is optional and is not required to participate.{' '}
-                <a href="/terms" target="_blank" rel="noreferrer">Terms</a>{' · '}
-                <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
-              </span>
-            </label>
-          </div>
-        )}
             </>
           }
           songs={pickerSongs}
