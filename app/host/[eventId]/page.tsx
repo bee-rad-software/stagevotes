@@ -3726,7 +3726,7 @@ async function saveEdit(
     await supabase
       .from('performances')
       .update({
-        status: 'completed',
+        status: 'skipped',
       })
       .eq('id', performanceId)
       .eq('event_id', eventId)
@@ -4697,6 +4697,20 @@ useEffect(() => {
 const completedPerformanceCount = performances.filter(
   (performance) => performance.status === 'completed'
 ).length;
+
+const songHistory = useMemo(
+  () => performances
+    .filter((performance) => performance.status === 'completed')
+    .sort((a, b) => {
+      const firstTime = Date.parse(a.completed_at || a.created_at);
+      const secondTime = Date.parse(b.completed_at || b.created_at);
+
+      return firstTime - secondTime ||
+        a.created_at.localeCompare(b.created_at) ||
+        a.id.localeCompare(b.id);
+    }),
+  [performances]
+);
 
 const isBrandNewEmptyShow =
   rotatedQueue.length === 0 &&
@@ -5910,6 +5924,33 @@ karafunPlayerOnline={karafunPlayerOnline}
     </>
   )}
 </div>
+
+<details className="sv-host-song-history">
+  <summary>
+    <span>🎵 Song history</span>
+    <span className="sv-host-song-history-count">
+      {songHistory.length} sung
+    </span>
+  </summary>
+
+  {songHistory.length === 0 ? (
+    <p className="sv-host-song-history-empty">No songs sung yet tonight.</p>
+  ) : (
+    <ol className="sv-host-song-history-list">
+      {songHistory.map((performance) => (
+        <li key={performance.id}>
+          <div>
+            <strong>{getKaraFunSingerName(performance)}</strong>
+            <span>
+              {performance.song_title}
+              {performance.artist ? ` · ${performance.artist}` : ''}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ol>
+  )}
+</details>
   
 {showSingerSignup && (
   <div

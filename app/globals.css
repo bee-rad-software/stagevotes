@@ -8801,6 +8801,83 @@ a.atlas-live-venue-logo {
   margin-top: 14px;
 }
 
+.sv-host-song-history {
+  margin: 0 0 28px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.78);
+}
+
+.sv-host-song-history summary {
+  display: flex;
+  list-style: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  color: #f8fafc;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sv-host-song-history summary::before {
+  content: '▸';
+  color: #38bdf8;
+}
+
+.sv-host-song-history[open] summary::before {
+  content: '▾';
+}
+
+.sv-host-song-history summary::-webkit-details-marker {
+  display: none;
+}
+
+.sv-host-song-history-count {
+  margin-left: auto;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sv-host-song-history-list {
+  margin: 0;
+  padding: 0 20px 12px 48px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.sv-host-song-history-list li {
+  padding: 14px 0 14px 4px;
+  color: #38bdf8;
+}
+
+.sv-host-song-history-list li + li {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.sv-host-song-history-list li > div {
+  display: grid;
+  gap: 3px;
+}
+
+.sv-host-song-history-list strong {
+  color: #f8fafc;
+}
+
+.sv-host-song-history-list li span,
+.sv-host-song-history-empty {
+  color: #cbd5e1;
+}
+
+.sv-host-song-history-empty {
+  margin: 0;
+  padding: 18px 20px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
 .sv-tournament-results-page {
   width: min(100%, 1000px);
   margin: 0 auto;
