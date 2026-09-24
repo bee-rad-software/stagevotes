@@ -4,6 +4,7 @@ Usage: python scripts/update-karafun-ratings.py <CSV URL or local CSV path>
 The CSV download is linked from https://www.karafun.com/karaoke-song-list.html.
 """
 import csv
+import base64
 import json
 import pathlib
 import sys
@@ -31,6 +32,18 @@ for row in rows:
 if len(ratings) < 50000:
     raise SystemExit('The catalog looks incomplete; existing ratings were not replaced.')
 
+byte_count = (max(map(int, ratings)) // 8) + 1
+known = bytearray(byte_count)
+explicit = bytearray(byte_count)
+for song_id, rating in ratings.items():
+    index = int(song_id)
+    known[index // 8] |= 1 << (index % 8)
+    if rating:
+        explicit[index // 8] |= 1 << (index % 8)
+
 destination = pathlib.Path(__file__).resolve().parent.parent / 'lib' / 'karafunSongRatings.json'
-destination.write_text(json.dumps(ratings, separators=(',', ':')) + '\n', encoding='utf-8')
+destination.write_text(json.dumps({
+    'known': base64.b64encode(known).decode('ascii'),
+    'explicit': base64.b64encode(explicit).decode('ascii'),
+}, separators=(',', ':')) + '\n', encoding='utf-8')
 print(f'Updated {len(ratings)} KaraFun song ratings ({sum(ratings.values())} explicit).')
