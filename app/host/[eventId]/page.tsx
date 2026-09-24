@@ -149,6 +149,13 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showAudienceAccess, setShowAudienceAccess] = useState(false);
   const [showCheckinStats, setShowCheckinStats] = useState(false);
   const [showCompletedTonight, setShowCompletedTonight] = useState(false);
+  const [smsShowStatus, setSmsShowStatus] = useState<Array<{
+    performanceId: string;
+    singer: string;
+    song: string;
+    performanceStatus: string;
+    delivery: Record<string, { status: string; errorCode: string | null }>;
+  }>>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
 const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
   const [copiedLink, setCopiedLink] = useState('');
@@ -4942,6 +4949,29 @@ useEffect(() => {
     cancelled = true;
   };
 }, [eventId, event?.current_performance_id, upNext?.id]);
+
+useEffect(() => {
+  if (!eventId) return;
+  let active = true;
+  async function refreshSmsStatus() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token || !active) return;
+      const response = await fetch(`/api/sms/show-status?eventId=${encodeURIComponent(eventId)}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: 'no-store',
+      });
+      if (!response.ok) return;
+      const result = await response.json();
+      if (active) setSmsShowStatus(result.alerts || []);
+    } catch (error) {
+      console.error('Unable to refresh singer text status:', error);
+    }
+  }
+  void refreshSmsStatus();
+  const timer = setInterval(() => void refreshSmsStatus(), 15000);
+  return () => { active = false; clearInterval(timer); };
+}, [eventId, performances.length, event?.current_performance_id]);
   const leaderboard = useMemo(() => {
   const singerScores = new Map<
     string,
@@ -5924,6 +5954,30 @@ karafunPlayerOnline={karafunPlayerOnline}
     </>
   )}
 </div>
+
+<details className="sv-host-song-history">
+  <summary>
+    <span>📱 Singer text alerts</span>
+    <span className="sv-host-song-history-count">{smsShowStatus.length} opted in</span>
+  </summary>
+  {smsShowStatus.length === 0 ? (
+    <p className="sv-host-song-history-empty">No singers have opted in to text alerts for this show.</p>
+  ) : (
+    <ol className="sv-host-song-history-list">
+      {smsShowStatus.map((item) => (
+        <li key={item.performanceId}>
+          <div><strong>{item.singer}</strong><span>{item.song}</span></div>
+          <div>
+            On deck: {item.delivery.on_deck?.status || 'Waiting'}
+            {item.delivery.on_deck?.errorCode ? ` (Twilio ${item.delivery.on_deck.errorCode})` : ''}
+            {' · '}Up next: {item.delivery.you_are_up?.status || 'Waiting'}
+            {item.delivery.you_are_up?.errorCode ? ` (Twilio ${item.delivery.you_are_up.errorCode})` : ''}
+          </div>
+        </li>
+      ))}
+    </ol>
+  )}
+</details>
 
 <details className="sv-host-song-history">
   <summary>

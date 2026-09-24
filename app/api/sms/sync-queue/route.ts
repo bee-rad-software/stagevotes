@@ -34,6 +34,9 @@ async function sendTwilioMessage(to: string, body: string) {
     MessagingServiceSid: messagingServiceSid,
     Body: body,
   });
+  if (process.env.TWILIO_AUTH_TOKEN) {
+    form.set('StatusCallback', `${process.env.TWILIO_STATUS_CALLBACK_BASE_URL || 'https://app.stagevotes.com'}/api/sms/status`);
+  }
 
   const response = await fetch(
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
@@ -173,7 +176,8 @@ export async function POST(request: NextRequest) {
             twilio_message_sid: sid,
             sent_at: new Date().toISOString(),
           })
-          .eq('id', claim.id);
+          .eq('id', claim.id)
+          .eq('status', 'sending');
 
         sent += 1;
       } catch (error) {
