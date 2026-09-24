@@ -23,6 +23,7 @@ import SVSongPicker, {
   type SVSongOption,
 } from '@/components/singer/SVSongPicker';
 import { getSingerFavoriteSongs } from '@/lib/singerSongFavorites';
+import { filterKaraFunSongs } from '@/lib/checkKaraFunSongs';
 import SVTipCard from '@/components/singer/SVTipCard';
 import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
 import {
@@ -80,6 +81,7 @@ type EventData = {
   tournament_event_id?: string | null;
   signups_open?: boolean | null;
   additional_songs_open?: boolean | null;
+  exclude_explicit_songs?: boolean | null;
   is_show_ended?: boolean | null;
   judging_enabled?: boolean | null;
 };
@@ -1434,6 +1436,10 @@ const needsCompetitionSong =
       }
 
       const data = await response.json();
+      const eligibleSongs = await filterKaraFunSongs(
+        eventId,
+        (Array.isArray(data) ? data : []).slice(0, 100)
+      );
 
       const queuedTitles = new Set(
         queue.map((performance) =>
@@ -1444,7 +1450,7 @@ const needsCompetitionSong =
       );
 
       const formattedSongs: SVSongOption[] =
-        (Array.isArray(data) ? data : [])
+        eligibleSongs
           .slice(0, 25)
           .map((song: any) => ({
             title: song.title || '',
@@ -1468,6 +1474,11 @@ const needsCompetitionSong =
      * No KaraFun configured:
      * keep using the StageVotes catalog.
      */
+    if (event?.exclude_explicit_songs) {
+      setPickerSongs([]);
+      setPickerError('The clean song catalog is temporarily unavailable. Ask your host to reconnect KaraFun.');
+      return;
+    }
     const { data, error } = await supabase
       .from('songs')
       .select('id, title, artist')
@@ -1565,6 +1576,10 @@ const needsCompetitionSong =
       }
 
       const data = await response.json();
+      const eligibleSongs = await filterKaraFunSongs(
+        eventId,
+        (Array.isArray(data) ? data : []).slice(0, 100)
+      );
 
       const queuedTitles = new Set(
         queue.map((performance) =>
@@ -1575,7 +1590,7 @@ const needsCompetitionSong =
       );
 
       const availableSongs =
-        (Array.isArray(data) ? data : []).filter(
+        eligibleSongs.filter(
           (song: any) =>
             !queuedTitles.has(
               String(song.title || '')
@@ -1615,6 +1630,10 @@ const needsCompetitionSong =
      * No KaraFun configured:
      * fall back to the StageVotes catalog.
      */
+    if (event?.exclude_explicit_songs) {
+      setPickerError('The clean song catalog is temporarily unavailable. Ask your host to reconnect KaraFun.');
+      return;
+    }
     const { data, error } = await supabase
       .from('songs')
       .select('id, title, artist')
@@ -2383,6 +2402,18 @@ return false;
   async function addSongToQueue(
     song: SVSongOption
   ) {
+    if (event?.exclude_explicit_songs) {
+      try {
+        const allowed = await filterKaraFunSongs(eventId, [{ songId: song.karafunSongId }]);
+        if (!allowed.length) {
+          setPickerError('This song is unavailable while the host excludes explicit songs.');
+          return;
+        }
+      } catch {
+        setPickerError('Unable to verify this song’s content rating. Please try again.');
+        return;
+      }
+    }
 
     if (!signupsAreOpen) {
   setMessage(
@@ -2805,6 +2836,18 @@ device_id: deviceId,
     performanceId: string,
     song: SVSongOption
   ) {
+    if (event?.exclude_explicit_songs) {
+      try {
+        const allowed = await filterKaraFunSongs(eventId, [{ songId: song.karafunSongId }]);
+        if (!allowed.length) {
+          setPickerError('This song is unavailable while the host excludes explicit songs.');
+          return;
+        }
+      } catch {
+        setPickerError('Unable to verify this song’s content rating. Please try again.');
+        return;
+      }
+    }
     setSubmitting(true);
     setMessage('');
 
@@ -4242,7 +4285,7 @@ currentArtist={
             </>
           }
           songs={pickerSongs}
-          sections={favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
+          sections={!event?.exclude_explicit_songs && favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
           recommendations={aiRecommendations}

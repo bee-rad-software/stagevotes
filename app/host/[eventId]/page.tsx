@@ -19,6 +19,7 @@ import SVMissionControl from '@/components/dashboard/SVMissionControl';
 import SVSongPicker, {
   SVSongOption,
 } from '@/components/singer/SVSongPicker';
+import { filterKaraFunSongs } from '@/lib/checkKaraFunSongs';
 import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
@@ -1207,9 +1208,13 @@ const searchPickerSongs = useCallback(
         }
 
         const data = await response.json();
+        const eligibleSongs = await filterKaraFunSongs(
+          eventId,
+          (Array.isArray(data) ? data : []).slice(0, 100)
+        );
 
         const results: SVSongOption[] =
-          (Array.isArray(data) ? data : [])
+          eligibleSongs
             .slice(0, 20)
             .map((result: any) => {
               const alreadyQueued =
@@ -4468,6 +4473,27 @@ async function toggleSignups() {
   await loadAll();
 }
 
+async function toggleExplicitSongs() {
+  if (!karafunChannel) {
+    alert('Connect a KaraFun catalog before excluding explicit songs.');
+    return;
+  }
+
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+  const exclude_explicit_songs = event?.exclude_explicit_songs !== true;
+  const { error } = await supabase
+    .from('events')
+    .update({ exclude_explicit_songs })
+    .eq('id', eventId)
+    .eq('account_id', accountId);
+  if (error) {
+    alert(error.message);
+    return;
+  }
+  setEvent((current) => current ? { ...current, exclude_explicit_songs } : current);
+}
+
 async function updateHostIQControls(
   updates: Partial<
     Pick<
@@ -5582,6 +5608,23 @@ if (!isSubscribed) {
       </button>
     </div>
   </div>
+  <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(148,163,184,.25)' }}>
+    <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
+      <input
+        type="checkbox"
+        checked={event?.exclude_explicit_songs === true}
+        disabled={!karafunChannel}
+        onChange={toggleExplicitSongs}
+        style={{ width: 20, height: 20, accentColor: '#38bdf8' }}
+      />
+      Exclude explicit songs from singer choices
+    </label>
+    <p style={{ color: '#94a3b8', fontSize: 13, margin: '8px 0 0' }}>
+      {karafunChannel
+        ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
+        : 'Available when a KaraFun catalog is connected.'}
+    </p>
+  </div>
 </section>
 
 {singerRecoveryRequests.length > 0 && (
@@ -6320,9 +6363,13 @@ karafunPlayerOnline={karafunPlayerOnline}
       }
 
       const data = await response.json();
+      const eligibleSongs = await filterKaraFunSongs(
+        eventId,
+        (Array.isArray(data) ? data : []).slice(0, 100)
+      );
 
       const availableSongs =
-        (Array.isArray(data) ? data : []).filter(
+        eligibleSongs.filter(
           (result: any) =>
             !performances.some(
               (performance) =>

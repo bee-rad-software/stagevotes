@@ -4,6 +4,7 @@ import type {
   AISongRecommendation,
   AISongRecommendationsResponse,
 } from '@/lib/aiSongRecommendations';
+import { isKaraFunSongAllowed } from '@/lib/karafunContent';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -210,7 +211,7 @@ export async function POST(request: NextRequest) {
 
     const { data: event, error: eventError } = await supabaseAdmin
       .from('events')
-      .select('id, account_id')
+      .select('*')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -352,7 +353,9 @@ export async function POST(request: NextRequest) {
     );
 
     const recommendations = checked.flatMap((song) =>
-      song ? [song as AISongRecommendation] : []
+      song && (!event.exclude_explicit_songs ||
+        (account?.karafun_channel && isKaraFunSongAllowed(song.karafunSongId)))
+        ? [song as AISongRecommendation] : []
     ).slice(0, 5);
 
     if (recommendations.length === 0) {

@@ -52,7 +52,7 @@ const [pickerLoading, setPickerLoading] = useState(false);
 async function loadEvent() {
   const { data, error } = await supabase
     .from('events')
-    .select('id, account_id')
+    .select('*')
     .eq('id', eventId)
     .single();
 
@@ -62,6 +62,11 @@ async function loadEvent() {
   }
 
   setEvent(data);
+
+  if (data?.exclude_explicit_songs) {
+    window.location.replace(`/signup/${eventId}`);
+    return;
+  }
 
   if (data?.account_id) {
     const { data: accountData, error: accountError } = await supabase
@@ -407,7 +412,6 @@ localStorage.setItem(
 );
 
 setSavedSingerName(singerName.trim());
-
     
     const deviceId = getDeviceId();
 

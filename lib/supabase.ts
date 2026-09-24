@@ -29,6 +29,7 @@ show_peoples_choice_qr?: boolean;
   show_checkin_qr?: boolean;
   signups_open?: boolean | null;
   additional_songs_open?: boolean | null;
+  exclude_explicit_songs?: boolean | null;
   host_target_end_time?: string | null;
   host_iq_buffer_minutes?: number | null;
   judging_enabled?: boolean | null;
