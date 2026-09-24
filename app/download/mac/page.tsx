@@ -14,14 +14,16 @@ export default function MacDownloadPage() {
   const [state, setState] =
     useState<DownloadState>('checking');
   const [message, setMessage] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
 
   useEffect(() => {
-    startDownload();
+    void startDownload();
   }, []);
 
   async function startDownload() {
     setState('checking');
     setMessage('');
+    setDownloadUrl('');
 
     const {
       data: { session },
@@ -35,40 +37,40 @@ export default function MacDownloadPage() {
     setState('downloading');
 
     try {
-      const response = await fetch(
-        '/api/download?platform=mac',
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
+      // Stripe's webhook may arrive a moment after checkout returns.
+      const returningFromCheckout = new URLSearchParams(window.location.search).get('checkout') === 'success';
+      for (let attempt = 0; attempt < (returningFromCheckout ? 15 : 1); attempt += 1) {
+        const response = await fetch('/api/download?platform=mac', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
           cache: 'no-store',
+        });
+        const result = await response.json();
+
+        if (response.status === 401) {
+          setState('signed-out');
+          return;
         }
-      );
 
-      const result = await response.json();
+        if (response.status === 403) {
+          if (returningFromCheckout && attempt < 14) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            continue;
+          }
+          setMessage(returningFromCheckout
+            ? 'Your checkout is complete, but your subscription is still activating. Please try again in a moment.'
+            : result.error || 'An active StageVotes subscription is required.');
+          setState(returningFromCheckout ? 'error' : 'subscription-required');
+          return;
+        }
 
-      if (response.status === 401) {
-        setState('signed-out');
+        if (!response.ok || !result.url) {
+          throw new Error(result.error || 'Unable to prepare the download.');
+        }
+
+        setDownloadUrl(result.url);
+        window.location.assign(result.url);
         return;
       }
-
-      if (response.status === 403) {
-        setMessage(
-          result.error ||
-            'An active StageVotes subscription is required.'
-        );
-        setState('subscription-required');
-        return;
-      }
-
-      if (!response.ok || !result.url) {
-        throw new Error(
-          result.error ||
-            'Unable to prepare the download.'
-        );
-      }
-
-      window.location.assign(result.url);
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -126,6 +128,12 @@ export default function MacDownloadPage() {
             >
               Keep this page open until the download begins.
             </p>
+            {downloadUrl && (
+              <>
+                <button type="button" onClick={startDownload} style={{ ...primaryButtonStyle, border: 0, cursor: 'pointer' }}>Download again</button>
+                <a href="/" style={secondaryButtonStyle}>Open StageVotes web app</a>
+              </>
+            )}
           </>
         )}
 
@@ -142,7 +150,7 @@ export default function MacDownloadPage() {
               Sign In
             </a>
             <a
-              href="/pricing"
+              href="/onboarding?download=mac"
               style={secondaryButtonStyle}
             >
               View Plans
@@ -154,7 +162,7 @@ export default function MacDownloadPage() {
           <>
             <p>{message}</p>
             <a
-              href="/pricing"
+              href="/onboarding?download=mac"
               style={primaryButtonStyle}
             >
               Start Subscription

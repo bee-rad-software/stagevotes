@@ -3,6 +3,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useCallback, useEffect, useState } from 'react';
 
 import AccountStep from '@/components/onboarding/AccountStep';
 import PlanStep from '@/components/onboarding/PlanStep';
@@ -11,6 +12,7 @@ import VenueStep from '@/components/onboarding/VenueStep';
 import WelcomeStep from '@/components/onboarding/WelcomeStep';
 import { useHostOnboarding } from '@/hooks/useHostOnboarding';
 import LaunchFirstShowStep from '@/components/onboarding/LaunchFirstShowStep';
+import { desktopDownloadPath, desktopPlatform, type DesktopPlatform } from '@/lib/desktopDownloadIntent';
 
 const steps = [
   {
@@ -37,6 +39,11 @@ const steps = [
 
 export default function OnboardingPage() {
   const onboarding = useHostOnboarding();
+  const [downloadPlatform, setDownloadPlatform] = useState<DesktopPlatform | null>(null);
+
+  useEffect(() => {
+    setDownloadPlatform(desktopPlatform(new URLSearchParams(window.location.search).get('download')));
+  }, []);
 
  const {
   currentStep,
@@ -51,6 +58,14 @@ export default function OnboardingPage() {
   goForward,
   goBack,
 } = onboarding;
+
+  const handleCheckoutVerified = useCallback((data: { accountId: string }) => {
+    if (downloadPlatform) {
+      window.location.replace(`${desktopDownloadPath(downloadPlatform)}?checkout=success`);
+    } else {
+      finishOnboarding(data);
+    }
+  }, [downloadPlatform, finishOnboarding]);
 
   if (!hasLoadedSavedState) {
     return (
@@ -174,12 +189,13 @@ export default function OnboardingPage() {
   !checkoutVerified && (
     <SuccessStep
       sessionId={checkoutSessionId}
-      onVerified={finishOnboarding}
+      onVerified={handleCheckoutVerified}
     />
   )}
 
 {currentStep === 4 &&
   checkoutVerified &&
+  !downloadPlatform &&
   hostData?.venueId &&
   hostData?.venueName && (
     <LaunchFirstShowStep
@@ -259,7 +275,7 @@ export default function OnboardingPage() {
 
         <p className="onboarding-footer">
           Already have an account?{' '}
-          <a href="/login">
+          <a href={downloadPlatform ? `/login?next=${encodeURIComponent(desktopDownloadPath(downloadPlatform))}` : '/login'}>
             Sign in to StageVotes
           </a>
         </p>

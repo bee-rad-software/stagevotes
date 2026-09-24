@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { desktopPlatform } from '@/lib/desktopDownloadIntent';
 import {
   AuthError,
   getSupabaseAdmin,
@@ -12,6 +13,7 @@ export async function POST(req: Request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const { user, account } = await requireStageVotesAccount(req);
+    const requestedPlatform = desktopPlatform((await req.json().catch(() => ({})))?.downloadPlatform);
 
     if (
       account.subscription_status === 'active' ||
@@ -63,7 +65,15 @@ export async function POST(req: Request) {
     const existingSession = existingSessions.data[0];
 
     if (existingSession?.url) {
-      return NextResponse.json({ url: existingSession.url });
+      const existingPlatform = desktopPlatform(
+        existingSession.success_url
+          ? new URL(existingSession.success_url).searchParams.get('download')
+          : null
+      );
+      if (existingPlatform === requestedPlatform) {
+        return NextResponse.json({ url: existingSession.url });
+      }
+      await stripe.checkout.sessions.expire(existingSession.id);
     }
 
     const subscriptions = await stripe.subscriptions.list({
@@ -115,8 +125,8 @@ export async function POST(req: Request) {
           },
         ],
 
-        success_url: `${siteUrl}/onboarding?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${siteUrl}/onboarding?checkout=cancelled`,
+        success_url: `${siteUrl}/onboarding?checkout=success&session_id={CHECKOUT_SESSION_ID}${requestedPlatform ? `&download=${requestedPlatform}` : ''}`,
+        cancel_url: `${siteUrl}/onboarding?checkout=cancelled${requestedPlatform ? `&download=${requestedPlatform}` : ''}`,
       });
 
     if (!session.url) {

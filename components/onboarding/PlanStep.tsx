@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { desktopPlatform } from '@/lib/desktopDownloadIntent';
 
 type PlanStepProps = {
   accountId: string;
@@ -21,6 +22,11 @@ export default function PlanStep({
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] =
     useState(false);
+  const [downloadPlatform] = useState(() =>
+    typeof window === 'undefined'
+      ? null
+      : desktopPlatform(new URLSearchParams(window.location.search).get('download'))
+  );
 
   async function startCheckout() {
     if (isLoading) return;
@@ -45,7 +51,9 @@ export default function PlanStep({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`,
           },
-          body: JSON.stringify({}),
+          body: JSON.stringify({
+            downloadPlatform,
+          }),
         }
       );
 
@@ -159,6 +167,11 @@ export default function PlanStep({
         confirming. Your payment method will be charged
         when the 7-day trial ends unless you cancel first.
       </p>
+      {downloadPlatform && (
+        <p className="onboarding-plan-note">
+          After checkout, your {downloadPlatform === 'mac' ? 'Mac' : 'Windows'} download will start automatically.
+        </p>
+      )}
     </div>
   );
 }
