@@ -7,6 +7,7 @@ import {
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
+import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,6 +32,8 @@ type UpcomingShow = {
   id: string;
   title: string;
   dayOfWeek: number;
+  date: string;
+  recurrenceType: RecurrenceType;
   startTime: string;
   showType: string;
   venueName: string;
@@ -171,7 +174,7 @@ async function loadLiveVenues() {
       (venue) => venue.id
     );
 
-    const {
+    let {
   data: recurringShowData,
   error: recurringShowError,
 } = await supabase
@@ -182,7 +185,9 @@ async function loadLiveVenues() {
     day_of_week,
     start_time,
     show_type,
-    venue_id
+    venue_id,
+    recurrence_type,
+    start_date
   `)
   .in('venue_id', venueIds)
   .eq('is_active', true)
@@ -192,6 +197,15 @@ async function loadLiveVenues() {
   .order('start_time', {
     ascending: true,
   });
+
+if (recurringShowError?.code === '42703') {
+  const fallback = await supabase.from('venue_recurring_shows')
+    .select('id, title, day_of_week, start_time, show_type, venue_id')
+    .in('venue_id', venueIds).eq('is_active', true)
+    .order('day_of_week').order('start_time');
+  recurringShowData = fallback.data as typeof recurringShowData;
+  recurringShowError = fallback.error;
+}
 
 if (recurringShowError) {
   console.error(
@@ -209,19 +223,21 @@ if (recurringShowError) {
 
   const upcomingRows: UpcomingShow[] =
     (recurringShowData || [])
-      .map((show) => {
+      .flatMap((show) => {
         const venue = venueMap.get(
           show.venue_id
         );
 
         if (!venue) {
-          return null;
+          return [];
         }
 
-        return {
+        return upcomingShowDates(show).slice(0, 2).map((date) => ({
           id: show.id,
           title: show.title,
           dayOfWeek: show.day_of_week,
+          date,
+          recurrenceType: show.recurrence_type || 'weekly',
           startTime: show.start_time,
           showType: show.show_type,
           venueName: venue.name,
@@ -230,14 +246,9 @@ if (recurringShowError) {
             .filter(Boolean)
             .join(', '),
           logoUrl: venue.logo_url || null,
-        };
+        }));
       })
-      .filter(
-        (
-          show
-        ): show is UpcomingShow =>
-          show !== null
-      );
+      .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
 
   setUpcomingShows(upcomingRows);
 }
@@ -1034,7 +1045,7 @@ const otherVenues = liveVenues.slice(1);
       <div className="atlas-upcoming-grid">
         {upcomingShows.map((show) => (
           <article
-            key={show.id}
+            key={`${show.id}:${show.date}`}
             className="atlas-upcoming-card"
           >
             <div className="atlas-upcoming-card-top">
@@ -1055,15 +1066,13 @@ const otherVenues = liveVenues.slice(1);
               </div>
 
               <div className="atlas-upcoming-type">
-                {show.showType ||
-                  'Karaoke Night'}
+                {show.showType || 'Karaoke Night'} · {scheduleLabel({ day_of_week: show.dayOfWeek, start_time: show.startTime, recurrence_type: show.recurrenceType })}
               </div>
             </div>
 
             <div className="atlas-upcoming-date">
               <strong>
-                {dayNames[show.dayOfWeek] ||
-                  'Upcoming'}
+                {new Date(`${show.date}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </strong>
 
               <span>

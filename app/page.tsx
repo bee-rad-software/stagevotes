@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import {
   CalendarDays,
   MapPin,
@@ -31,6 +32,8 @@ type RecurringShow = {
   venue_id: string;
   title: string;
   day_of_week: number;
+  recurrence_type?: RecurrenceType;
+  start_date?: string | null;
   start_time: string;
   end_time: string | null;
   show_type: string | null;
@@ -315,7 +318,7 @@ const [
       );
 
     if (venueIds.length > 0) {
-      const {
+      let {
         data: recurringData,
         error: recurringError,
       } = await supabase
@@ -325,6 +328,8 @@ const [
           venue_id,
           title,
           day_of_week,
+          recurrence_type,
+          start_date,
           start_time,
           end_time,
           show_type,
@@ -342,6 +347,15 @@ const [
         .order('day_of_week')
         .order('start_time');
 
+      if (recurringError?.code === '42703') {
+        const fallback = await supabase.from('venue_recurring_shows')
+          .select('id, venue_id, title, day_of_week, start_time, end_time, show_type, description, is_active, venues(id, name, city, state)')
+          .in('venue_id', venueIds).eq('is_active', true)
+          .order('day_of_week').order('start_time');
+        recurringData = fallback.data as typeof recurringData;
+        recurringError = fallback.error;
+      }
+
       if (recurringError) {
         console.error(
           'Unable to load recurring shows:',
@@ -349,8 +363,7 @@ const [
         );
       } else {
         setRecurringShows(
-          (recurringData ||
-            []) as RecurringShow[]
+          ((recurringData || []) as RecurringShow[]).filter((show) => upcomingShowDates(show).length > 0)
         );
       }
     }
@@ -1228,11 +1241,11 @@ if (currentEventError) {
           <div className="sv-host-home-section-heading">
             <div>
               <span>
-                Regular Schedule
+                Your venue calendar
               </span>
 
               <h2>
-                Recurring Shows
+                Upcoming Shows
               </h2>
             </div>
 
@@ -1261,10 +1274,7 @@ if (currentEventError) {
 
                       <div>
                         <span className="sv-host-home-card-type">
-                          {dayNames[
-                            show.day_of_week
-                          ] ||
-                            'Recurring Show'}
+                          {scheduleLabel(show)}
                         </span>
 
                         <h3>
@@ -1272,9 +1282,7 @@ if (currentEventError) {
                         </h3>
 
                         <p>
-                          {formatTime(
-                            show.start_time
-                          )}
+                          {upcomingShowDates(show)[0] && new Date(`${upcomingShowDates(show)[0]}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {formatTime(show.start_time)}
 
                           {show.end_time
                             ? ` – ${formatTime(

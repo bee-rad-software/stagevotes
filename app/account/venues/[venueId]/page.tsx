@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
+import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import styles from './venue-editor.module.css';
 
 const supabase = createClient(
@@ -35,6 +36,17 @@ type Venue = {
 };
 
 type UploadType = 'logo' | 'cover';
+
+type VenueSchedule = {
+  id: string;
+  title: string;
+  day_of_week: number;
+  start_time: string;
+  show_type: string | null;
+  recurrence_type: RecurrenceType;
+  start_date: string | null;
+  is_active: boolean;
+};
 
 const venueFields = `
   id,
@@ -83,6 +95,16 @@ export default function VenueEditorPage() {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [musicProvider, setMusicProvider] = useState('');
   const [personalityTags, setPersonalityTags] = useState('');
+  const [schedule, setSchedule] = useState<VenueSchedule[]>([]);
+  const [scheduleReady, setScheduleReady] = useState(true);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
+  const [showTitle, setShowTitle] = useState('');
+  const [showType, setShowType] = useState('Karaoke Night');
+  const [showTime, setShowTime] = useState('20:00');
+  const [showDay, setShowDay] = useState(6);
+  const [showRecurrence, setShowRecurrence] = useState<RecurrenceType>('one_time');
+  const [showDate, setShowDate] = useState('');
 
   useEffect(() => {
     async function loadVenue() {
@@ -137,6 +159,18 @@ export default function VenueEditorPage() {
       setPersonalityTags(
         (loadedVenue.personality_tags || []).join(', ')
       );
+
+      const { data: scheduled, error: scheduleError } = await supabase
+        .from('venue_recurring_shows')
+        .select('id, title, day_of_week, start_time, show_type, recurrence_type, start_date, is_active')
+        .eq('venue_id', venueId)
+        .order('start_time');
+      if (scheduleError) {
+        setScheduleReady(false);
+        console.error('Unable to load venue schedule:', scheduleError);
+      } else {
+        setSchedule((scheduled || []) as VenueSchedule[]);
+      }
 
       setLoading(false);
     }
@@ -345,6 +379,92 @@ export default function VenueEditorPage() {
     setSaving(false);
   }
 
+  function resetScheduleForm() {
+    setEditingScheduleId(null);
+    setShowTitle('');
+    setShowType('Karaoke Night');
+    setShowTime('20:00');
+    setShowDay(6);
+    setShowRecurrence('one_time');
+    setShowDate('');
+  }
+
+  function editSchedule(show: VenueSchedule) {
+    setEditingScheduleId(show.id);
+    setShowTitle(show.title);
+    setShowType(show.show_type || 'Karaoke Night');
+    setShowTime(show.start_time.slice(0, 5));
+    setShowDay(show.day_of_week);
+    setShowRecurrence(show.recurrence_type);
+    setShowDate(show.start_date || '');
+    setMessage('');
+    setErrorMessage('');
+  }
+
+  async function saveSchedule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!venue || !scheduleReady || scheduleSaving) return;
+    if (!showTitle.trim() || !showTime || (showRecurrence !== 'weekly' && !showDate)) {
+      setErrorMessage('Add a title, time, and a first date for one-time or every-other-week shows.');
+      return;
+    }
+
+    const selectedDate = showDate ? new Date(`${showDate}T12:00:00`) : null;
+    if (showRecurrence !== 'weekly' && (!selectedDate || Number.isNaN(selectedDate.getTime()))) {
+      setErrorMessage('Choose a valid show date.');
+      return;
+    }
+    const dayOfWeek = showRecurrence === 'weekly' ? showDay : selectedDate!.getDay();
+    const existing = schedule.find((show) => show.id === editingScheduleId);
+    setScheduleSaving(true);
+    setMessage('');
+    setErrorMessage('');
+    const values = {
+      venue_id: venue.id,
+      title: showTitle.trim(),
+      show_type: showType.trim() || 'Karaoke Night',
+      day_of_week: dayOfWeek,
+      start_time: showTime,
+      recurrence_type: showRecurrence,
+      start_date: showRecurrence === 'weekly' ? null : showDate,
+      is_active: existing?.is_active ?? true,
+    };
+
+    const query = editingScheduleId
+      ? supabase.from('venue_recurring_shows').update(values).eq('id', editingScheduleId).eq('venue_id', venue.id)
+      : supabase.from('venue_recurring_shows').insert(values);
+    const { data, error } = await query
+      .select('id, title, day_of_week, start_time, show_type, recurrence_type, start_date, is_active')
+      .maybeSingle();
+    setScheduleSaving(false);
+    if (error || !data) {
+      setErrorMessage(error?.message || 'Could not save the show. Check your venue permissions.');
+      return;
+    }
+    setSchedule((current) => [data as VenueSchedule, ...current.filter((item) => item.id !== data.id)]);
+    setMessage(editingScheduleId ? 'Karaoke night updated.' : 'Upcoming karaoke night published.');
+    resetScheduleForm();
+  }
+
+  async function toggleSchedule(show: VenueSchedule) {
+    if (!venue || scheduleSaving) return;
+    setScheduleSaving(true);
+    setMessage('');
+    setErrorMessage('');
+    const { data, error } = await supabase.from('venue_recurring_shows')
+      .update({ is_active: !show.is_active })
+      .eq('id', show.id).eq('venue_id', venue.id)
+      .select('id, title, day_of_week, start_time, show_type, recurrence_type, start_date, is_active')
+      .maybeSingle();
+    setScheduleSaving(false);
+    if (error || !data) {
+      setErrorMessage(error?.message || 'Could not update the karaoke night.');
+      return;
+    }
+    setSchedule((current) => current.map((item) => item.id === show.id ? data as VenueSchedule : item));
+    setMessage(data.is_active ? 'Show listed again.' : 'Show removed from upcoming listings.');
+  }
+
   if (loading) {
     return (
       <main className={styles.page}>
@@ -513,6 +633,66 @@ export default function VenueEditorPage() {
               />
             </label>
           </article>
+        </section>
+
+        <section className={`${styles.formCard} ${styles.scheduleCard}`}>
+          <div className={styles.formHeading}>
+            <span className={styles.sectionLabel}>Karaoke calendar</span>
+            <h2>Upcoming karaoke nights</h2>
+            <p>List a single date, every Saturday, or every other Saturday. Singers will see the actual dates in My Schedule.</p>
+          </div>
+
+          {!scheduleReady ? (
+            <p className={styles.scheduleHint}>Scheduling is unavailable right now. Please try again later.</p>
+          ) : (
+            <>
+              <div className={styles.scheduleRows}>
+                {schedule.length === 0 && <p>No nights listed yet. Add your first karaoke night below.</p>}
+                {schedule.map((show) => (
+                  <div className={styles.scheduleRow} key={show.id}>
+                    <div>
+                      <strong>{show.title}</strong>
+                      <span>{scheduleLabel(show)}{show.start_date ? ` · ${show.recurrence_type === 'one_time' ? 'On' : 'Starting'} ${new Date(`${show.start_date}T12:00:00`).toLocaleDateString()}` : ''} · {show.start_time.slice(0, 5)}{!show.is_active ? ' · Hidden' : ''}</span>
+                      {show.is_active && upcomingShowDates(show)[0] && <small>Next: {new Date(`${upcomingShowDates(show)[0]}T12:00:00`).toLocaleDateString()}</small>}
+                    </div>
+                    <div className={styles.scheduleActions}>
+                      <button type="button" disabled={scheduleSaving} onClick={() => editSchedule(show)}>Edit</button>
+                      <button type="button" disabled={scheduleSaving} onClick={() => void toggleSchedule(show)}>{show.is_active ? 'Hide' : 'Show'}</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form onSubmit={saveSchedule} className={styles.scheduleForm}>
+                <h3>{editingScheduleId ? 'Edit karaoke night' : 'Add a karaoke night'}</h3>
+                <div className={styles.fieldGrid}>
+                  <label className={styles.field}><span>Show name</span><input required value={showTitle} onChange={(event) => setShowTitle(event.target.value)} placeholder="Saturday Karaoke" /></label>
+                  <label className={styles.field}><span>Schedule</span><select value={showRecurrence} onChange={(event) => setShowRecurrence(event.target.value as RecurrenceType)}>
+                    <option value="one_time">One specific night</option>
+                    <option value="biweekly">Every other week</option>
+                    <option value="weekly">Every week</option>
+                  </select></label>
+                  {showRecurrence === 'weekly' ? (
+                    <label className={styles.field}><span>Day of week</span><select value={showDay} onChange={(event) => setShowDay(Number(event.target.value))}>
+                      {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => <option value={index} key={day}>{day}</option>)}
+                    </select></label>
+                  ) : (
+                    <label className={styles.field}><span>{showRecurrence === 'biweekly' ? 'First show date' : 'Show date'}</span><input type="date" required value={showDate} onChange={(event) => setShowDate(event.target.value)} /></label>
+                  )}
+                  <label className={styles.field}><span>Start time</span><input type="time" required value={showTime} onChange={(event) => setShowTime(event.target.value)} /></label>
+                  <label className={styles.field}><span>Show type</span><input value={showType} onChange={(event) => setShowType(event.target.value)} placeholder="Karaoke Night" /></label>
+                </div>
+                <p className={styles.scheduleHint}>{showRecurrence === 'biweekly'
+                  ? 'Choose the first actual show date. The next nights will be exactly 14 days apart.'
+                  : showRecurrence === 'one_time' ? 'This date appears once and will disappear from upcoming listings afterward.'
+                    : 'This night appears on the same weekday every week.'}</p>
+                <div className={styles.scheduleActions}>
+                  <button type="submit" disabled={scheduleSaving} className={styles.saveButton}>{scheduleSaving ? 'Saving…' : editingScheduleId ? 'Save changes' : 'Publish night'}</button>
+                  {editingScheduleId && <button type="button" onClick={resetScheduleForm}>Cancel</button>}
+                </div>
+              </form>
+            </>
+          )}
         </section>
 
         <form

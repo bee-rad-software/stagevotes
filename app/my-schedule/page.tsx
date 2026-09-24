@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
 import { supabase } from '@/lib/supabase';
+import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import {
   mergeShowPlans,
   parseShowPlans,
@@ -21,23 +22,12 @@ type ScheduledShow = {
   startTime: string;
   dayOfWeek: number;
   date: string;
+  recurrenceType: RecurrenceType;
   venueName: string;
   venueSlug: string;
   city: string;
   logoUrl: string | null;
 };
-
-function nextDate(dayOfWeek: number, startTime: string) {
-  const now = new Date();
-  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  date.setDate(date.getDate() + (dayOfWeek - date.getDay() + 7) % 7);
-  const [hour, minute] = startTime.split(':').map(Number);
-  if (date.getTime() + hour * 3600000 + minute * 60000 < now.getTime()) {
-    date.setDate(date.getDate() + 7);
-  }
-  return [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'),
-    String(date.getDate()).padStart(2, '0')].join('-');
-}
 
 function displayTime(time: string) {
   const [hour, minute] = time.split(':').map(Number);
@@ -86,9 +76,16 @@ export default function MySchedulePage() {
       }
 
       if (venues?.length) {
-        const { data: recurring, error } = await supabase.from('venue_recurring_shows')
-          .select('id, title, show_type, day_of_week, start_time, venue_id')
+        let { data: recurring, error } = await supabase.from('venue_recurring_shows')
+          .select('id, title, show_type, day_of_week, start_time, venue_id, recurrence_type, start_date')
           .in('venue_id', venues.map((venue) => venue.id)).eq('is_active', true);
+        if (error?.code === '42703') {
+          const fallback = await supabase.from('venue_recurring_shows')
+            .select('id, title, show_type, day_of_week, start_time, venue_id')
+            .in('venue_id', venues.map((venue) => venue.id)).eq('is_active', true);
+          recurring = fallback.data as typeof recurring;
+          error = fallback.error;
+        }
         if (cancelled) return;
         if (error) {
           setMessage('Could not load upcoming shows. Please try again.');
@@ -97,14 +94,14 @@ export default function MySchedulePage() {
           setShows((recurring || []).flatMap((show) => {
             const venue = byVenue.get(show.venue_id);
             if (!venue || show.day_of_week == null || !show.start_time) return [];
-            return [{
+            return upcomingShowDates(show).map((date) => ({
               id: show.id, title: show.title, showType: show.show_type,
               startTime: show.start_time, dayOfWeek: show.day_of_week,
-              date: nextDate(show.day_of_week, show.start_time),
+              date, recurrenceType: show.recurrence_type || 'weekly',
               venueName: venue.name, venueSlug: venue.slug,
               city: [venue.city, venue.state].filter(Boolean).join(', '),
               logoUrl: venue.logo_url,
-            }];
+            }));
           }).sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime)));
         }
       }
@@ -119,8 +116,8 @@ export default function MySchedulePage() {
     const todayKey = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, '0'),
       String(today.getDate()).padStart(2, '0')].join('-');
     return plans.filter((plan) => plan.date >= todayKey).flatMap((plan) => {
-      const show = shows.find((entry) => entry.id === plan.showId);
-      return show ? [{ ...show, date: plan.date }] : [];
+      const show = shows.find((entry) => entry.id === plan.showId && entry.date === plan.date);
+      return show ? [show] : [];
     }).sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime));
   }, [shows, plans]);
 
@@ -162,7 +159,10 @@ export default function MySchedulePage() {
         <div className={styles.cardBody}>
           {show.logoUrl && <img className={styles.logo} src={show.logoUrl} alt="" />}
           <div>
-            <span className={styles.type}>{show.showType || 'Karaoke night'}</span>
+            <span className={styles.type}>{show.showType || 'Karaoke night'} · {scheduleLabel({
+            day_of_week: show.dayOfWeek, start_time: show.startTime,
+            recurrence_type: show.recurrenceType,
+          })}</span>
             <h3>{show.title}</h3>
             <p>{show.venueName}{show.city ? ` · ${show.city}` : ''}</p>
           </div>
@@ -197,13 +197,13 @@ export default function MySchedulePage() {
                 <p className={styles.empty}>Nothing planned yet. Add a show below to keep it here.</p>}
             </section>
             <section className={styles.section}>
-              <div className={styles.heading}><h2>Explore upcoming shows</h2><span>{shows.length}</span></div>
+              <div className={styles.heading}><h2>Explore upcoming shows</h2><span>{shows.length - selectedShows.filter((show) => shows.some((entry) => entry.id === show.id && entry.date === show.date)).length}</span></div>
               {shows.length ? <div className={styles.grid}>{shows.filter((show) =>
                 !selectedShows.some((selected) => selected.id === show.id && selected.date === show.date)
               ).map(showCard)}</div> :
                 <p className={styles.empty}>No upcoming shows are listed yet. Check back soon or see what’s live tonight.</p>}
             </section>
-            <p className={styles.note}>Your schedule is a personal plan; joining a show still happens on the night. Recurring shows display their next date, and saving one date does not save every week. {identity === 'guest'
+            <p className={styles.note}>Your schedule is a personal plan; joining a show still happens on the night. Saving one date does not save every occurrence. {identity === 'guest'
               ? 'Sign in to keep your plans across devices.' : 'Your plans are saved to your singer account.'}</p>
           </>
         )}

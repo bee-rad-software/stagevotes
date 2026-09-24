@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import styles from './venue-profile.module.css';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
+import { scheduleLabel, upcomingShowDates } from '@/lib/venueShowSchedule';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -40,6 +41,8 @@ type RecurringShow = {
   day_of_week: number;
   start_time: string;
   show_type: string;
+  recurrence_type?: 'weekly' | 'biweekly' | 'one_time';
+  start_date?: string | null;
 };
 
 type LiveEvent = {
@@ -500,7 +503,7 @@ if (venuePerformanceError) {
   }
 }
 
-      const { data: recurringShows, error: recurringShowsError } =
+      let { data: recurringShows, error: recurringShowsError } =
         await supabase
           .from('venue_recurring_shows')
           .select(`
@@ -508,12 +511,23 @@ if (venuePerformanceError) {
             title,
             day_of_week,
             start_time,
-            show_type
+            show_type,
+            recurrence_type,
+            start_date
           `)
           .eq('venue_id', data.id)
           .eq('is_active', true)
           .order('day_of_week')
           .order('start_time');
+
+      if (recurringShowsError?.code === '42703') {
+        const fallback = await supabase.from('venue_recurring_shows')
+          .select('id, title, day_of_week, start_time, show_type')
+          .eq('venue_id', data.id).eq('is_active', true)
+          .order('day_of_week').order('start_time');
+        recurringShows = fallback.data as typeof recurringShows;
+        recurringShowsError = fallback.error;
+      }
 
       if (recurringShowsError) {
         console.error(
@@ -522,7 +536,7 @@ if (venuePerformanceError) {
         );
       }
 
-      setShows(recurringShows || []);
+      setShows((recurringShows || []).filter((show) => upcomingShowDates(show).length > 0));
       const today = new Date();
 today.setHours(0, 0, 0, 0);
 
@@ -1427,7 +1441,7 @@ async function toggleFollowVenue() {
 
             <div>
               <span className={styles.cardLabel}>
-                Weekly Schedule
+                Upcoming dates
               </span>
               <h3>Upcoming karaoke</h3>
             </div>
@@ -1435,7 +1449,7 @@ async function toggleFollowVenue() {
             <div className={styles.scheduleList}>
               {shows.length === 0 ? (
                 <div className={styles.placeholder}>
-                  <strong>No weekly shows yet.</strong>
+                  <strong>No upcoming karaoke nights listed yet.</strong>
                 </div>
               ) : (
                 shows.map((show) => (
@@ -1444,21 +1458,9 @@ async function toggleFollowVenue() {
                     className={styles.scheduleRow}
                   >
                     <div>
-                      <strong>
-                        {
-                          [
-                            'Sunday',
-                            'Monday',
-                            'Tuesday',
-                            'Wednesday',
-                            'Thursday',
-                            'Friday',
-                            'Saturday',
-                          ][show.day_of_week]
-                        }
-                      </strong>
+                      <strong>{new Date(`${upcomingShowDates(show)[0]}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</strong>
 
-                      <div>{show.title}</div>
+                      <div>{show.title} · {scheduleLabel(show)}</div>
                     </div>
 
                     <span>
