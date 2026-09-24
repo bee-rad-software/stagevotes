@@ -140,6 +140,11 @@ export default function SignupPage() {
 
   const [smsPhone, setSmsPhone] = useState('');
   const [smsConsent, setSmsConsent] = useState(false);
+  const [queueSmsOpen, setQueueSmsOpen] = useState(false);
+  const [queueSmsConsent, setQueueSmsConsent] = useState(false);
+  const [queueSmsSaving, setQueueSmsSaving] = useState(false);
+  const [queueSmsMessage, setQueueSmsMessage] = useState('');
+  const [smsOptedPerformanceIds, setSmsOptedPerformanceIds] = useState<string[]>([]);
 
    const [isDuet, setIsDuet] =
     useState(false);
@@ -1104,6 +1109,15 @@ async function maybeCelebrateFirstPerformance(
       setSmsPhone(savedSmsPhone);
     }
 
+    try {
+      const savedOptIns = JSON.parse(localStorage.getItem(`stagevotes_sms_opted_${eventId}`) || '[]');
+      if (Array.isArray(savedOptIns)) {
+        setSmsOptedPerformanceIds(savedOptIns.filter((id): id is string => typeof id === 'string'));
+      }
+    } catch {
+      // An invalid local cache cannot affect the actual opt-ins in the database.
+    }
+
     loadEvent();
     loadQueue();
     loadSingerProfile();
@@ -1232,6 +1246,72 @@ return Boolean(
 
   const hasJoined =
     myPerformances.length > 0;
+
+  const remainingSmsPerformances = myPerformances.filter(
+    (performance) => performance.id !== currentSinger?.id && Boolean(performance.song_title?.trim())
+  );
+  const unenrolledSmsPerformances = remainingSmsPerformances.filter(
+    (performance) => !smsOptedPerformanceIds.includes(performance.id)
+  );
+
+  function rememberSmsOptIns(performanceIds: string[]) {
+    setSmsOptedPerformanceIds((current) => {
+      const updated = Array.from(new Set([...current, ...performanceIds]));
+      localStorage.setItem(`stagevotes_sms_opted_${eventId}`, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  async function enableQueueSmsAlerts() {
+    if (queueSmsSaving || !queueSmsConsent) return;
+    const phone = normalizeUsPhone(smsPhone);
+    if (!phone) {
+      setQueueSmsMessage('Enter a valid 10-digit U.S. mobile number.');
+      return;
+    }
+    if (unenrolledSmsPerformances.length === 0) return;
+
+    setQueueSmsSaving(true);
+    setQueueSmsMessage('');
+    const enrolledIds: string[] = [];
+    let failed = 0;
+    let alreadyEnabled = 0;
+    for (const performance of unenrolledSmsPerformances) {
+      const { error } = await supabase.from('performance_sms_subscriptions').insert({
+        performance_id: performance.id,
+        event_id: eventId,
+        phone_e164: phone,
+        consented_at: new Date().toISOString(),
+        consent_version: SMS_CONSENT_VERSION,
+        consent_source: 'singer_web_form',
+      });
+      if (!error) enrolledIds.push(performance.id);
+      else if (error.code === '23505') {
+        enrolledIds.push(performance.id);
+        alreadyEnabled += 1;
+      } else {
+        console.error('Unable to save queued-song SMS opt-in:', error);
+        failed += 1;
+      }
+    }
+
+    if (enrolledIds.length) rememberSmsOptIns(enrolledIds);
+    if (!failed) {
+      if (enrolledIds.length > alreadyEnabled) {
+        localStorage.setItem(`stagevotes_sms_phone_${eventId}`, smsPhone);
+      }
+      setQueueSmsOpen(false);
+      setQueueSmsConsent(false);
+      setQueueSmsMessage(alreadyEnabled === enrolledIds.length
+        ? 'These songs already had text alerts enabled. Their saved phone number was not changed.'
+        : alreadyEnabled > 0
+          ? `Alerts enabled for ${enrolledIds.length - alreadyEnabled} ${enrolledIds.length - alreadyEnabled === 1 ? 'song' : 'songs'}. ${alreadyEnabled} already had alerts; their saved number was not changed.`
+          : `Text alerts enabled for ${enrolledIds.length} queued ${enrolledIds.length === 1 ? 'song' : 'songs'}.`);
+    } else {
+      setQueueSmsMessage(`Could not enable alerts for ${failed} ${failed === 1 ? 'song' : 'songs'}. Please try again.`);
+    }
+    setQueueSmsSaving(false);
+  }
 
   const isTournament =
   event?.competition_mode === 'tournament';
@@ -2555,6 +2635,7 @@ device_id: deviceId,
             `stagevotes_sms_phone_${eventId}`,
             smsPhone
           );
+          rememberSmsOptIns([createdPerformance.id]);
         }
       }
 
@@ -3305,6 +3386,55 @@ currentArtist={
             estimatedWaitMinutes
           }
         />
+      )}
+
+      {hasJoined && remainingSmsPerformances.length > 0 && !event?.is_show_ended && (
+        <section className="sv-queue-sms-card" aria-label="Text notifications">
+          {unenrolledSmsPerformances.length === 0 ? (
+            <div className="sv-queue-sms-enabled">✓ Text alerts enabled for your queued songs</div>
+          ) : (
+            <>
+              <label className="sv-queue-sms-toggle">
+                <input
+                  type="checkbox"
+                  checked={queueSmsOpen}
+                  onChange={(inputEvent) => {
+                    setQueueSmsOpen(inputEvent.target.checked);
+                    if (!inputEvent.target.checked) setQueueSmsConsent(false);
+                    setQueueSmsMessage('');
+                  }}
+                />
+                <span>Get text notifications for your queued {unenrolledSmsPerformances.length === 1 ? 'song' : 'songs'}</span>
+              </label>
+              {queueSmsOpen && (
+                <div className="sv-queue-sms-form">
+                  <p>Get an on-deck text and a text when it’s your turn. Up to 2 messages per queued song.</p>
+                  <label htmlFor="queue-sms-phone">Mobile number</label>
+                  <input
+                    id="queue-sms-phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={smsPhone}
+                    onChange={(inputEvent) => setSmsPhone(inputEvent.target.value)}
+                    placeholder="(479) 555-0123"
+                  />
+                  <label className="sv-song-sms-consent">
+                    <input type="checkbox" checked={queueSmsConsent} onChange={(inputEvent) => setQueueSmsConsent(inputEvent.target.checked)} />
+                    <span>Text me when I’m on deck and when it’s my turn. Up to 2 messages per queued song. Message and data rates may apply. Reply STOP to opt out or HELP for help. Consent is optional and is not required to participate.{' '}
+                      <a href="/terms" target="_blank" rel="noreferrer">Terms</a>{' · '}
+                      <a href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
+                    </span>
+                  </label>
+                  <button type="button" className="sv-full-button" disabled={!queueSmsConsent || queueSmsSaving} onClick={() => void enableQueueSmsAlerts()}>
+                    {queueSmsSaving ? 'Enabling…' : 'Enable text alerts'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+          {queueSmsMessage && <p className="sv-queue-sms-message" role="status">{queueSmsMessage}</p>}
+        </section>
       )}
 
       {!hasJoined && (

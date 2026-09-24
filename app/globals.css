@@ -8731,6 +8731,77 @@ a.atlas-live-venue-logo {
   color: #e2e8f0;
 }
 
+.sv-queue-sms-card {
+  margin: 14px 0 22px;
+  padding: 18px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.94));
+  color: #e2e8f0;
+}
+
+.sv-queue-sms-toggle {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sv-queue-sms-toggle input {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  accent-color: #38bdf8;
+}
+
+.sv-queue-sms-enabled {
+  color: #86efac;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.sv-queue-sms-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.sv-queue-sms-form > p,
+.sv-queue-sms-message {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sv-queue-sms-form > label:not(.sv-song-sms-consent) {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.sv-queue-sms-form > input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.36);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.75);
+  color: #f8fafc;
+  font-size: 16px;
+}
+
+.sv-queue-sms-form > button {
+  min-height: 48px;
+}
+
+.sv-queue-sms-message {
+  margin-top: 10px;
+}
+
 .sv-song-sms-options h3,
 .sv-song-sms-options p {
   margin: 0;
