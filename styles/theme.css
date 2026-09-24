@@ -2862,7 +2862,7 @@ background:
   position: absolute;
   z-index: 40;
   right: 50%;
-  bottom: calc(100% + 9px);
+  top: calc(100% + 9px);
   width: max-content;
   max-width: 190px;
   transform: translateX(50%) translateY(4px);
@@ -2953,6 +2953,7 @@ background:
   border: 1px solid var(--sv-border);
   border-radius: 17px;
   background: rgba(255, 255, 255, 0.018);
+  overflow: visible;
 
   transform-origin: center;
   cursor: pointer;
@@ -2962,6 +2963,11 @@ background:
     border-color 0.18s ease,
     background 0.18s ease,
     box-shadow 0.18s ease;
+}
+
+.sv-host-queue-sortable:hover,
+.sv-host-queue-sortable:focus-within {
+  z-index: 30 !important;
 }
 
 .sv-host-queue-drag-handle {
