@@ -1960,13 +1960,15 @@ const needsCompetitionSong =
 
   async function getSingerQueueDetails(
   singerProfileId: string | null,
-  deviceId: string
+  deviceId: string,
+  singerName: string
 ) {
   const { data, error } = await supabase
   .from('performances')
   .select(`
     round,
     queue_order,
+    singer_name,
     singer_profile_id,
     device_id,
     status
@@ -1987,9 +1989,27 @@ const needsCompetitionSong =
         return true;
       }
 
-      return Boolean(
+      if (
         deviceId &&
         performance.device_id === deviceId
+      ) {
+        return true;
+      }
+
+      // A walk-up entered by the host has no profile
+      // or device yet. Count that song when the singer
+      // later joins from their phone.
+      return (
+        !performance.singer_profile_id &&
+        !performance.device_id &&
+        performance.singer_name
+          ?.trim()
+          .replace(/\s+/g, ' ')
+          .toLowerCase() ===
+          singerName
+            .trim()
+            .replace(/\s+/g, ' ')
+            .toLowerCase()
       );
     });
 
@@ -2539,7 +2559,8 @@ const {
   originalOrder: singerOriginalOrder,
 } = await getSingerQueueDetails(
   singerProfileId,
-  deviceId
+  deviceId,
+  singerName
 );
 
 const assignedRound =

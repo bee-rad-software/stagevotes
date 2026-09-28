@@ -1316,17 +1316,16 @@ const searchPickerSongs = useCallback(
     return false;
   }
 
-const newPerformanceIdentity =
-  getRotationIdentity({
-    singer_name: singerName,
-    singer_profile_id: null,
-    device_id: null,
-  });
-
+// The host chooses the singer by name. Include songs
+// that singer added on their own device or profile so a
+// host-added song cannot reuse the same round.
+const normalizedSingerName = singerName.trim().replace(/\s+/g, ' ').toLowerCase();
 const singerExistingSongs = performances.filter(
   (performance: any) =>
-    getRotationIdentity(performance) ===
-      newPerformanceIdentity
+    performance.singer_name
+      ?.trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase() === normalizedSingerName
 );
 
 const currentRound =

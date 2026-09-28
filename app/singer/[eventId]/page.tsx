@@ -337,7 +337,7 @@ async function addSelectedSongToRotation(selected: SVSongOption) {
         performance.status !== 'skipped'
     ) || [];
 
-  const singerPerformances = activePerformances.filter(
+  const singerPerformances = (existingPerformances || []).filter(
     (performance) =>
       performance.singer_name.trim().toLowerCase() ===
       cleanName.toLowerCase()
@@ -361,7 +361,18 @@ async function addSelectedSongToRotation(selected: SVSongOption) {
         )
       : 1;
 
-  const nextRound = activeRound + singerPerformances.length;
+  const countedSingerSongs = singerPerformances.filter(
+    (performance) => performance.status !== 'skipped'
+  );
+  const highestSingerRound = countedSingerSongs.length
+    ? Math.max(...countedSingerSongs.map((performance) => performance.round || 1))
+    : null;
+  const nextRound = highestSingerRound === null
+    ? activeRound
+    : Math.max(activeRound, highestSingerRound + 1);
+  const originalSingerOrder = singerPerformances.length
+    ? Math.min(...singerPerformances.map((performance) => performance.queue_order || 0))
+    : null;
 
   const { error: insertError } = await supabase
     .from('performances')
@@ -371,7 +382,7 @@ async function addSelectedSongToRotation(selected: SVSongOption) {
       singer_name: cleanName,
       song_title: selected.title.trim(),
       artist: selected.artist.trim(),
-      queue_order: maxQueueOrder + 1,
+      queue_order: originalSingerOrder ?? maxQueueOrder + 1,
       round: nextRound,
       device_id: deviceId,
     });
@@ -458,14 +469,28 @@ const maxQueueOrder =
 
 const startingOrder = maxQueueOrder + 1;
     
+const priorSingerSongs = (existing || []).filter(
+  (p: any) => p.singer_name?.trim().toLowerCase() === singerName.trim().toLowerCase()
+);
+const priorCountedSongs = priorSingerSongs.filter((p: any) => p.status !== 'skipped');
+const highestPriorRound = priorCountedSongs.length
+  ? Math.max(...priorCountedSongs.map((p: any) => p.round || 1))
+  : null;
+const firstRound = highestPriorRound === null
+  ? activeRound
+  : Math.max(activeRound, highestPriorRound + 1);
+const originalOrder = priorSingerSongs.length
+  ? Math.min(...priorSingerSongs.map((p: any) => p.queue_order || 0))
+  : startingOrder;
+
 const rows = validSongs.map((song, index) => ({
   event_id: eventId,
    account_id: event?.account_id,
   singer_name: singerName.trim(),
   song_title: song.songTitle.trim(),
   artist: song.artist.trim(),
-  queue_order: startingOrder + index,
-  round: activeRound + index,
+  queue_order: originalOrder,
+  round: firstRound + index,
   device_id: deviceId
 }));
     
