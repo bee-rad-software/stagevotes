@@ -22,6 +22,10 @@ type Props = {
   onOpenDisplay?: () => void;
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
+  onPlayKaraFun?: () => void;
+  karafunPlaybackReady?: boolean;
+  karafunPlayPending?: boolean;
+  karafunPlayError?: string;
   karafunDisplayOpen?: boolean;
   onOpenKaraFunDisplay?: () => void;
   karafunConnecting?: boolean;
@@ -47,6 +51,10 @@ export default function SVMissionControl({
   onOpenDisplay,
   onAwards,
   onConnectKaraFun,
+  onPlayKaraFun,
+  karafunPlaybackReady = false,
+  karafunPlayPending = false,
+  karafunPlayError = '',
   karafunDisplayOpen,
   onOpenKaraFunDisplay,
 
@@ -364,6 +372,27 @@ Launch audience display
       'Connect tonight’s KaraFun session'}
 </small>
 </button>
+
+        <button
+          type="button"
+          className="sv-mission-action"
+          onClick={onPlayKaraFun}
+          disabled={!karafunPlaybackReady || karafunPlayPending}
+          aria-disabled={!karafunPlaybackReady || karafunPlayPending}
+          title="Play the paused KaraFun song for the current singer"
+        >
+          <span className={`sv-action-badge sv-action-badge-${karafunPlaybackReady ? 'success' : 'neutral'}`}>
+            {karafunPlaybackReady ? 'READY' : 'WAITING'}
+          </span>
+          <Play size={26} />
+          <span>{karafunPlayPending ? 'Starting KaraFun...' : 'Play KaraFun Song'}</span>
+          <small>
+            {karafunPlayError ||
+              (karafunPlaybackReady
+                ? 'Start the paused song for the current singer'
+                : 'Connect KaraFun and pause the matching singer’s song')}
+          </small>
+        </button>
 
         <button
           type="button"

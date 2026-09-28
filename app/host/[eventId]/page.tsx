@@ -207,6 +207,19 @@ const [
   setKarafunQueueItems,
 ] = useState<any[]>([]);
 
+const [karafunPlaybackState, setKarafunPlaybackState] =
+  useState<number | null>(null);
+const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
+  useState('');
+const [karafunPlaybackAllowed, setKarafunPlaybackAllowed] =
+  useState(false);
+const [karafunPlayPending, setKarafunPlayPending] =
+  useState(false);
+const [karafunPlayError, setKarafunPlayError] =
+  useState('');
+const karafunPlayTimeoutRef =
+  useRef<ReturnType<typeof setTimeout> | null>(null);
+
 const [
   karafunAutoAdvance,
   setKarafunAutoAdvance,
@@ -1559,6 +1572,15 @@ karaFunRecoveryNeedsAdvanceRef.current =
   setKarafunConnecting(true);
   setKarafunConnected(false);
   setKarafunConnectionError('');
+  setKarafunPlaybackState(null);
+  setKarafunPlaybackSinger('');
+  setKarafunPlaybackAllowed(false);
+  setKarafunPlayPending(false);
+  setKarafunPlayError('');
+  if (karafunPlayTimeoutRef.current) {
+    clearTimeout(karafunPlayTimeoutRef.current);
+    karafunPlayTimeoutRef.current = null;
+  }
 
   try {
     const response = await fetch(
@@ -1614,6 +1636,13 @@ console.log(
   '🔥 KARAFUN RAW MESSAGE:',
   message
 );
+
+      if (message.type === 'remote.PermissionsUpdateEvent') {
+        setKarafunPlaybackAllowed(
+          message.payload?.permissions?.managePlayback === true
+        );
+        return;
+      }
 
       if (
         message.type ===
@@ -1759,6 +1788,19 @@ if (message.type === 'remote.StatusEvent') {
 
   const karaFunState =
     status?.state;
+
+  setKarafunPlaybackState(
+    typeof karaFunState === 'number' ? karaFunState : null
+  );
+  setKarafunPlaybackSinger(
+    status?.current?.song?.options?.singer || ''
+  );
+  if (karaFunState === 4 && karafunPlayTimeoutRef.current) {
+    clearTimeout(karafunPlayTimeoutRef.current);
+    karafunPlayTimeoutRef.current = null;
+    setKarafunPlayPending(false);
+    setKarafunPlayError('');
+  }
 
   const karaFunCurrentId =
     status?.current?.id || null;
@@ -2203,6 +2245,10 @@ if (message.type === 'remote.AppLeftEvent') {
 
   setKarafunPlayerOnline(false);
   setKarafunQueueSynced(false);
+  setKarafunPlaybackState(null);
+  setKarafunPlaybackSinger('');
+  setKarafunPlaybackAllowed(false);
+  setKarafunPlayPending(false);
 
   setKarafunConnectionError(
     'KaraFun player disconnected. Waiting for it to return...'
@@ -2400,6 +2446,15 @@ function disconnectKaraFun() {
   setKarafunConnected(false);
   setKarafunPlayerOnline(false);
   setKarafunQueueSynced(false);
+  setKarafunPlaybackState(null);
+  setKarafunPlaybackSinger('');
+  setKarafunPlaybackAllowed(false);
+  setKarafunPlayPending(false);
+  setKarafunPlayError('');
+  if (karafunPlayTimeoutRef.current) {
+    clearTimeout(karafunPlayTimeoutRef.current);
+    karafunPlayTimeoutRef.current = null;
+  }
   setKarafunConnectionError('');
 
   if (
@@ -2428,6 +2483,48 @@ function toggleKaraFunConnection() {
   }
 
   void connectKaraFun();
+}
+
+function playKaraFunSong() {
+  const ws = karafunSocketRef.current;
+  const currentSinger = getKaraFunSingerName(current).trim().toLowerCase();
+  const playerSinger = karafunPlaybackSinger.trim().toLowerCase();
+
+  if (
+    !karafunConnected ||
+    !karafunPlayerOnline ||
+    !karafunPlaybackAllowed ||
+    karafunPlaybackState !== 5 ||
+    !currentSinger ||
+    !playerSinger ||
+    currentSinger !== playerSinger ||
+    karafunPlayPending ||
+    !ws ||
+    ws.readyState !== WebSocket.OPEN
+  ) {
+    setKarafunPlayError(
+      'Check that the correct singer is paused in KaraFun and the StageVotes bridge has playback permission.'
+    );
+    return;
+  }
+
+  setKarafunPlayPending(true);
+  setKarafunPlayError('');
+  try {
+    ws.send(JSON.stringify({
+      id: Date.now(),
+      type: 'remote.PlayRequest',
+      payload: {},
+    }));
+    karafunPlayTimeoutRef.current = setTimeout(() => {
+      karafunPlayTimeoutRef.current = null;
+      setKarafunPlayPending(false);
+      setKarafunPlayError('KaraFun did not confirm playback. Check the player before trying again.');
+    }, 6000);
+  } catch {
+    setKarafunPlayPending(false);
+    setKarafunPlayError('Could not send Play to KaraFun. Check the connection.');
+  }
 }
 
 async function syncKaraFunQueueOrder() {
@@ -5746,6 +5843,18 @@ onOpenKaraFunDisplay={() => {
     )
   }
   onConnectKaraFun={toggleKaraFunConnection}
+  onPlayKaraFun={playKaraFunSong}
+  karafunPlaybackReady={
+    karafunConnected &&
+    karafunPlayerOnline &&
+    karafunPlaybackAllowed &&
+    karafunPlaybackState === 5 &&
+    getKaraFunSingerName(current).trim().toLowerCase() ===
+      karafunPlaybackSinger.trim().toLowerCase() &&
+    Boolean(karafunPlaybackSinger.trim())
+  }
+  karafunPlayPending={karafunPlayPending}
+  karafunPlayError={karafunPlayError}
   karafunConnected={karafunConnected}
   karafunConnecting={karafunConnecting}
 karafunConnectionError={karafunConnectionError}
