@@ -211,8 +211,6 @@ const [karafunPlaybackState, setKarafunPlaybackState] =
   useState<number | null>(null);
 const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
   useState('');
-const [karafunPlaybackAllowed, setKarafunPlaybackAllowed] =
-  useState(false);
 const [karafunPlayPending, setKarafunPlayPending] =
   useState(false);
 const [karafunPlayError, setKarafunPlayError] =
@@ -1574,7 +1572,6 @@ karaFunRecoveryNeedsAdvanceRef.current =
   setKarafunConnectionError('');
   setKarafunPlaybackState(null);
   setKarafunPlaybackSinger('');
-  setKarafunPlaybackAllowed(false);
   setKarafunPlayPending(false);
   setKarafunPlayError('');
   if (karafunPlayTimeoutRef.current) {
@@ -1636,13 +1633,6 @@ console.log(
   '🔥 KARAFUN RAW MESSAGE:',
   message
 );
-
-      if (message.type === 'remote.PermissionsUpdateEvent') {
-        setKarafunPlaybackAllowed(
-          message.payload?.permissions?.managePlayback === true
-        );
-        return;
-      }
 
       if (
         message.type ===
@@ -2247,7 +2237,6 @@ if (message.type === 'remote.AppLeftEvent') {
   setKarafunQueueSynced(false);
   setKarafunPlaybackState(null);
   setKarafunPlaybackSinger('');
-  setKarafunPlaybackAllowed(false);
   setKarafunPlayPending(false);
 
   setKarafunConnectionError(
@@ -2448,7 +2437,6 @@ function disconnectKaraFun() {
   setKarafunQueueSynced(false);
   setKarafunPlaybackState(null);
   setKarafunPlaybackSinger('');
-  setKarafunPlaybackAllowed(false);
   setKarafunPlayPending(false);
   setKarafunPlayError('');
   if (karafunPlayTimeoutRef.current) {
@@ -2493,8 +2481,7 @@ function playKaraFunSong() {
   if (
     !karafunConnected ||
     !karafunPlayerOnline ||
-    !karafunPlaybackAllowed ||
-    karafunPlaybackState !== 5 ||
+    ![3, 5].includes(karafunPlaybackState ?? -1) ||
     !currentSinger ||
     !playerSinger ||
     currentSinger !== playerSinger ||
@@ -2503,7 +2490,7 @@ function playKaraFunSong() {
     ws.readyState !== WebSocket.OPEN
   ) {
     setKarafunPlayError(
-      'Check that the correct singer is paused in KaraFun and the StageVotes bridge has playback permission.'
+      'Check that the current singer’s song is loaded and waiting in KaraFun.'
     );
     return;
   }
@@ -5847,8 +5834,7 @@ onOpenKaraFunDisplay={() => {
   karafunPlaybackReady={
     karafunConnected &&
     karafunPlayerOnline &&
-    karafunPlaybackAllowed &&
-    karafunPlaybackState === 5 &&
+    [3, 5].includes(karafunPlaybackState ?? -1) &&
     getKaraFunSingerName(current).trim().toLowerCase() ===
       karafunPlaybackSinger.trim().toLowerCase() &&
     Boolean(karafunPlaybackSinger.trim())

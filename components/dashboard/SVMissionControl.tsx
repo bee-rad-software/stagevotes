@@ -390,7 +390,7 @@ Launch audience display
             {karafunPlayError ||
               (karafunPlaybackReady
                 ? 'Start the paused song for the current singer'
-                : 'Connect KaraFun and pause the matching singer’s song')}
+                : 'Connect KaraFun and load the matching singer’s song')}
           </small>
         </button>
 
