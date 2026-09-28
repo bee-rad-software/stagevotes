@@ -29,6 +29,7 @@ import {
 } from '@dnd-kit/sortable';
 
 import { CSS } from '@dnd-kit/utilities';
+import { getRotationIdentity } from '@/lib/rotationIdentity';
 
   function formatSingerName(name: string) {
   return name
@@ -517,9 +518,9 @@ export default function SVHostQueue({
 
     items.forEach((item) => {
       const existing =
-        groups.get(item.singerName) || [];
+        groups.get(getRotationIdentity(item.performance)) || [];
 
-      groups.set(item.singerName, [
+      groups.set(getRotationIdentity(item.performance), [
         ...existing,
         item,
       ]);
@@ -817,7 +818,8 @@ const uniqueSingerCount = singerGroups.length;
       ) : singerView ? (
   <div className="sv-host-singer-groups">
     {singerGroups.map(
-      ([singerName, songs]) => {
+      ([, songs]) => {
+        const singerName = songs[0].singerName;
         const photoUrl =
           songs.find(
             (song) => song.photoUrl
@@ -857,29 +859,48 @@ const uniqueSingerCount = singerGroups.length;
             </div>
 
             <div className="sv-singer-group-songs">
-              {songs.map((song) => (
-                <button
-                  type="button"
-                  key={song.id}
-                  className="sv-singer-group-song"
-                  onClick={() =>
-                    onStartEdit?.(song)
-                  }
-                >
-                  <Music2 size={16} />
-
-                  <span>
-                    <strong>
-                      {song.songTitle}
-                    </strong>
-
-                    {song.artist && (
-                      <small>
-                        {song.artist}
-                      </small>
-                    )}
-                  </span>
-                </button>
+              {songs.map((song, index) => (
+                <div className="sv-singer-group-song-row" key={song.id}>
+                  <button
+                    type="button"
+                    className="sv-singer-group-song"
+                    onClick={() => onStartEdit?.(song)}
+                    title="Edit this song"
+                  >
+                    <Music2 size={16} />
+                    <span>
+                      <strong>{song.songTitle}</strong>
+                      {song.artist && <small>{song.artist}</small>}
+                      <small>Round {song.round}</small>
+                    </span>
+                  </button>
+                  <div className="sv-singer-group-song-moves">
+                    <button
+                      type="button"
+                      className="btn-small"
+                      onClick={() => onMoveSongEarlier?.(song.id)}
+                      disabled={
+                        song.status === 'current' ||
+                        index === 0 ||
+                        songs[index - 1]?.status === 'current'
+                      }
+                      title="Move this song to an earlier round"
+                      aria-label={`Move ${song.songTitle} earlier`}
+                    >
+                      ↑ Earlier
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-small"
+                      onClick={() => onMoveSongLater?.(song.id)}
+                      disabled={song.status === 'current' || index === songs.length - 1}
+                      title="Move this song to a later round"
+                      aria-label={`Move ${song.songTitle} later`}
+                    >
+                      ↓ Later
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

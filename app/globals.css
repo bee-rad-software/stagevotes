@@ -803,6 +803,34 @@ button.danger {
   margin-top: 14px;
 }
 
+.sv-singer-group-song-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.sv-singer-group-song-moves {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sv-singer-group-song-moves .btn-small {
+  white-space: nowrap;
+}
+
+.sv-singer-group-song-moves .btn-small:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 680px) {
+  .sv-singer-group-song-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .sv-singer-group-song {
   width: 100%;
   display: grid;
