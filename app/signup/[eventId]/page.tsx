@@ -3142,18 +3142,6 @@ function openCompetitionSong() {
     performanceIndex: number,
     direction: 'earlier' | 'later'
   ) {
-    /*
-     * Once a show is running, KaraFun may
-     * already have buffered upcoming songs.
-     * The host can safely manage live changes.
-     */
-    if (event?.current_performance_id) {
-      setMessage(
-        'Song order can only be changed before the show starts. Ask the host if you need help.'
-      );
-      return;
-    }
-
     const targetIndex =
       direction === 'earlier'
         ? performanceIndex - 1
