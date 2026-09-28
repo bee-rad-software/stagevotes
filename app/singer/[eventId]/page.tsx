@@ -293,6 +293,7 @@ async function checkDuplicateSong(songTitle: string) {
     .select('singer_name, song_title')
     .eq('event_id', eventId)
     .neq('status', 'completed')
+    .neq('status', 'skipped')
     .ilike('song_title', songTitle.trim())
     .limit(1);
 

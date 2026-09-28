@@ -1803,7 +1803,8 @@ const needsCompetitionSong =
     (performance) => {
       if (
         performance.id ===
-        editingPerformanceId
+        editingPerformanceId ||
+        performance.status === 'skipped'
       ) {
         return false;
       }
