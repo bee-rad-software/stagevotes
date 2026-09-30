@@ -3071,51 +3071,59 @@ async function confirmSongSelection(song: SVSongOption) {
 }
 
 async function checkInTournamentSinger() {
-  if (
-    !isTournament ||
-    !tournamentPerformance ||
-    !singerProfile?.id
-  ) {
+  if (!isTournament || !tournamentPerformance) {
+    setMessage('Your tournament entry could not be found. Refresh the page and try again.');
+    return;
+  }
+
+  if (!performanceBelongsToSinger(tournamentPerformance)) {
+    setMessage('We could not verify your tournament entry. Please ask the host to check you in.');
     return;
   }
 
   setSubmitting(true);
   setMessage('');
 
-  const { error } = await supabase
-    .from('performances')
-    .update({
-      checked_in_at:
-        new Date().toISOString(),
-      checked_in_by: 'singer',
-    })
-    .eq(
-      'id',
-      tournamentPerformance.id
-    )
-    .eq(
-      'event_id',
-      eventId
-    )
-    .eq(
-      'singer_profile_id',
-      singerProfile.id
-    );
+  try {
+    let request = supabase
+      .from('performances')
+      .update({
+        checked_in_at: new Date().toISOString(),
+        checked_in_by: 'singer',
+      })
+      .eq('id', tournamentPerformance.id)
+      .eq('event_id', eventId);
 
-  if (error) {
-    setMessage(
-      error.message ||
-      'Unable to check in.'
-    );
+    if (singerProfile?.id &&
+        tournamentPerformance.singer_profile_id === singerProfile.id) {
+      request = request.eq('singer_profile_id', singerProfile.id);
+    } else if (tournamentPerformance.device_id) {
+      request = request.eq('device_id', getDeviceId());
+    } else {
+      request = request.eq('singer_name', tournamentPerformance.singer_name);
+    }
 
+    const { data, error } = await request
+      .select('id, checked_in_at')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data?.checked_in_at) {
+      throw new Error('Check-in was not saved. Please ask the host to check you in.');
+    }
+
+    setQueue((current) => current.map((performance) =>
+      performance.id === data.id
+        ? { ...performance, checked_in_at: data.checked_in_at, checked_in_by: 'singer' }
+        : performance
+    ));
+    setMessage("You're checked in!");
+    await loadQueue();
+  } catch (error: any) {
+    setMessage(error?.message || 'Unable to check in. Please try again.');
+  } finally {
     setSubmitting(false);
-    return;
   }
-
-  setMessage('');
-
-  await loadQueue();
-  setSubmitting(false);
 }
 
 function openCompetitionSong() {
@@ -3755,7 +3763,7 @@ currentArtist={
             }
             disabled={submitting}
           >
-            Check In
+            {submitting ? 'Checking in...' : 'Check In'}
           </button>
         </div>
       )}
