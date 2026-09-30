@@ -290,7 +290,10 @@ const karaFunManualDisconnectRef =
   useRef(false);
 
 const nextSingerRef =
-  useRef<(() => Promise<void>) | null>(null);
+  useRef<((automatic?: boolean) => Promise<void>) | null>(null);
+
+const advanceInFlightRef = useRef(false);
+const [pendingKaraFunAdvanceId, setPendingKaraFunAdvanceId] = useState<string | null>(null);
 
 const currentPerformanceRef =
   useRef<PerformanceRow | null>(null);
@@ -1951,7 +1954,7 @@ if (
     karaFunRecoveryNeedsAdvanceRef.current =
       false;
 
-    void advanceSinger();
+    void advanceSinger(true);
 
     return;
   }
@@ -2194,7 +2197,7 @@ console.log(
   expectedNext.song_title
 );
 
-void advanceSinger().finally(() => {
+void advanceSinger(true).finally(() => {
   setTimeout(() => {
     karaFunAutoAdvancingRef.current = false;
   }, 750);
@@ -4371,62 +4374,69 @@ async function loadTournamentJudgeCount() {
   );
 }
 
-async function nextSinger() {
-  if (advancingSinger) return;
+function countCompleteJudgeBallots(
+  rows: { device_id?: string | null; category_id?: string | null }[],
+  categoryIds: string[]
+) {
+  if (!categoryIds.length) return 0;
+  const ballots = new Map<string, Set<string>>();
+  for (const vote of rows) {
+    if (!vote.device_id || !vote.category_id) continue;
+    const ballot = ballots.get(vote.device_id) || new Set<string>();
+    ballot.add(vote.category_id);
+    ballots.set(vote.device_id, ballot);
+  }
+  return [...ballots.values()].filter((ballot) =>
+    categoryIds.every((id) => ballot.has(id))
+  ).length;
+}
 
+async function nextSinger(automatic = false) {
+  if (advanceInFlightRef.current) return;
+  advanceInFlightRef.current = true;
   setAdvancingSinger(true);
 
   try {
     const completedId = event?.current_performance_id;
-
     const isTournament =
-  (event as any)?.competition_mode ===
-  'tournament';
+      (event as any)?.competition_mode === 'tournament';
 
-if (
-  isTournament &&
-  completedId &&
-  !expectedTournamentJudges
-) {
-  alert(
-    'This tournament does not have an expected judge count configured. Set the judge count before advancing competitors.'
-  );
+    if (isTournament && completedId && (event as any)?.judging_enabled !== false) {
+      if (automatic) setPendingKaraFunAdvanceId(completedId);
 
-  return;
-}
+      // Read persisted ballots and configuration, rather than a possibly
+      // stale render or the first category received over Realtime.
+      const [judgeResult, categoryResult, voteResult] = await Promise.all([
+        supabase.from('tournament_events').select('expected_judges')
+          .eq('id', (event as any).tournament_event_id).maybeSingle(),
+        supabase.from('vote_categories').select('id').eq('event_id', eventId),
+        supabase.from('votes').select('device_id, category_id')
+          .eq('event_id', eventId).eq('performance_id', completedId),
+      ]);
 
-if (
-  isTournament &&
-  completedId &&
-  expectedTournamentJudges &&
-  !currentScoringComplete
-) {
-  // your existing incomplete-ballot warning / override logic
-}
+      if (judgeResult.error || categoryResult.error || voteResult.error) {
+        if (!automatic) alert('Unable to verify judge ballots. Please try again.');
+        return;
+      }
 
-if (
-  isTournament &&
-  completedId &&
-  expectedTournamentJudges &&
-  !currentScoringComplete
-) {
-  const remaining =
-    expectedTournamentJudges -
-    currentJudgeBallotCount;
+      const expected = judgeResult.data?.expected_judges;
+      if (!expected || !categoryResult.data?.length) {
+        if (!automatic) alert('Set the expected judge count and judging categories before advancing competitors.');
+        return;
+      }
 
-  const shouldAdvance =
-    window.confirm(
-      `${current?.singer_name || 'This competitor'} has only received ${currentJudgeBallotCount} of ${expectedTournamentJudges} judge ballots. ${
-        remaining > 0
-          ? `${remaining} ${remaining === 1 ? 'judge is' : 'judges are'} still outstanding.`
-          : ''
-      }\n\nAdvance anyway?`
-    );
+      const received = countCompleteJudgeBallots(
+        voteResult.data || [], categoryResult.data.map((category) => category.id)
+      );
+      if (received < expected) {
+        if (!automatic) alert(
+          `Waiting for judge ballots: ${received} of ${expected} complete. The current singer will stay open until all judges submit.`
+        );
+        return;
+      }
+    }
 
-  if (!shouldAdvance) {
-    return;
-  }
-}
+    setPendingKaraFunAdvanceId(null);
 
     if (completedId) {
       const { error: completeError } =
@@ -4486,8 +4496,10 @@ if (
       return;
     }
 
+    setPendingKaraFunAdvanceId(null);
     await loadAll();
   } finally {
+    advanceInFlightRef.current = false;
     setAdvancingSinger(false);
   }
 }
@@ -5176,20 +5188,10 @@ const judgeBallotCount = new Set(
 ).size;
 
 const currentJudgeBallotCount =
-  current
-    ? new Set(
-        votes
-          .filter(
-            (vote: any) =>
-              vote.performance_id ===
-              current.id
-          )
-          .map(
-            (vote: any) =>
-              vote.device_id
-          )
-      ).size
-    : 0;
+  current ? countCompleteJudgeBallots(
+    votes.filter((vote) => vote.performance_id === current.id) as any[],
+    categories.map((category) => category.id)
+  ) : 0;
 
 const currentScoringComplete =
   Boolean(
@@ -5198,6 +5200,19 @@ const currentScoringComplete =
       expectedTournamentJudges
   );
   
+useEffect(() => {
+  if (!pendingKaraFunAdvanceId) return;
+  if (pendingKaraFunAdvanceId !== event?.current_performance_id) {
+    setPendingKaraFunAdvanceId(null);
+    return;
+  }
+  // Keep checking persisted ballots even if a Realtime notification is delayed.
+  const retry = () => { void nextSingerRef.current?.(true); };
+  retry();
+  const timer = window.setInterval(retry, 2000);
+  return () => window.clearInterval(timer);
+}, [pendingKaraFunAdvanceId, event?.current_performance_id]);
+
 const currentPerformanceVotes =
   current
     ? votes.filter(
@@ -5477,6 +5492,11 @@ if (!isSubscribed) {
         >
           Judge ballots received
         </div>
+        {pendingKaraFunAdvanceId === current.id && (
+          <p role="status" style={{ color: '#fdba74', marginTop: 8 }}>
+            KaraFun changed songs. Waiting for all judge ballots before advancing.
+          </p>
+        )}
       </div>
 
       <div
@@ -5794,7 +5814,7 @@ if (!isSubscribed) {
   onAddSinger={() =>
     setShowSingerSignup(true)
   }
-  onNextSinger={nextSinger}
+  onNextSinger={() => nextSinger()}
   onToggleVoting={() =>
     toggleVoting(!event?.is_voting_open)
   }
