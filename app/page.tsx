@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import SVSidebar from '@/components/layout/SVSidebar';
 import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import {
   CalendarDays,
@@ -1111,9 +1112,12 @@ if (currentEventError) {
   if (loading) {
 
     return (
-      <main className="sv-host-home-loading">
-        Loading your shows...
-      </main>
+      <div className="sv-app">
+        <SVSidebar />
+        <main className="sv-workspace sv-host-home-loading">
+          Loading your shows...
+        </main>
+      </div>
     );
   }
 
@@ -1124,7 +1128,9 @@ if (currentEventError) {
   );
 
   return (
-    <main className="sv-host-home">
+    <div className="sv-app">
+      <SVSidebar />
+      <main className="sv-workspace sv-host-home">
       <div className="sv-host-home-inner">
 
         <header className="sv-host-home-header">
@@ -1833,6 +1839,7 @@ setTournamentExpectedJudges(
   </div>
 )}
 
-    </main>
+      </main>
+    </div>
   );
 }
