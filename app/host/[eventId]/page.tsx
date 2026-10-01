@@ -5457,6 +5457,9 @@ if (!isSubscribed) {
   }
   artist={current?.artist || ''}
   votingOpen={!!event?.is_voting_open}
+  judgeBallotCount={currentJudgeBallotCount}
+  expectedJudges={expectedTournamentJudges}
+  judgingEnabled={(event as any)?.judging_enabled !== false && categories.length > 0}
   showName={
     event?.name || 'Tonight’s Karaoke'
   }

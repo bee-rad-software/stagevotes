@@ -15,6 +15,9 @@ type Props = {
   votingOpen?: boolean;
   showName?: string;
   photoUrl?: string | null;
+  judgeBallotCount?: number;
+  expectedJudges?: number | null;
+  judgingEnabled?: boolean;
 };
 
 export default function SVHostHero({
@@ -25,6 +28,9 @@ export default function SVHostHero({
   startedAt = null,
   votingOpen = false,
   showName = 'Tonight’s Karaoke',
+  judgeBallotCount = 0,
+  expectedJudges = null,
+  judgingEnabled = false,
 }: Props) {
   const [elapsedSeconds, setElapsedSeconds] =
     useState(0);
@@ -208,6 +214,22 @@ const displaySingerName = singerName
             </strong>
           </div>
         </div>
+
+        {judgingEnabled && hasCurrentSinger && (
+          <div className="sv-host-timer" role="status" aria-live="polite">
+            <div>
+              <span>Judge ballots</span>
+              <strong>
+                {judgeBallotCount}{expectedJudges ? ` / ${expectedJudges}` : ''}
+              </strong>
+              <span>
+                {expectedJudges && judgeBallotCount >= expectedJudges
+                  ? 'All judges submitted'
+                  : 'Complete ballots received'}
+              </span>
+            </div>
+          </div>
+        )}
 
         <div className="sv-host-hero-footer-status">
           <span
