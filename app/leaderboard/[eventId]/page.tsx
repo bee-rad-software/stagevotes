@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { calculateJudgeScore } from '@/lib/olympicScoring';
 import { supabase, PerformanceRow, VoteRow } from '@/lib/supabase';
 
 export default function LeaderboardPage() {
   const params = useParams<{ eventId: string }>();
   const eventId = params.eventId;
+  const [olympicConfig, setOlympicConfig] = useState<{ enabled: boolean; expected: number; categories: string[] }>({ enabled: false, expected: 0, categories: [] });
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
 const [event, setEvent] = useState<{
@@ -57,7 +59,7 @@ const [peoplesChoice, setPeoplesChoice] = useState<{
 async function loadEvent() {
   const { data, error } = await supabase
     .from('events')
-    .select('name, venue, judging_enabled')
+    .select('*')
     .eq('id', eventId)
     .maybeSingle();
 
@@ -70,6 +72,17 @@ async function loadEvent() {
     return;
   }
 
+  if (data?.tournament_event_id) {
+    const [config, categories] = await Promise.all([
+      supabase.from('tournament_events').select('*').eq('id', data.tournament_event_id).maybeSingle(),
+      supabase.from('vote_categories').select('id').eq('event_id', eventId),
+    ]);
+    setOlympicConfig({ enabled: config.data?.olympic_scoring === true,
+      expected: config.data?.expected_judges || 0,
+      categories: (categories.data || []).map((category) => category.id) });
+  } else {
+    setOlympicConfig({ enabled: false, expected: 0, categories: [] });
+  }
   setEvent(data);
   setEventLoaded(true);
 }
@@ -131,12 +144,17 @@ async function loadPeoplesChoice() {
 }
 
   const leaderboard = useMemo(() => {
-    return performances.map(p => {
+    return performances.filter(p => !olympicConfig.enabled || p.status !== 'skipped').map(p => {
       const pv = votes.filter(v => v.performance_id === p.id);
-      const avg = pv.length ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
+      const olympicResult = olympicConfig.enabled && olympicConfig.expected >= 5
+        ? calculateJudgeScore(pv as any[], olympicConfig.categories,
+            { olympic: true, expectedJudges: olympicConfig.expected }) : null;
+      const avg = olympicConfig.enabled ? olympicResult?.averageScore ?? null
+        : pv.length ? pv.reduce((sum, v) => sum + v.score, 0) / pv.length : 0;
       return { ...p, avg, voteCount: pv.length };
-    }).sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount);
-  }, [performances, votes]);
+    }).filter((row): row is typeof row & { avg: number } => row.avg !== null)
+      .sort((a, b) => b.avg - a.avg || b.voteCount - a.voteCount);
+  }, [performances, votes, olympicConfig]);
 
 const champion = leaderboard[0];
 const runnerUp = leaderboard[1];

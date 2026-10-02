@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import AppQRCode from '@/components/AppQRCode';
 import AppShell from '@/components/AppShell';
 import SVShell from '@/components/ui/SVShell';
+import { calculateJudgeScore } from '@/lib/olympicScoring';
 import SVHostHero from '@/components/dashboard/SVHostHero';
 import SVMissionControl from '@/components/dashboard/SVMissionControl';
 import SVSongPicker, {
@@ -314,6 +315,8 @@ const [welcomeSingerAdded, setWelcomeSingerAdded] =
 
 const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
   useState(false);
+
+ const [olympicScoring, setOlympicScoring] = useState(false);
 
  const [
   expectedTournamentJudges,
@@ -815,6 +818,11 @@ async function endShow() {
 
   if (!accountId) {
     return;
+  }
+
+  if (olympicScoring) {
+    const { error } = await supabase.rpc('validate_olympic_event', { p_event_id: eventId });
+    if (error) { alert(error.message); return; }
   }
 
   const judgeWinner = leaderboard[0];
@@ -4352,12 +4360,13 @@ async function loadTournamentJudgeCount() {
 
   if (!tournamentEventId) {
     setExpectedTournamentJudges(null);
+    setOlympicScoring(false);
     return;
   }
 
   const { data, error } = await supabase
     .from('tournament_events')
-    .select('expected_judges')
+    .select('*')
     .eq('id', tournamentEventId)
     .maybeSingle();
 
@@ -4372,6 +4381,7 @@ async function loadTournamentJudgeCount() {
   setExpectedTournamentJudges(
     data?.expected_judges || null
   );
+  setOlympicScoring(data?.olympic_scoring === true);
 }
 
 function countCompleteJudgeBallots(
@@ -5110,7 +5120,12 @@ useEffect(() => {
 
     if (pv.length === 0) return;
 
-    const performanceAverage =
+    const olympicResult = olympicScoring && expectedTournamentJudges && expectedTournamentJudges >= 5
+      ? calculateJudgeScore(pv as any[], categories.map((category) => category.id),
+          { olympic: true, expectedJudges: expectedTournamentJudges })
+      : null;
+    if (olympicScoring && (p.status === 'skipped' || !olympicResult || olympicResult.averageScore === null)) return;
+    const performanceAverage = olympicResult?.averageScore ??
       pv.reduce((sum, v) => sum + v.score, 0) / pv.length;
 
     const key = p.singer_name.trim().toLowerCase();
@@ -5136,7 +5151,8 @@ useEffect(() => {
 );
 
 const tiebreakerVotes = pv.filter(
-  (v) => (v as any).category_id === tiebreakerCategory?.id
+  (v) => (v as any).category_id === tiebreakerCategory?.id &&
+    (!olympicResult || olympicResult.retainedJudgeIds.includes((v as any).device_id))
 );
     
 if (tiebreakerVotes.length > 0) {
@@ -5164,7 +5180,7 @@ if (tiebreakerVotes.length > 0) {
 
   return (b.tiebreakerScore / b.performances || 0) - (a.tiebreakerScore / a.performances || 0);
 })
-}, [performances, votes, categories, event]);
+}, [performances, votes, categories, event, olympicScoring, expectedTournamentJudges]);
  
   const singers = Array.from(
   new Set(
@@ -5222,14 +5238,12 @@ const currentPerformanceVotes =
       )
     : [];
 
-const currentAverageScore =
-  currentPerformanceVotes.length > 0
-    ? currentPerformanceVotes.reduce(
-        (sum, vote: any) =>
-          sum + Number(vote.score || 0),
-        0
-      ) /
-      currentPerformanceVotes.length
+const currentOlympicScore = olympicScoring && expectedTournamentJudges && expectedTournamentJudges >= 5
+  ? calculateJudgeScore(currentPerformanceVotes as any[], categories.map((category) => category.id),
+      { olympic: true, expectedJudges: expectedTournamentJudges }) : null;
+const currentAverageScore = olympicScoring ? currentOlympicScore?.averageScore ?? null
+  : currentPerformanceVotes.length > 0
+    ? currentPerformanceVotes.reduce((sum, vote) => sum + Number(vote.score || 0), 0) / currentPerformanceVotes.length
     : null;
 
 const singerGroups = activeQueue.reduce((groups, p) => {
@@ -5479,7 +5493,7 @@ if (!isSubscribed) {
     <div className="sv-card sv-tournament-scoring-status">
       <div>
         <div className="sv-mobile-kicker">
-          Competition Scoring
+          {olympicScoring ? 'Olympic Scoring · High and low judge totals excluded' : 'Competition Scoring'}
         </div>
 
         <strong>
@@ -5527,6 +5541,11 @@ if (!isSubscribed) {
 >
   Judges submitted
 </div>
+{currentOlympicScore?.excludedTotals.length === 2 && (
+  <p style={{ color: '#94a3b8', fontSize: 13 }}>
+    Excluded judge totals: {currentOlympicScore.excludedTotals.map((total) => total.toFixed(2)).join(' and ')}
+  </p>
+)}
 
 {currentAverageScore !== null && (
   <div

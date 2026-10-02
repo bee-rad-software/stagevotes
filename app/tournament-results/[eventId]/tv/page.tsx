@@ -26,6 +26,8 @@ type ResultRow = {
 };
 
 export default function TournamentResultsTvPage() {
+  const [olympicScoring, setOlympicScoring] = useState(false);
+
   const params = useParams<{
     eventId: string;
   }>();
@@ -154,6 +156,7 @@ const [
   .from('tournament_events')
   .select(`
     results_reveal_step,
+  *,
     tournaments (
       name
     ),
@@ -163,6 +166,8 @@ const [
   `)
   .eq('id', tournamentEventId)
   .maybeSingle();
+
+setOlympicScoring(tournamentEvent?.olympic_scoring === true);
 
 setRevealStep(
   tournamentEvent?.results_reveal_step || 0
@@ -367,6 +372,7 @@ official_score,
 </div>
 
         <h1>{eventName}</h1>
+        {olympicScoring && <p>Olympic scoring · Highest and lowest judge totals excluded</p>}
 
         {venueName && (
           <p>{venueName}</p>

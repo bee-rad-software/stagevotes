@@ -31,6 +31,8 @@ type ResultRow = {
 };
 
 export default function TournamentResultsPage() {
+  const [olympicScoring, setOlympicScoring] = useState(false);
+
   const params = useParams<{
     eventId: string;
   }>();
@@ -168,6 +170,7 @@ const [
   name,
   advancement_count,
   results_reveal_step,
+  *,
   tournaments (
     name
   ),
@@ -198,6 +201,7 @@ const [
       return;
     }
 
+    setOlympicScoring(tournamentEvent.olympic_scoring === true);
     setAdvancementCount(
       tournamentEvent.advancement_count ||
         null
@@ -484,6 +488,7 @@ status:
 </div>
 
     <h1>{eventName}</h1>
+        {olympicScoring && <p>Olympic scoring · Highest and lowest judge totals excluded</p>}
 
     {venueName && (
       <p>{venueName}</p>

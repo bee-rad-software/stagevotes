@@ -63,6 +63,7 @@ type TournamentEvent = {
   starts_at: string | null;
   advancement_count: number | null;
   expected_judges: number | null;
+  olympic_scoring?: boolean;
   event_id: string | null;
 
   venues:
@@ -381,6 +382,7 @@ const [
         starts_at,
         advancement_count,
         expected_judges,
+        *,
         event_id,
         venues (
           id,
@@ -482,6 +484,7 @@ async function launchAssignedTournament() {
         event_id,
         venue_id,
         host_account_id,
+        *,
         name
       `)
       .eq(
@@ -535,6 +538,10 @@ async function launchAssignedTournament() {
       throw new Error(
         'Add at least one judging category.'
       );
+    }
+
+    if (assignedEvent.olympic_scoring && (!tournamentJudgingEnabled || tournamentExpectedJudges < 5)) {
+      throw new Error('This event uses Olympic scoring. Enable judging and confirm at least five judges before launching.');
     }
 
     const result =
@@ -1621,6 +1628,10 @@ setTournamentExpectedJudges(
             </select>
           </label>
         </div>
+      )}
+
+      {setupTournamentEvent.olympic_scoring && (
+        <p role="status">Olympic scoring: discard the highest and lowest complete judge totals. At least five judges are required.</p>
       )}
 
       <label className="sv-host-home-toggle-row">

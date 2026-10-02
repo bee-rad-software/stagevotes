@@ -69,6 +69,7 @@ type TournamentEvent = {
   starts_at: string | null;
   advancement_count: number | null;
   expected_judges: number | null;
+  olympic_scoring?: boolean;
   venues:
     | {
         id: string;
@@ -193,6 +194,8 @@ export default function TournamentDirectorDetailPage() {
 
   const [rounds, setRounds] =
     useState<TournamentRound[]>([]);
+
+  const [eventOlympicScoring, setEventOlympicScoring] = useState(false);
 
   const [loading, setLoading] =
     useState(true);
@@ -418,6 +421,7 @@ const {
     starts_at,
     advancement_count,
     expected_judges,
+    *,
     venues (
       id,
       name,
@@ -804,6 +808,7 @@ function openEventForm(
         : ''
     );
 
+    setEventOlympicScoring(tournamentEvent.olympic_scoring === true);
     setEventExpectedJudges(
   tournamentEvent.expected_judges
     ? String(
@@ -829,6 +834,7 @@ function openEventForm(
   );
 
   setEventExpectedJudges('3');
+  setEventOlympicScoring(false);
 }
 
 function openEditRound(round: TournamentRound) {
@@ -992,7 +998,15 @@ const hostAccountId =
     ? Number(eventExpectedJudges)
     : 3;
   
+  if (eventOlympicScoring && (!Number.isInteger(expectedJudgesNumber) || expectedJudgesNumber < 5)) {
+    setMessage('Olympic scoring requires at least five judges.');
+    setSavingEvent(false);
+    return;
+  }
+
   const eventValues = {
+  ...((eventOlympicScoring || editingTournamentEvent?.olympic_scoring !== undefined)
+    ? { olympic_scoring: eventOlympicScoring } : {}),
   tournament_id: tournamentId,
   round_id: eventRound.id,
   venue_id: eventVenueId || null,
@@ -1047,6 +1061,7 @@ const {
     starts_at,
     advancement_count,
     expected_judges,
+    *,
     venues (
       id,
       name,
@@ -1887,6 +1902,19 @@ const incomingSingerCount =
     competitor.
   </span>
 </label>
+
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <input type="checkbox" checked={eventOlympicScoring}
+          disabled={Boolean(editingTournamentEvent?.event_id)}
+          onChange={(event) => setEventOlympicScoring(event.target.checked)} />
+        <span>
+          Olympic scoring (optional)
+          <small style={{ display: 'block', marginTop: 6, color: '#94a3b8' }}>
+            Off by default. Requires at least five judges. Discards one highest and one lowest complete judge total.
+            Configure before launching the show.
+          </small>
+        </span>
+      </label>
 
       <div className="sv-director-form-actions">
         <button
