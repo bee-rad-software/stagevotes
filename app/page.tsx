@@ -1172,32 +1172,7 @@ if (currentEventError) {
         <SVSidebar />
         <main className="sv-workspace sv-host-home-loading">
           Loading your shows...
-  {dateEditor && (
-  <div className="sv-host-home-modal-backdrop">
-    <form className="sv-host-home-modal" role="dialog" aria-modal="true" aria-labelledby="edit-show-date-title"
-      onSubmit={(e) => { e.preventDefault(); saveShowDate(); }}>
-      <h2 id="edit-show-date-title">Edit show date</h2>
-      <p>{dateEditor.title}</p>
-      {dateEditor.kind === 'recurring' && dateEditor.recurrence !== 'one_time' && (
-        <p>This changes the recurring schedule. Shows will repeat {dateEditor.recurrence === 'biweekly' ? 'every two weeks' : 'every week'} starting on the date you choose.</p>
-      )}
-      <p>Dates and times use your device's local timezone.</p>
-      <div className="sv-host-home-modal-section">
-        <label htmlFor="edit-show-date">Date</label>
-        <input id="edit-show-date" type="date" required value={editDate} onChange={(e) => setEditDate(e.target.value)} disabled={savingDate} />
-        <label htmlFor="edit-show-time">Start time</label>
-        <input id="edit-show-time" type="time" required value={editTime} onChange={(e) => setEditTime(e.target.value)} disabled={savingDate} />
-      </div>
-      {dateError && <p role="alert">{dateError}</p>}
-      <div className="sv-host-home-modal-actions">
-        <button type="button" disabled={savingDate} onClick={() => setDateEditor(null)}>Cancel</button>
-        <button type="submit" disabled={savingDate}>{savingDate ? 'Saving…' : 'Save date'}</button>
-      </div>
-    </form>
-  </div>
-)}
-
-      </main>
+        </main>
       </div>
     );
   }
@@ -1925,6 +1900,31 @@ setTournamentExpectedJudges(
         </button>
       </div>
     </div>
+  </div>
+)}
+
+{dateEditor && (
+  <div className="sv-host-home-modal-backdrop">
+    <form className="sv-host-home-modal" role="dialog" aria-modal="true" aria-labelledby="edit-show-date-title"
+      onSubmit={(e) => { e.preventDefault(); saveShowDate(); }}>
+      <h2 id="edit-show-date-title">Edit show date</h2>
+      <p>{dateEditor.title}</p>
+      {dateEditor.kind === 'recurring' && dateEditor.recurrence !== 'one_time' && (
+        <p>This changes the recurring schedule. Shows will repeat {dateEditor.recurrence === 'biweekly' ? 'every two weeks' : 'every week'} starting on the date you choose.</p>
+      )}
+      <p>Dates and times use your device's local timezone.</p>
+      <div className="sv-host-home-modal-section">
+        <label htmlFor="edit-show-date">Date</label>
+        <input id="edit-show-date" type="date" required value={editDate} onChange={(e) => setEditDate(e.target.value)} disabled={savingDate} />
+        <label htmlFor="edit-show-time">Start time</label>
+        <input id="edit-show-time" type="time" required value={editTime} onChange={(e) => setEditTime(e.target.value)} disabled={savingDate} />
+      </div>
+      {dateError && <p role="alert">{dateError}</p>}
+      <div className="sv-host-home-modal-actions">
+        <button type="button" disabled={savingDate} onClick={() => setDateEditor(null)}>Cancel</button>
+        <button type="submit" disabled={savingDate}>{savingDate ? 'Saving…' : 'Save date'}</button>
+      </div>
+    </form>
   </div>
 )}
 
