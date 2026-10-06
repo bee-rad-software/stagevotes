@@ -224,6 +224,55 @@ const [
   setLaunchingTournament,
 ] = useState(false);
 
+  const [dateEditor, setDateEditor] = useState<{ kind: 'recurring' | 'tournament'; id: string; title: string; recurrence?: RecurrenceType } | null>(null);
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [savingDate, setSavingDate] = useState(false);
+
+  function openShowDate(show: RecurringShow) {
+    setDateEditor({ kind: 'recurring', id: show.id, title: show.title, recurrence: show.recurrence_type || 'weekly' });
+    setEditDate(upcomingShowDates(show)[0] || show.start_date || '');
+    setEditTime(show.start_time.slice(0, 5));
+    setDateError('');
+  }
+
+  function openTournamentDate(show: TournamentEvent) {
+    const date = show.starts_at ? new Date(show.starts_at) : null;
+    setDateEditor({ kind: 'tournament', id: show.id, title: show.name });
+    setEditDate(date ? [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-') : '');
+    setEditTime(date ? [String(date.getHours()).padStart(2, '0'), String(date.getMinutes()).padStart(2, '0')].join(':') : '20:00');
+    setDateError('');
+  }
+
+  async function saveShowDate() {
+    if (!dateEditor || savingDate) return;
+    const date = new Date(`${editDate}T${editTime}:00`);
+    if (!editDate || !editTime || Number.isNaN(date.getTime()) || date <= new Date()) {
+      setDateError('Choose a future date and time.');
+      return;
+    }
+    setSavingDate(true);
+    setDateError('');
+    try {
+      const table = dateEditor.kind === 'recurring' ? 'venue_recurring_shows' : 'tournament_events';
+      const values = dateEditor.kind === 'recurring'
+        ? { start_date: editDate, day_of_week: date.getDay(), start_time: editTime }
+        : { starts_at: date.toISOString() };
+      let query = supabase.from(table).update(values).eq('id', dateEditor.id);
+      if (dateEditor.kind === 'tournament') query = query.eq('host_account_id', account?.id).is('event_id', null);
+      const { data, error } = await query.select('id').single();
+      if (error || !data) throw error || new Error('The show could not be updated.');
+      setDateEditor(null);
+      await loadHostHome();
+      setMessage('Show date updated.');
+    } catch (error: any) {
+      setDateError(error.message || 'Unable to update the show date.');
+    } finally {
+      setSavingDate(false);
+    }
+  }
+
   useEffect(() => {
     loadHostHome();
   }, []);
@@ -1123,7 +1172,32 @@ if (currentEventError) {
         <SVSidebar />
         <main className="sv-workspace sv-host-home-loading">
           Loading your shows...
-        </main>
+  {dateEditor && (
+  <div className="sv-host-home-modal-backdrop">
+    <form className="sv-host-home-modal" role="dialog" aria-modal="true" aria-labelledby="edit-show-date-title"
+      onSubmit={(e) => { e.preventDefault(); saveShowDate(); }}>
+      <h2 id="edit-show-date-title">Edit show date</h2>
+      <p>{dateEditor.title}</p>
+      {dateEditor.kind === 'recurring' && dateEditor.recurrence !== 'one_time' && (
+        <p>This changes the recurring schedule. Shows will repeat {dateEditor.recurrence === 'biweekly' ? 'every two weeks' : 'every week'} starting on the date you choose.</p>
+      )}
+      <p>Dates and times use your device's local timezone.</p>
+      <div className="sv-host-home-modal-section">
+        <label htmlFor="edit-show-date">Date</label>
+        <input id="edit-show-date" type="date" required value={editDate} onChange={(e) => setEditDate(e.target.value)} disabled={savingDate} />
+        <label htmlFor="edit-show-time">Start time</label>
+        <input id="edit-show-time" type="time" required value={editTime} onChange={(e) => setEditTime(e.target.value)} disabled={savingDate} />
+      </div>
+      {dateError && <p role="alert">{dateError}</p>}
+      <div className="sv-host-home-modal-actions">
+        <button type="button" disabled={savingDate} onClick={() => setDateEditor(null)}>Cancel</button>
+        <button type="submit" disabled={savingDate}>{savingDate ? 'Saving…' : 'Save date'}</button>
+      </div>
+    </form>
+  </div>
+)}
+
+      </main>
       </div>
     );
   }
@@ -1225,6 +1299,7 @@ if (currentEventError) {
               </div>
             </div>
 
+            {!nextTournamentEvent.event_id && <button type="button" onClick={() => openTournamentDate(nextTournamentEvent)}>Edit date</button>}
             <button
   type="button"
   onClick={() => {
@@ -1314,6 +1389,8 @@ if (currentEventError) {
                         </div>
                       </div>
 
+                      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                      <button type="button" onClick={() => openShowDate(show)}>Edit date</button>
                       <button
   type="button"
   onClick={() =>
@@ -1322,6 +1399,7 @@ if (currentEventError) {
 >
   Start Show
 </button>
+</div>
                     </article>
                   );
                 }
