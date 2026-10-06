@@ -343,6 +343,8 @@ useEffect(() => {
 }, [eventId]);
 
 const [savingJudgeCount, setSavingJudgeCount] = useState(false);
+const [savingNoteSharing, setSavingNoteSharing] = useState(false);
+const [noteSharingMessage, setNoteSharingMessage] = useState('');
 const [judgeCountMessage, setJudgeCountMessage] = useState('');
 
  const [
@@ -4412,6 +4414,22 @@ async function loadTournamentJudgeCount() {
   setJudgeCountDraft(String(data?.expected_judges || 3));
 }
 
+async function setNoteSharing(enabled: boolean) {
+  if (savingNoteSharing) return;
+  setSavingNoteSharing(true);
+  setNoteSharingMessage('');
+  try {
+    const { data, error } = await supabase.from('events')
+      .update({ share_judge_notes: enabled }).eq('id', eventId)
+      .eq('account_id', accountId).select('*').single();
+    if (error) throw error;
+    setEvent(data);
+    setNoteSharingMessage(enabled ? 'Notes are shared with signed-in singers after their performance is completed.' : 'Notes are private to the host.');
+  } catch (error: any) {
+    setNoteSharingMessage(error.message || 'Unable to save note sharing.');
+  } finally { setSavingNoteSharing(false); }
+}
+
 async function saveJudgeCount() {
   const count = Number(judgeCountDraft);
   const minimum = olympicScoring ? 5 : 1;
@@ -5938,6 +5956,21 @@ if (!isSubscribed) {
       <p>Some ballots were submitted before named check-in. They still count toward the ballot total.</p>
     )}
   </section>
+)}
+
+{judgePanelAvailable && event?.judging_enabled === true && (
+  <details className="sv-host-song-history">
+    <summary><span>📝 Judge note sharing</span><span className="sv-host-song-history-count">{(event as any)?.share_judge_notes ? 'Shared' : 'Private'}</span></summary>
+    <div style={{ padding: 20 }}>
+      <label style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <input type="checkbox" checked={(event as any)?.share_judge_notes === true}
+          disabled={savingNoteSharing} onChange={(e) => setNoteSharing(e.target.checked)} />
+        <strong>Share judge notes with singers</strong>
+      </label>
+      <p>Off by default. Signed-in singers can see their own feedback and the judge's name after each performance is completed. Turning this off hides previously shared notes.</p>
+      {noteSharingMessage && <p role="status">{noteSharingMessage}</p>}
+    </div>
+  </details>
 )}
 
 <SVMissionControl

@@ -1,5 +1,6 @@
 'use client';
 
+import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import {
   useEffect,
   useMemo,
@@ -4504,6 +4505,7 @@ currentArtist={
           }}
         />
       )}
-    </main>
+    <SVJudgeFeedback eventId={eventId} />
+</main>
   );
 }

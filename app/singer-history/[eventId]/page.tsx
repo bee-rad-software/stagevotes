@@ -1,5 +1,6 @@
 'use client';
 
+import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, History, Music2 } from 'lucide-react';
@@ -131,6 +132,7 @@ export default function SingerHistoryPage() {
             </div>
           ))}
       </section>
+    <SVJudgeFeedback eventId={eventId} />
     </main>
   );
 }

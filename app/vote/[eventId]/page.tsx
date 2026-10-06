@@ -636,7 +636,7 @@ const allCategoriesScored = completed === categories.length;
             {judgeFeatures && !submitted && (
               <div style={{ marginBottom: 20 }}>
                 <label htmlFor="judge-note"><strong>Judge notes (optional)</strong></label>
-                <p>Feedback on this performance. Visible to the host; does not affect the score.</p>
+                <p>Feedback on this performance. Visible to the host. The host may share it, with your name, with this singer after the performance. Does not affect the score.</p>
                 <textarea id="judge-note" rows={4} maxLength={2000} value={judgeNote}
                   onChange={(e) => setJudgeNote(e.target.value)}
                   style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0f172a', color: '#fff', border: '1px solid #64748b' }} />
