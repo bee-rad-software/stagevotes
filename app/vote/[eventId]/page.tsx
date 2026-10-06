@@ -57,6 +57,60 @@ export default function VotePage() {
   const [categories, setCategories] = useState<VoteCategory[]>([]);
 const [scores, setScores] = useState<Record<string, number>>({});
   const [logoUrl, setLogoUrl] = useState('');
+  const [judgeName, setJudgeName] = useState('');
+  const [judgeReady, setJudgeReady] = useState(false);
+  const [judgeFeatures, setJudgeFeatures] = useState(false);
+  const [judgeNotice, setJudgeNotice] = useState('');
+  const [judgeNote, setJudgeNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    setJudgeName(localStorage.getItem(`stagevotes_judge_name_${eventId}`) || '');
+    let cancelled = false;
+    supabase.from('judge_sessions').select('event_id').limit(0).then(({ error }) => {
+      if (!cancelled) setJudgeFeatures(!error || error.code === '42501');
+    });
+    return () => { cancelled = true; };
+  }, [eventId]);
+
+  async function checkInJudge() {
+    if (!judgeName.trim()) { setJudgeNotice('Enter your name to check in.'); return; }
+    const { error } = await supabase.rpc('check_in_judge', {
+      p_event_id: eventId, p_device_id: getDeviceId(), p_token: getVoterKey(), p_name: judgeName.trim()
+    });
+    if (error) { setJudgeNotice(error.message); return; }
+    localStorage.setItem(`stagevotes_judge_name_${eventId}`, judgeName.trim());
+    setJudgeReady(true);
+    setJudgeNotice('Checked in. Keep this page open while judging.');
+  }
+
+  useEffect(() => {
+    if (!judgeReady) return;
+    const heartbeat = setInterval(() => {
+      supabase.rpc('check_in_judge', { p_event_id: eventId, p_device_id: getDeviceId(),
+        p_token: getVoterKey(), p_name: localStorage.getItem(`stagevotes_judge_name_${eventId}`) || judgeName
+      }).then(({ error }) => { if (error) setJudgeNotice(error.message); });
+    }, 20000);
+    return () => clearInterval(heartbeat);
+  }, [judgeReady, eventId]);
+
+  useEffect(() => {
+    setJudgeNote('');
+    setSubmitted(false);
+    if (!current?.id) return;
+    let cancelled = false;
+    supabase.from('votes').select('category_id,score').eq('performance_id', current.id)
+      .eq('device_id', getDeviceId()).then(({ data }) => {
+        if (!cancelled && data?.length) {
+          setSubmitted(true);
+          setScores(Object.fromEntries(data.filter(v => v.category_id).map(v => [v.category_id, v.score])));
+          setMessage('Thanks. Your ballot was already submitted.');
+        }
+      });
+    return () => { cancelled = true; };
+  }, [current?.id]);
+
  const [currentCategoryIndex, setCurrentCategoryIndex] =
   useState(0); 
 
@@ -161,6 +215,7 @@ async function vote(score: number) {
 }
 
 async function submitCategoryVotes() {
+  if (submitting || submitted) return;
   setMessage('');
 
   if (!event?.is_voting_open || !current) {
@@ -172,6 +227,23 @@ async function submitCategoryVotes() {
 
   if (missingScore) {
     setMessage('Please vote in every category.');
+    return;
+  }
+
+  if (judgeFeatures) {
+    if (!judgeReady) { setMessage('Check in with your judge name first.'); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.rpc('submit_judge_ballot', {
+        p_event_id: eventId, p_performance_id: current.id, p_device_id: getDeviceId(),
+        p_token: getVoterKey(), p_scores: scores, p_note: judgeNote.trim()
+      });
+      if (error) throw error;
+      setSubmitted(true);
+      setMessage('Thanks. Your complete ballot and notes were saved.');
+    } catch (error: any) {
+      setMessage(error.message || 'Unable to submit. Please try again.');
+    } finally { setSubmitting(false); }
     return;
   }
 
@@ -260,6 +332,18 @@ const allCategoriesScored = completed === categories.length;
           {event?.name || 'StageVotes Event'}
         </p>
       </header>
+
+      {judgeFeatures && (
+        <section className={styles.waitingCard}>
+          <h2>Judge check-in</h2>
+          <label htmlFor="judge-name">Your name</label>
+          <input id="judge-name" value={judgeName} maxLength={80} disabled={judgeReady}
+            onChange={(e) => setJudgeName(e.target.value)}
+            style={{ display: 'block', width: '100%', padding: 12, margin: '12px 0', borderRadius: 12, background: '#0f172a', color: '#fff', border: '1px solid #64748b' }} />
+          {!judgeReady && <button type="button" className={styles.submitButton} onClick={checkInJudge}>Check in as judge</button>}
+          {judgeNotice && <p role="status">{judgeNotice}</p>}
+        </section>
+      )}
 
       {!current ? (
         <section className={styles.waitingCard}>
@@ -549,16 +633,25 @@ const allCategoriesScored = completed === categories.length;
               </div>
             )}
 
+            {judgeFeatures && !submitted && (
+              <div style={{ marginBottom: 20 }}>
+                <label htmlFor="judge-note"><strong>Judge notes (optional)</strong></label>
+                <p>Feedback on this performance. Visible to the host; does not affect the score.</p>
+                <textarea id="judge-note" rows={4} maxLength={2000} value={judgeNote}
+                  onChange={(e) => setJudgeNote(e.target.value)}
+                  style={{ width: '100%', padding: 14, borderRadius: 12, background: '#0f172a', color: '#fff', border: '1px solid #64748b' }} />
+              </div>
+            )}
             <button
               type="button"
               onClick={submitCategoryVotes}
               disabled={
-                !allCategoriesScored ||
+                submitting || submitted || (judgeFeatures && !judgeReady) || !allCategoriesScored ||
                 !event?.is_voting_open
               }
               className={styles.submitButton}
             >
-              {allCategoriesScored
+              {submitted ? '✓ Ballot submitted' : submitting ? 'Submitting…' : allCategoriesScored
   ? '✓ Submit Official Ballot'
   : `${categories.length - completed} ${
       categories.length - completed === 1

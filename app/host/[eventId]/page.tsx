@@ -318,6 +318,30 @@ const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
 
  const [olympicScoring, setOlympicScoring] = useState(false);
 const [judgeCountDraft, setJudgeCountDraft] = useState('');
+const [judgeSessions, setJudgeSessions] = useState<{device_id: string; judge_name: string; last_seen_at: string}[]>([]);
+const [judgeNotes, setJudgeNotes] = useState<{performance_id: string; device_id: string; judge_name: string; note: string; submitted_at: string}[]>([]);
+const [judgePanelAvailable, setJudgePanelAvailable] = useState(false);
+const [judgePanelTime, setJudgePanelTime] = useState(Date.now());
+
+useEffect(() => {
+  if (!eventId) return;
+  let active = true;
+  async function refreshJudges() {
+    const [sessions, notes] = await Promise.all([
+      supabase.from('judge_sessions').select('device_id,judge_name,last_seen_at').eq('event_id', eventId).order('created_at'),
+      supabase.from('judge_ballot_notes').select('performance_id,device_id,judge_name,note,submitted_at').eq('event_id', eventId).order('submitted_at')
+    ]);
+    if (!active) return;
+    setJudgePanelTime(Date.now());
+    setJudgePanelAvailable(!sessions.error && !notes.error);
+    if (!sessions.error) setJudgeSessions(sessions.data || []);
+    if (!notes.error) setJudgeNotes(notes.data || []);
+  }
+  refreshJudges();
+  const timer = setInterval(refreshJudges, 5000);
+  return () => { active = false; clearInterval(timer); };
+}, [eventId]);
+
 const [savingJudgeCount, setSavingJudgeCount] = useState(false);
 const [judgeCountMessage, setJudgeCountMessage] = useState('');
 
@@ -5878,6 +5902,42 @@ if (!isSubscribed) {
       {judgeCountMessage && <p role="status">{judgeCountMessage}</p>}
     </div>
   </details>
+)}
+
+{judgePanelAvailable && event?.judging_enabled === true && (
+  <section className="sv-card" style={{ margin: '20px 0', padding: 20 }}>
+    <h2 style={{ marginTop: 0 }}>Judge readiness</h2>
+    <p role="status">
+      {current && expectedTournamentJudges && currentJudgeBallotCount >= expectedTournamentJudges
+        ? '✓ All ballots received—ready to advance'
+        : current ? `Waiting for ballots: ${currentJudgeBallotCount}${expectedTournamentJudges ? ' of ' + expectedTournamentJudges : ''} complete`
+        : 'Judges can check in before the first singer.'}
+    </p>
+    <p style={{ color: '#94a3b8' }}>Connection status reflects activity within the last 60 seconds. A complete ballot counts even if the judge disconnects.</p>
+    {judgeSessions.length === 0 && <p>No named judges have checked in yet.</p>}
+    <div style={{ display: 'grid', gap: 12 }}>
+      {judgeSessions.map(judge => {
+        const rows = current ? votes.filter((v: any) => v.performance_id === current.id && v.device_id === judge.device_id) : [];
+        const complete = categories.length > 0 && countCompleteJudgeBallots(rows as any[], categories.map(c => c.id)) > 0;
+        const recent = judgePanelTime - new Date(judge.last_seen_at).getTime() < 60000;
+        const note = judgeNotes.find(n => n.performance_id === current?.id && n.device_id === judge.device_id);
+        return <div key={judge.device_id} style={{ padding: 14, border: '1px solid #334155', borderRadius: 12 }}>
+          <strong>{judge.judge_name}</strong>
+          <div style={{ color: complete ? '#4ade80' : '#fbbf24', marginTop: 4 }}>
+            {complete ? '✓ Complete ballot submitted' : current ? 'Awaiting ballot' : 'Ready for the first singer'}
+            {' · '}{recent ? 'Recently connected' : 'Connection not recently seen'}
+          </div>
+          {note?.note && <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>Notes: {note.note}</p>}
+        </div>;
+      })}
+    </div>
+    {!!expectedTournamentJudges && judgeSessions.length < expectedTournamentJudges && (
+      <p>{expectedTournamentJudges - judgeSessions.length} expected judge slot(s) have not checked in with a name.</p>
+    )}
+    {current && votes.some((v: any) => v.performance_id === current.id && v.device_id && !judgeSessions.some(j => j.device_id === v.device_id)) && (
+      <p>Some ballots were submitted before named check-in. They still count toward the ballot total.</p>
+    )}
+  </section>
 )}
 
 <SVMissionControl
