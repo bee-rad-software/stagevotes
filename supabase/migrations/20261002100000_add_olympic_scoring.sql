@@ -5,14 +5,14 @@ alter table public.tournament_events add constraint tournament_events_olympic_ju
  check (not olympic_scoring or (expected_judges is not null and expected_judges >= 5));
 
 create or replace function public.lock_launched_olympic_mode()
-returns trigger language plpgsql set search_path = public as $
+returns trigger language plpgsql set search_path = public as $$
 begin
  if old.event_id is not null and new.olympic_scoring is distinct from old.olympic_scoring then
    raise exception 'Scoring mode cannot change after a tournament show is launched';
  end if;
  return new;
 end;
-$;
+$$;
 drop trigger if exists lock_launched_olympic_mode on public.tournament_events;
 create trigger lock_launched_olympic_mode before update of olympic_scoring on public.tournament_events
 for each row execute function public.lock_launched_olympic_mode();
@@ -781,3 +781,4 @@ end;
 $function$;
 
 commit;
+
