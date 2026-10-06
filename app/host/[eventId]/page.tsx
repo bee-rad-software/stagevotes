@@ -317,6 +317,9 @@ const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
   useState(false);
 
  const [olympicScoring, setOlympicScoring] = useState(false);
+const [judgeCountDraft, setJudgeCountDraft] = useState('');
+const [savingJudgeCount, setSavingJudgeCount] = useState(false);
+const [judgeCountMessage, setJudgeCountMessage] = useState('');
 
  const [
   expectedTournamentJudges,
@@ -4382,6 +4385,32 @@ async function loadTournamentJudgeCount() {
     data?.expected_judges || null
   );
   setOlympicScoring(data?.olympic_scoring === true);
+  setJudgeCountDraft(String(data?.expected_judges || 3));
+}
+
+async function saveJudgeCount() {
+  const count = Number(judgeCountDraft);
+  const minimum = olympicScoring ? 5 : 1;
+  if (!Number.isInteger(count) || count < minimum) {
+    setJudgeCountMessage(`Enter at least ${minimum} judges.`);
+    return;
+  }
+  if (event?.is_show_ended || !(event as any)?.tournament_event_id || savingJudgeCount) return;
+  setSavingJudgeCount(true);
+  setJudgeCountMessage('');
+  try {
+    const { data, error } = await supabase.from('tournament_events')
+      .update({ expected_judges: count })
+      .eq('id', (event as any).tournament_event_id)
+      .select('expected_judges').single();
+    if (error) throw error;
+    setExpectedTournamentJudges(data.expected_judges);
+    setJudgeCountMessage('Judge count saved. Ballot tracking now uses this count.');
+  } catch (error: any) {
+    setJudgeCountMessage(error.message || 'Unable to save judge count.');
+  } finally {
+    setSavingJudgeCount(false);
+  }
 }
 
 function countCompleteJudgeBallots(
@@ -5828,6 +5857,27 @@ if (!isSubscribed) {
       ))}
     </div>
   </section>
+)}
+
+{(event as any)?.tournament_event_id && event?.judging_enabled === true && !event?.is_show_ended && (
+  <details className="sv-host-song-history">
+    <summary><span>⚙️ Show options</span><span className="sv-host-song-history-count">{expectedTournamentJudges || '—'} judges</span></summary>
+    <div style={{ padding: 20 }}>
+      <label htmlFor="show-judge-count"><strong>Judges scoring tonight</strong></label>
+      <p>Update the number of judges expected to submit a complete ballot. This applies to every competitor in this show. Existing votes are kept.</p>
+      {olympicScoring && <p>Olympic scoring requires at least five judges.</p>}
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input id="show-judge-count" type="number" min={olympicScoring ? 5 : 1} step={1}
+          value={judgeCountDraft} disabled={savingJudgeCount}
+          onChange={(e) => { setJudgeCountDraft(e.target.value); setJudgeCountMessage(''); }}
+          style={{ width: 100, padding: 12 }} />
+        <button type="button" className="btn" disabled={savingJudgeCount} onClick={saveJudgeCount}>
+          {savingJudgeCount ? 'Saving…' : 'Save judge count'}
+        </button>
+      </div>
+      {judgeCountMessage && <p role="status">{judgeCountMessage}</p>}
+    </div>
+  </details>
 )}
 
 <SVMissionControl

@@ -1542,7 +1542,7 @@ setTournamentExpectedJudges(
       onClick={() =>
         setTournamentExpectedJudges(
           (current) =>
-            Math.max(1, current - 1)
+            Math.max(setupTournamentEvent.olympic_scoring ? 5 : 1, current - 1)
         )
       }
     >
