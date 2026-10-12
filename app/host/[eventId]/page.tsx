@@ -25,6 +25,7 @@ import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
 import SVHostIQ from '@/components/dashboard/SVHostIQ';
+import { detectHostQueueIssues, type WatchdogAlert } from '@/lib/hostQueueWatchdog';
 import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
 import SVEmptyQueueState from '@/components/dashboard/SVEmptyQueueState';
 import SVFinishedQueueState from '@/components/dashboard/SVFinishedQueueState';
@@ -336,6 +337,14 @@ const [welcomeProgressLoaded, setWelcomeProgressLoaded] =
   useState(false);
 
  const [olympicScoring, setOlympicScoring] = useState(false);
+const [watchdogNow,setWatchdogNow]=useState(Date.now());
+const watchdogSnapshotRef=useRef({signature:'',since:Date.now()});
+const watchdogFixBusyRef=useRef(false);
+useEffect(()=>{
+ const timer=setInterval(()=>setWatchdogNow(Date.now()),15000);
+ return()=>clearInterval(timer);
+},[eventId]);
+
 const [judgeCountDraft, setJudgeCountDraft] = useState('');
 const [judgeSessions, setJudgeSessions] = useState<{device_id: string; judge_name: string; last_seen_at: string}[]>([]);
 const [judgeNotes, setJudgeNotes] = useState<{performance_id: string; device_id: string; judge_name: string; note: string; submitted_at: string}[]>([]);
@@ -4260,7 +4269,8 @@ async function skipSinger(
 }
 
 async function moveSingerToNextRound(
-  performanceId: string
+  performanceId: string,
+  requestedRound?: number
 ) {
   const accountId = await getMyAccountId();
 
@@ -4291,7 +4301,12 @@ async function moveSingerToNextRound(
     performance.round || 1;
 
   const nextRound =
-    currentRound + 1;
+    requestedRound ?? currentRound + 1;
+
+  if (!Number.isInteger(nextRound) || nextRound <= currentRound) {
+    alert('Choose a later round for this song.');
+    return;
+  }
 
   const destinationRoundPerformances =
   performances.filter(
@@ -4846,6 +4861,7 @@ async function generateAIHostBriefing(): Promise<AIHostBriefing> {
     showStarted: Boolean(current),
     votingOpen: Boolean(event?.is_voting_open),
     karaFunConnected: karafunConnected,
+    watchdogFindings: watchdogAlerts.map(({kind,title,message,suggestion})=>({kind,title,message,suggestion})),
     recommendation: {
       status: hostIQRecommendation.status,
       title: hostIQRecommendation.title,
@@ -5195,6 +5211,66 @@ const fairQueue = useMemo(() => {
     p.status !== 'completed' &&
     p.status !== 'skipped'
 );
+
+const watchdogNext=rotatedQueue.find(p=>p.id!==current?.id&&p.status!=='completed'&&p.status!=='skipped'&&isTournamentPerformanceReady(p))||null;
+const watchdogSignature=JSON.stringify([current?.id,watchdogNext?.id,karafunConnected,karafunPlayerOnline,karafunPlaybackState,
+ karafunPlaybackSinger,karaFunCurrentTitleRef.current,karaFunCurrentItemIdRef.current,karafunQueueItems,karaFunRecoveringRef.current]);
+useEffect(()=>{
+ watchdogSnapshotRef.current={signature:watchdogSignature,since:Date.now()};
+},[watchdogSignature]);
+const watchdogAlerts=detectHostQueueIssues({
+ performances,current:current?{...current,singer_name:getKaraFunSingerName(current)}:null,
+ next:watchdogNext?{...watchdogNext,singer_name:getKaraFunSingerName(watchdogNext)}:null,
+ startedAt:event?.current_performance_started_at||null,now:watchdogNow,averageMinutes:pace.averageMinutes,
+ showEnded:event?.is_show_ended===true,tournament:(event as any)?.competition_mode==='tournament',
+ karaFun:{connected:karafunConnected,online:karafunPlayerOnline,recovering:karaFunRecoveringRef.current,state:karafunPlaybackState,
+  singer:karafunPlaybackSinger,title:karaFunCurrentTitleRef.current,currentItemId:karaFunCurrentItemIdRef.current,
+  stableForMs:watchdogSnapshotRef.current.signature===watchdogSignature?Math.max(0,watchdogNow-watchdogSnapshotRef.current.since):0,
+  queue:karafunQueueItems}
+});
+
+function reviewWatchdogAlert(issue:WatchdogAlert){
+ if(issue.action==='review_karafun'){
+  document.getElementById('watchdog-mission-controls')?.scrollIntoView({behavior:'smooth',block:'center'});
+  return;
+ }
+ const performance=performances.find(p=>p.id===issue.performanceId);
+ if(performance){setSingerView(false);startEditing(performance);}
+ setTimeout(()=>document.getElementById('watchdog-host-queue')?.scrollIntoView({behavior:'smooth',block:'start'}),100);
+}
+
+async function fixWatchdogAlert(issue:WatchdogAlert):Promise<string>{
+ if(watchdogFixBusyRef.current)return 'Another fix is already running.';
+ if(!watchdogAlerts.some(a=>a.id===issue.id&&a.fixAction===issue.fixAction))return 'This alert has changed. Review the latest queue.';
+ if(issue.fixAction==='advance_singer'&&!window.confirm('Confirm this performance has finished and advance to the next singer?'))return 'No changes made.';
+ watchdogFixBusyRef.current=true;
+ try{
+  const {data:latest,error}=await supabase.from('events').select('current_performance_id,is_show_ended').eq('id',eventId).eq('account_id',accountId).single();
+  if(error)throw error;
+  if(latest.is_show_ended)return 'The show has ended. No changes made.';
+  if(issue.fixAction==='move_next_round'){
+   const p=performances.find(p=>p.id===issue.performanceId);
+   if(!p||p.id===latest.current_performance_id||p.status==='completed'||p.status==='skipped')return 'This song is no longer eligible to move. Review the queue.';
+   const {data:fresh,error:targetError}=await supabase.from('performances').select('round,status').eq('id',p.id).eq('event_id',eventId).eq('account_id',accountId).single();
+   if(targetError)throw targetError;
+   if(fresh.round!==p.round||fresh.status!==p.status)return 'The song’s round or status has changed. Refresh and review the new queue.';
+   await moveSingerToNextRound(p.id,issue.fixRound);
+   return 'Round move requested. The watchdog will recheck the updated queue.';
+  }
+  if(issue.fixAction==='sync_karafun'){
+   if(!karafunConnected||!karafunPlayerOnline||karaFunRecoveringRef.current)return 'Wait for the KaraFun connection to settle before syncing.';
+   if(karaFunQueueSyncInFlightRef.current||karaFunPendingSkipAdvanceRef.current)return 'KaraFun is already syncing or skipping. Wait for that operation to finish.';
+   await syncKaraFunQueueOrder();
+   return 'KaraFun queue sync requested. Allow a few seconds for the alignment check to update.';
+  }
+  if(issue.fixAction==='advance_singer'){
+   if(latest.current_performance_id!==issue.performanceId)return 'The current singer has already changed. No changes made.';
+   await nextSinger();
+   return 'Advancement checked. Any missing tournament ballots will keep the current singer open.';
+  }
+  return 'Review this issue manually before making changes.';
+ }finally{watchdogFixBusyRef.current=false;}
+}
 
 useEffect(() => {
   if (!event?.current_performance_id) return;
@@ -6061,6 +6137,7 @@ if (!isSubscribed) {
   <Link href={`/host/${eventId}/contest`} className="btn">Manage contest →</Link>
 </section>
 
+<div id="watchdog-mission-controls">
 <SVMissionControl
   onStartShow={startShow}
   onEndShow={endShow}
@@ -6132,7 +6209,13 @@ karafunPlayerOnline={karafunPlayerOnline}
   nextSingerName={upNext?.singer_name}
 />
 
+</div>
 <SVHostIQ
+  eventId={eventId}
+  watchdogAlerts={watchdogAlerts}
+  karaFunWatchdogAvailable={karafunConnected && karafunPlayerOnline}
+  onReviewWatchdog={reviewWatchdogAlert}
+  onFixWatchdog={fixWatchdogAlert}
   targetEndTime={
     event?.host_target_end_time || ''
   }
@@ -6178,6 +6261,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     onEndShow={endShow}
   />
 ) : (
+  <div id="watchdog-host-queue">
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
@@ -6237,6 +6321,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     karafunConnected && karafunPlayerOnline
     }
 />
+  </div>
 )}
 
 

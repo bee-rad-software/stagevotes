@@ -11,6 +11,7 @@ export type AIHostBriefing = {
 };
 
 export type AIHostBriefingRequest = {
+  watchdogFindings?: {kind:string;title:string;message:string;suggestion:string}[];
   eventId: string;
   targetEndTime: string;
   bufferMinutes: number;

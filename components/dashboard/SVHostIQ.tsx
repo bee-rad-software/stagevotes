@@ -5,9 +5,16 @@ import type {
   HostIQAction,
   HostIQRecommendation,
 } from '@/lib/hostIQ';
+import SVHostWatchdog from '@/components/dashboard/SVHostWatchdog';
+import type {WatchdogAlert} from '@/lib/hostQueueWatchdog';
 import type { AIHostBriefing } from '@/lib/aiHostIQ';
 
 type Props = {
+  eventId:string;
+  watchdogAlerts:WatchdogAlert[];
+  karaFunWatchdogAvailable:boolean;
+  onReviewWatchdog:(alert:WatchdogAlert)=>void;
+  onFixWatchdog:(alert:WatchdogAlert)=>Promise<string>;
   targetEndTime: string;
   bufferMinutes: number;
   averageMinutes: number;
@@ -32,6 +39,7 @@ const statusColors = {
 };
 
 export default function SVHostIQ({
+  eventId,watchdogAlerts,karaFunWatchdogAvailable,onReviewWatchdog,onFixWatchdog,
   targetEndTime,
   bufferMinutes,
   averageMinutes,
@@ -135,7 +143,7 @@ export default function SVHostIQ({
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
         <div>
           <div className="sv-card-eyebrow">🧠 HOST IQ</div>
-          <h3 style={{ marginBottom: 5 }}>End-Time & Signup Advisor</h3>
+          <h3 style={{ marginBottom: 5 }}>Live Show Advisor</h3>
           <p style={{ margin: 0, color: '#94a3b8', fontSize: 13 }}>
             Live guidance based on tonight&apos;s queue and pace
           </p>
@@ -210,6 +218,9 @@ export default function SVHostIQ({
           </button>
         )}
       </div>
+
+      <SVHostWatchdog eventId={eventId} alerts={watchdogAlerts} karaFunAvailable={karaFunWatchdogAvailable}
+        onReview={onReviewWatchdog} onFix={onFixWatchdog} onExplain={generateBriefing} explaining={briefingLoading} />
 
       <div style={{ marginTop: 14, padding: 14, borderRadius: 12, border: '1px solid rgba(56,189,248,.25)', background: 'rgba(14,116,144,.09)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
