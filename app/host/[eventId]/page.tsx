@@ -212,6 +212,25 @@ const [karafunPlaybackState, setKarafunPlaybackState] =
   useState<number | null>(null);
 const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
   useState('');
+const [karafunControlPending, setKarafunControlPending] = useState<'pause' | 'skip' | null>(null);
+const [karafunControlError, setKarafunControlError] = useState('');
+const karafunControlRef = useRef<{kind:'pause'|'skip';previousItemId:string|null}|null>(null);
+const karafunControlBusyRef = useRef(false);
+const karafunControlTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
+useEffect(() => () => {
+ if (karafunControlTimerRef.current) clearTimeout(karafunControlTimerRef.current);
+ karafunControlRef.current=null;
+ karafunControlBusyRef.current=false;
+}, [eventId]);
+
+function finishKaraFunControl() {
+ if (karafunControlTimerRef.current) clearTimeout(karafunControlTimerRef.current);
+ karafunControlTimerRef.current=null;
+ karafunControlRef.current=null;
+ karafunControlBusyRef.current=false;
+ setKarafunControlPending(null);
+}
+
 const [karafunPlayPending, setKarafunPlayPending] =
   useState(false);
 const [karafunPlayError, setKarafunPlayError] =
@@ -1549,6 +1568,8 @@ function isTournamentPerformanceReady(
 }
 
   async function connectKaraFun() {
+  finishKaraFunControl();
+  setKarafunControlError('');
   karaFunManualDisconnectRef.current = false;
 
   if (karaFunReconnectTimerRef.current) {
@@ -1834,6 +1855,12 @@ if (message.type === 'remote.StatusEvent') {
 
   const karaFunCurrentId =
     status?.current?.id || null;
+  const control = karafunControlRef.current;
+  if (control && ((control.kind === 'pause' && karaFunState === 5) ||
+      (control.kind === 'skip' && karaFunCurrentId && karaFunCurrentId !== control.previousItemId))) {
+    finishKaraFunControl();
+    setKarafunControlError('');
+  }
 
   const karaFunSinger =
     status?.current?.song
@@ -2135,7 +2162,7 @@ if (
     return;
   }
 
-  if (!karafunAutoAdvance) {
+  if (!karafunAutoAdvance && control?.kind !== 'skip') {
     console.log(
       'KaraFun changed songs, but Auto Advance is OFF.'
     );
@@ -2443,6 +2470,8 @@ if (message.type === 'remote.AppLeftEvent') {
 }
 
 function disconnectKaraFun() {
+  finishKaraFunControl();
+  setKarafunControlError('');
   /*
    * This is an intentional host disconnect,
    * so the onclose handler must NOT
@@ -2514,6 +2543,7 @@ function toggleKaraFunConnection() {
 }
 
 function playKaraFunSong() {
+  if (karafunControlBusyRef.current) return;
   const ws = karafunSocketRef.current;
   const currentSinger = getKaraFunSingerName(current).trim().toLowerCase();
   const playerSinger = karafunPlaybackSinger.trim().toLowerCase();
@@ -2552,6 +2582,58 @@ function playKaraFunSong() {
     setKarafunPlayPending(false);
     setKarafunPlayError('Could not send Play to KaraFun. Check the connection.');
   }
+}
+
+function karaFunSkipTargetReady() {
+ if (!current || !upNext || !karafunConnected || !karafunPlayerOnline || ![3,4,5].includes(karafunPlaybackState ?? -1)) return false;
+ const normalize=(value:string|null|undefined)=>(value||'').trim().toLowerCase();
+ if (normalize(karafunPlaybackSinger)!==normalize(getKaraFunSingerName(current)) ||
+     normalize(karaFunCurrentTitleRef.current)!==normalize(current.song_title)) return false;
+ const currentItemIndex=karafunQueueItems.findIndex((item:any)=>item.queueItemId===karaFunCurrentItemIdRef.current);
+ const nextItem=currentItemIndex>=0?karafunQueueItems[currentItemIndex+1]:karafunQueueItems[0];
+ return Boolean(nextItem && normalize(nextItem.singer)===normalize(getKaraFunSingerName(upNext)) &&
+   normalize(nextItem.title)===normalize(upNext.song_title) && isTournamentPerformanceReady(upNext));
+}
+
+async function controlKaraFun(kind:'pause'|'skip') {
+ if (karafunControlBusyRef.current || karafunPlayPending) return;
+ const ws=karafunSocketRef.current;
+ if (!karafunConnected || !karafunPlayerOnline || !ws || ws.readyState!==WebSocket.OPEN) {
+  setKarafunControlError('Connect KaraFun before using playback controls.');return;
+ }
+ if (kind==='pause' && karafunPlaybackState!==4) return;
+ if (kind==='skip' && !karaFunSkipTargetReady()) {
+  setKarafunControlError('Wait for KaraFun to load the matching next singer in its queue.');return;
+ }
+ if (kind==='skip' && !window.confirm('Skip the current KaraFun song and move to the next queued song?')) return;
+ karafunControlBusyRef.current=true;
+ setKarafunControlPending(kind);
+ setKarafunControlError('');
+ try {
+  if (kind==='skip' && (event as any)?.competition_mode==='tournament' && event?.judging_enabled!==false && current) {
+   const [judges,cats,ballots]=await Promise.all([
+    supabase.from('tournament_events').select('expected_judges').eq('id',(event as any).tournament_event_id).maybeSingle(),
+    supabase.from('vote_categories').select('id').eq('event_id',eventId),
+    supabase.from('votes').select('device_id,category_id').eq('event_id',eventId).eq('performance_id',current.id)
+   ]);
+   if(judges.error||cats.error||ballots.error)throw new Error('Unable to verify judge ballots. Please try again.');
+   const expected=judges.data?.expected_judges;
+   if(!expected||!cats.data?.length)throw new Error('Set the expected judges and categories before skipping.');
+   const received=countCompleteJudgeBallots(ballots.data||[],cats.data.map(c=>c.id));
+   if(received<expected)throw new Error(`Waiting for judge ballots: ${received} of ${expected} complete.`);
+  }
+  if(karafunSocketRef.current!==ws || ws.readyState!==WebSocket.OPEN)throw new Error('KaraFun disconnected. Please reconnect.');
+  if(kind==='skip' && (currentPerformanceRef.current?.id!==current?.id || !karaFunSkipTargetReady()))throw new Error('The song changed while checking. Check the queue before trying again.');
+  karafunControlRef.current={kind,previousItemId:karaFunCurrentItemIdRef.current};
+  ws.send(JSON.stringify({id:Date.now(),type:kind==='pause'?'remote.PauseRequest':'remote.NextRequest',payload:{}}));
+  karafunControlTimerRef.current=setTimeout(()=>{
+   finishKaraFunControl();
+   setKarafunControlError('KaraFun did not confirm the change. Check the player before trying again.');
+  },6000);
+ } catch(error:any) {
+  finishKaraFunControl();
+  setKarafunControlError(error.message||'Unable to send the command to KaraFun.');
+ }
 }
 
 async function syncKaraFunQueueOrder() {
@@ -6022,6 +6104,12 @@ onOpenKaraFunDisplay={() => {
   }
   onConnectKaraFun={toggleKaraFunConnection}
   onPlayKaraFun={playKaraFunSong}
+  onPauseKaraFun={() => { void controlKaraFun('pause'); }}
+  onSkipKaraFun={() => { void controlKaraFun('skip'); }}
+  karafunPauseReady={karafunConnected && karafunPlayerOnline && karafunPlaybackState === 4}
+  karafunSkipReady={karaFunSkipTargetReady()}
+  karafunControlPending={karafunControlPending}
+  karafunControlError={karafunControlError}
   karafunPlaybackReady={
     karafunConnected &&
     karafunPlayerOnline &&

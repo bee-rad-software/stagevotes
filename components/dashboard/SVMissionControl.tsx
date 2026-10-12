@@ -2,6 +2,7 @@
 
 import {
   Play,
+  Pause,
   Square,
   UserPlus,
   SkipForward,
@@ -23,6 +24,12 @@ type Props = {
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
   onPlayKaraFun?: () => void;
+  onPauseKaraFun?: () => void;
+  onSkipKaraFun?: () => void;
+  karafunPauseReady?: boolean;
+  karafunSkipReady?: boolean;
+  karafunControlPending?: 'pause' | 'skip' | null;
+  karafunControlError?: string;
   karafunPlaybackReady?: boolean;
   karafunPlayPending?: boolean;
   karafunPlayError?: string;
@@ -52,6 +59,12 @@ export default function SVMissionControl({
   onAwards,
   onConnectKaraFun,
   onPlayKaraFun,
+  onPauseKaraFun,
+  onSkipKaraFun,
+  karafunPauseReady = false,
+  karafunSkipReady = false,
+  karafunControlPending = null,
+  karafunControlError = '',
   karafunPlaybackReady = false,
   karafunPlayPending = false,
   karafunPlayError = '',
@@ -377,8 +390,8 @@ Launch audience display
           type="button"
           className="sv-mission-action"
           onClick={onPlayKaraFun}
-          disabled={!karafunPlaybackReady || karafunPlayPending}
-          aria-disabled={!karafunPlaybackReady || karafunPlayPending}
+          disabled={!karafunPlaybackReady || karafunPlayPending || !!karafunControlPending}
+          aria-disabled={!karafunPlaybackReady || karafunPlayPending || !!karafunControlPending}
           title="Play the paused KaraFun song for the current singer"
         >
           <span className={`sv-action-badge sv-action-badge-${karafunPlaybackReady ? 'success' : 'neutral'}`}>
@@ -392,6 +405,23 @@ Launch audience display
                 ? 'Start the paused song for the current singer'
                 : 'Connect KaraFun and load the matching singer’s song')}
           </small>
+        </button>
+
+        <button type="button" className="sv-mission-action" onClick={onPauseKaraFun}
+          disabled={!karafunPauseReady || karafunPlayPending || !!karafunControlPending}
+          title="Pause the song currently playing in KaraFun">
+          <span className={`sv-action-badge sv-action-badge-${karafunPauseReady ? 'success' : 'neutral'}`}>{karafunPauseReady?'READY':'WAITING'}</span>
+          <Pause size={26}/>
+          <span>{karafunControlPending==='pause'?'Pausing…':'Pause KaraFun Song'}</span>
+          <small>{karafunControlError || 'Pause playback; use Play to resume the matching singer’s song'}</small>
+        </button>
+        <button type="button" className="sv-mission-action" onClick={onSkipKaraFun}
+          disabled={!karafunSkipReady || karafunPlayPending || !!karafunControlPending}
+          title="Skip the current KaraFun song after checking the next singer and judge ballots">
+          <span className={`sv-action-badge sv-action-badge-${karafunSkipReady ? 'success' : 'neutral'}`}>{karafunSkipReady?'READY':'WAITING'}</span>
+          <SkipForward size={26}/>
+          <span>{karafunControlPending==='skip'?'Skipping…':'Skip to Next Song'}</span>
+          <small>{karafunControlError || (karafunSkipReady?'Skip the current track; tournament ballots must be complete':'Load the matching next singer in KaraFun first')}</small>
         </button>
 
         <button
