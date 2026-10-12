@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import SVFirstShowChecklist from '@/components/dashboard/SVFirstShowChecklist';
 import SVSidebar from '@/components/layout/SVSidebar';
 import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import {
@@ -1215,6 +1216,8 @@ if (currentEventError) {
             Create One-Time Show
           </Link>
         </header>
+
+        {account?.id && <SVFirstShowChecklist key={account.id} accountId={account.id} venueCount={venues.length} />}
 
         {message && (
           <div className="sv-host-home-message">
