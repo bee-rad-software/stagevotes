@@ -4162,6 +4162,7 @@ currentArtist={
       >
 
         <SVSongPicker
+          discoveryEventId={eventId}
           afterResultsContent={!editingPerformanceId && (
             <div className="sv-song-sms-options">
               <div className="sv-mobile-kicker">Optional text alerts</div>

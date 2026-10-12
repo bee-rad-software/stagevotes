@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import SVSmartSongDiscovery from './SVSmartSongDiscovery';
 import { Search } from 'lucide-react';
 
 export type SVSongStatus = 'available' | 'queued' | 'favorite';
@@ -23,6 +24,7 @@ export type SVSongSection = {
 };
 
 type Props = {
+  discoveryEventId?: string;
   songs: SVSongOption[];
   sections?: SVSongSection[];
   onSelect: (song: SVSongOption) => void;
@@ -40,6 +42,7 @@ type Props = {
 
 export default function SVSongPicker({
   songs,
+  discoveryEventId,
   sections = [],
   onSelect,
   onSearch,
@@ -212,6 +215,8 @@ return songs;
 ))}
 
 {afterResultsContent}
+
+{discoveryEventId && <SVSmartSongDiscovery eventId={discoveryEventId} onSelect={onSelect} />}
 
 {optionsContent && (
   <div className="sv-picker-options">
