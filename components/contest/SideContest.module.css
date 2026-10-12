@@ -6,7 +6,7 @@
 .card { background: #101a2b; border: 1px solid #334155; border-radius: 18px; padding: 22px; margin: 18px 0; }
 .card h2 { margin-top: 0; }
 .row { display:flex; gap: 12px; flex-wrap:wrap; align-items:center; }
-.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),340px)); gap:16px; }
 .field { display:block; margin-bottom:16px; }
 .field span { display:block; margin-bottom:8px; font-weight:700; }
 .input { box-sizing:border-box; width:100%; border:1px solid #64748b; border-radius:12px; padding:12px; background:#070f20; color:#fff; font-size:16px; }
@@ -15,7 +15,7 @@
 .secondary { background:#23354b; color:#e0f2fe; }
 .button:disabled,.secondary:disabled { opacity:.5; cursor:default; }
 .message { background:#172d43; border:1px solid #38bdf8; border-radius:12px; padding:14px; margin:16px 0; }
-.photo { width:100%; height:220px; object-fit:cover; border-radius:12px; background:#26364d; }
+.photo { width:100%; height:300px; object-fit:contain; border-radius:12px; background:#26364d; }
 .placeholder { height:150px; display:grid; place-items:center; font-size:42px; background:#23354b; border-radius:12px; }
 .entry { border:1px solid #334155; border-radius:16px; padding:16px; background:#0b1425; }
 .entry h3 { margin:12px 0 6px; }
