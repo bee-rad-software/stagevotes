@@ -24,6 +24,13 @@ export default function HostSideContest() {
  const [fileKey,setFileKey]=useState(0);
  const [origin,setOrigin]=useState('');
  const [ready,setReady]=useState(false);
+ const [venue,setVenue]=useState<{id:string;name:string;current_side_contest_id:string|null}|null>(null);
+ async function loadVenue() {
+  const {data:show}=await supabase.from('events').select('venue_id').eq('id',eventId).maybeSingle();
+  if(!show?.venue_id)return;
+  const {data}=await supabase.from('venues').select('id,name,current_side_contest_id').eq('id',show.venue_id).maybeSingle();
+  setVenue(data || {id:show.venue_id,name:'Venue',current_side_contest_id:null});
+ }
  useEffect(()=>{
   setOrigin(window.location.origin);
   let active=true;
@@ -34,13 +41,13 @@ export default function HostSideContest() {
    if(!active)return;
    if(error) {
     setMessage(['PGRST202','42883'].includes(error.code)?'The contest database update needs to be installed before setup.':'Unable to load contest: '+error.message);
-   } else {setContest(data);setReady(true);}
+   } else {setContest(data);setReady(true);await loadVenue();}
    setLoading(false);
   }
   init();
   const timer=setInterval(async()=>{
    const {data,error}=await supabase.rpc('get_show_side_contest',{p_event_id:eventId});
-   if(active&&!error)setContest(data);
+   if(active&&!error){setContest(data);await loadVenue();}
   },5000);
   return()=>{active=false;clearInterval(timer);};
  },[eventId,router]);
@@ -50,6 +57,7 @@ export default function HostSideContest() {
   const refresh=await supabase.rpc('get_show_side_contest',{p_event_id:eventId});
   if(refresh.error)throw refresh.error;
   setContest(refresh.data);
+  await loadVenue();
  }
  async function run(actionName:string,data:Record<string,unknown>={}) {
   if(busy)return;
@@ -85,7 +93,7 @@ export default function HostSideContest() {
   }catch(error:any){setMessage(error.message||'Unable to add contestant.');}
   finally{setBusy(false);}
  }
- const voteUrl=contest&&origin?origin+'/contest/'+contest.id:'';
+ const voteUrl=venue&&origin?origin+'/go/venue/'+venue.id+'/contest':contest&&origin?origin+'/contest/'+contest.id:'';
  const displayUrl=contest&&origin?origin+'/contest/'+contest.id+'/display':'';
  return <SVShell title="People’s Choice Contest" subtitle="Run a separate contest alongside karaoke">
   <div className={styles.wrap}>
@@ -94,6 +102,25 @@ export default function HostSideContest() {
     <p>Karaoke continues independently. These contestants and votes do not affect the singer queue or karaoke scores.</p>
    </div>
    {message&&<div className={styles.message} role="status">{message}</div>}
+   {venue&&voteUrl&&<section className={styles.card}>
+    <h2>Permanent venue contest QR</h2><p>{venue.name} · Print this now and reuse it for future contests.</p>
+    <p className={styles.muted}>This code always opens the venue’s selected contest. Creating a new contest at this venue selects it automatically.</p>
+    <div className={styles.row}><div className={styles.qr}><QRCodeSVG value={voteUrl} size={190}/></div>
+     <div><a className={styles.secondary} href={origin+'/go/venue/'+venue.id+'/contest/print'} target="_blank" rel="noreferrer">Print venue QR</a>
+      <p style={{overflowWrap:'anywhere'}}>{voteUrl}</p>
+      <button className={styles.secondary} onClick={async()=>{try{await navigator.clipboard.writeText(voteUrl);setMessage('Permanent venue link copied.');}catch{setMessage('Copy the permanent link shown above.');}}}>Copy permanent link</button>
+     </div>
+    </div>
+    {contest&&venue.current_side_contest_id!==contest.id&&<div>
+     <p>This venue QR currently points to another contest or is waiting for a contest.</p>
+     <button className={styles.button} disabled={busy} onClick={async()=>{
+      if(busy)return;setBusy(true);
+      try {const {error}=await supabase.rpc('activate_venue_contest',{p_event_id:eventId});if(error)throw error;await loadVenue();setMessage('The printed venue QR now opens this contest.');}
+      catch(error:any){setMessage(error.message);}finally{setBusy(false);}
+     }}>Use this contest for venue QR</button>
+    </div>}
+    {contest&&venue.current_side_contest_id===contest.id&&<p>✓ This contest is selected for the venue’s printed QR.</p>}
+   </section>}
    {loading?<p>Loading…</p>:!contest?<form className={styles.card} onSubmit={create}>
     <label className={styles.field}><span>Contest name</span><input className={styles.input} required maxLength={120} value={title} onChange={e=>setTitle(e.target.value)}/></label>
     <label className={styles.field}><span>Winner options</span><select className={styles.input} value={mode} onChange={e=>setMode(e.target.value as 'overall'|'categories')}>
@@ -112,14 +139,11 @@ export default function HostSideContest() {
      </div>
      <p className={styles.muted}>Closing karaoke does not close this contest. Close contest voting here when you are ready. Tied leaders are shown as a tie.</p>
     </section>
-    <section className={styles.card}><h2>Costume voting QR code</h2><p>Use this QR code for the contest. Keep using your existing karaoke signup QR code for singers.</p>
-     <div className={styles.row}>{voteUrl&&<div className={styles.qr}><QRCodeSVG value={voteUrl} size={190}/></div>}
-      <div><a className={styles.secondary} href={voteUrl} target="_blank" rel="noreferrer">Open voting page</a>
-       <p style={{overflowWrap:'anywhere'}}>{voteUrl}</p>
-       <button className={styles.secondary} onClick={async()=>{try{await navigator.clipboard.writeText(voteUrl);setMessage('Voting link copied.');}catch{setMessage('Copy the voting link shown above.');}}}>Copy link</button>
-      </div>
-     </div>
-    </section>
+    {!venue&&<section className={styles.card}><h2>Show-specific voting QR</h2>
+     <p>This show has no assigned venue. Assign a venue to get a permanent venue QR. This code only opens this contest.</p>
+     {voteUrl&&<div className={styles.qr}><QRCodeSVG value={voteUrl} size={190}/></div>}
+     <a className={styles.secondary} href={voteUrl} target="_blank" rel="noreferrer">Open voting page</a>
+    </section>}
     {contest.status==='draft'&&<form className={styles.card} onSubmit={addEntry}><h2>Add contestant</h2>
      <label className={styles.field}><span>Name</span><input className={styles.input} required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label>
      <label className={styles.field}><span>Costume description (optional)</span><input className={styles.input} maxLength={200} value={costume} onChange={e=>setCostume(e.target.value)}/></label>
