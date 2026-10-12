@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import SVAIRecap from '@/components/singer/SVAIRecap';
 import { supabase } from '@/lib/supabase';
 
 type Note = { performance_id: string; song_title: string; artist: string | null; judge_name: string; note: string; submitted_at: string };
@@ -22,6 +23,7 @@ export default function SVJudgeFeedback({ eventId }: { eventId: string }) {
   return <details className="sv-mobile-card" style={{ marginTop: 20 }}>
     <summary style={{ cursor: 'pointer', fontWeight: 800, fontSize: 20 }}>📝 Feedback from your judges</summary>
     <p>Shared by your host for your completed performances.</p>
+    <SVAIRecap eventId={eventId} kind="judge" revision={JSON.stringify(notes)} />
     {notes.map(n => <article key={n.performance_id + n.judge_name + n.submitted_at} style={{ borderTop: '1px solid #334155', paddingTop: 14, marginTop: 14 }}>
       <strong>{n.song_title}{n.artist ? ' · ' + n.artist : ''}</strong>
       <p style={{ color: '#38bdf8' }}>{n.judge_name}</p>

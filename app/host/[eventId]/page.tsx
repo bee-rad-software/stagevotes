@@ -6166,6 +6166,9 @@ if (!isSubscribed) {
   </div>
 </details>
 
+{event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
+{event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
+
 <div id="watchdog-mission-controls">
 <SVMissionControl
   onStartShow={startShow}

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import SVAIRecap from '@/components/singer/SVAIRecap';
+import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
 import { supabase } from '@/lib/supabase';
 import {
@@ -309,6 +311,8 @@ export default function ShowRecapPage() {
               </section>
             )}
 
+            <SVAIRecap eventId={eventId} kind="show" />
+            <SVJudgeFeedback eventId={eventId} />
             <section className={styles.setlist}>
               <span className={styles.kicker}>EVERY SONG, IN ORDER</span>
               <h2>The full setlist</h2>

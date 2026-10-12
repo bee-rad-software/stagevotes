@@ -15,6 +15,7 @@ import {
   Users,
 } from 'lucide-react';
 
+import SVAIRecap from '@/components/singer/SVAIRecap';
 import SVShell from '@/components/ui/SVShell';
 import {
   supabase,
@@ -268,6 +269,8 @@ const recentArchivedEvents = useMemo(() => {
           : 'Review completed performances and previous shows.'
       }
     >
+      {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
+      {event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
       <div
         style={{
           display: 'grid',
