@@ -6155,11 +6155,16 @@ if (!isSubscribed) {
   </details>
 )}
 
-<section className="sv-card" style={{ margin: '20px 0', padding: 20 }}>
-  <h2>People’s Choice contest</h2>
-  <p>Run a costume contest or another audience vote alongside karaoke, with its own contestants and QR code.</p>
-  <Link href={`/host/${eventId}/contest`} className="btn">Manage contest →</Link>
-</section>
+<details className="sv-host-song-history" style={{ margin: '20px 0' }}>
+  <summary>
+    <span>🏆 People’s Choice contest</span>
+    <span className="sv-host-song-history-count">Optional</span>
+  </summary>
+  <div style={{ padding: 20 }}>
+    <p style={{ marginTop: 0 }}>Run a costume contest or another audience vote alongside karaoke, with its own contestants and QR code.</p>
+    <Link href={`/host/${eventId}/contest`} className="btn">Manage contest →</Link>
+  </div>
+</details>
 
 <div id="watchdog-mission-controls">
 <SVMissionControl
