@@ -5,6 +5,8 @@ import type {
   HostIQAction,
   HostIQRecommendation,
 } from '@/lib/hostIQ';
+import SVAskHostIQ from '@/components/dashboard/SVAskHostIQ';
+import type {HostIQChatMessage} from '@/lib/hostIQChat';
 import SVHostWatchdog from '@/components/dashboard/SVHostWatchdog';
 import type {WatchdogAlert} from '@/lib/hostQueueWatchdog';
 import type { AIHostBriefing } from '@/lib/aiHostIQ';
@@ -28,6 +30,7 @@ type Props = {
   onSaveSettings: (targetEndTime: string, bufferMinutes: number) => Promise<void>;
   onAction: (action: Exclude<HostIQAction, null>) => Promise<void>;
   onGenerateBriefing: () => Promise<AIHostBriefing>;
+  onAskHostIQ:(question:string,history:HostIQChatMessage[])=>Promise<string>;
 };
 
 const statusColors = {
@@ -53,6 +56,7 @@ export default function SVHostIQ({
   onSaveSettings,
   onAction,
   onGenerateBriefing,
+  onAskHostIQ,
 }: Props) {
   const [draftEndTime, setDraftEndTime] = useState(targetEndTime);
   const [draftBuffer, setDraftBuffer] = useState(bufferMinutes);
@@ -218,6 +222,8 @@ export default function SVHostIQ({
           </button>
         )}
       </div>
+
+      <SVAskHostIQ eventId={eventId} onAsk={onAskHostIQ} />
 
       <SVHostWatchdog eventId={eventId} alerts={watchdogAlerts} karaFunAvailable={karaFunWatchdogAvailable}
         onReview={onReviewWatchdog} onFix={onFixWatchdog} onExplain={generateBriefing} explaining={briefingLoading} />

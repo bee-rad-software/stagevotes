@@ -25,6 +25,7 @@ import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
 import SVHostIQ from '@/components/dashboard/SVHostIQ';
+import type {HostIQChatMessage} from '@/lib/hostIQChat';
 import { detectHostQueueIssues, type WatchdogAlert } from '@/lib/hostQueueWatchdog';
 import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
 import SVEmptyQueueState from '@/components/dashboard/SVEmptyQueueState';
@@ -4836,16 +4837,8 @@ async function handleHostIQAction(
   });
 }
 
-async function generateAIHostBriefing(): Promise<AIHostBriefing> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session?.access_token) {
-    throw new Error('Please sign in again to generate an AI briefing.');
-  }
-
-  const requestBody: AIHostBriefingRequest = {
+function buildAIHostIQContext():AIHostBriefingRequest {
+  return {
     eventId,
     targetEndTime: event?.host_target_end_time || '',
     bufferMinutes: event?.host_iq_buffer_minutes ?? 10,
@@ -4869,6 +4862,18 @@ async function generateAIHostBriefing(): Promise<AIHostBriefing> {
       capacitySongs: hostIQRecommendation.capacitySongs,
     },
   };
+}
+
+async function generateAIHostBriefing(): Promise<AIHostBriefing> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error('Please sign in again to generate an AI briefing.');
+  }
+
+  const requestBody = buildAIHostIQContext();
 
   const response = await fetch('/api/host-iq/briefing', {
     method: 'POST',
@@ -4889,6 +4894,25 @@ async function generateAIHostBriefing(): Promise<AIHostBriefing> {
   }
 
   return data.briefing;
+}
+
+async function askAIHostIQ(question:string,history:HostIQChatMessage[]):Promise<string>{
+ const {data:{session}}=await supabase.auth.getSession();
+ if(!session?.access_token)throw new Error('Please sign in again to ask Host IQ.');
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),25000);
+ try{
+  const response=await fetch('/api/host-iq/chat',{
+   method:'POST',headers:{Authorization:'Bearer '+session.access_token,'Content-Type':'application/json'},signal:controller.signal,
+   body:JSON.stringify({eventId,question,history:history.slice(-8).map(m=>({...m,content:m.content.slice(0,3000)})),
+    context:{...buildAIHostIQContext(),localTime:new Date().toLocaleString(),timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone}})
+  });
+  const data=await response.json();
+  if(!response.ok||!data.answer)throw new Error(data.error||'Host IQ could not answer right now.');
+  return data.answer;
+ }catch(error:any){
+  if(error.name==='AbortError')throw new Error('Host IQ took too long to respond. Please try again.');
+  throw error;
+ }finally{clearTimeout(timer);}
 }
 
 async function toggleAdditionalSongs() {
@@ -6233,6 +6257,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   onSaveSettings={saveHostIQSettings}
   onAction={handleHostIQAction}
   onGenerateBriefing={generateAIHostBriefing}
+  onAskHostIQ={askAIHostIQ}
 />
 
 {isBrandNewEmptyShow ? (
