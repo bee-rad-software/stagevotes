@@ -2,6 +2,7 @@ export type ContestEntry = { id: string; number: number; name: string; costume: 
 export type SideContest = {
  id: string; title: string; mode: 'overall' | 'categories'; status: 'draft' | 'open' | 'closed'; results_visible: boolean;
  categories: {id: string; name: string}[]; entries: ContestEntry[];
+ registrations_open?: boolean; pending_entries?: ContestEntry[];
  selections: Record<string,string>; counts: {category_id: string; entry_id: string; votes: number}[] | null;
 };
 export function contestRanking(contest: SideContest, categoryId: string) {

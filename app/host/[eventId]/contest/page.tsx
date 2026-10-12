@@ -121,6 +121,15 @@ export default function HostSideContest() {
     </div>}
     {contest&&venue.current_side_contest_id===contest.id&&<p>✓ This contest is selected for the venue’s printed QR.</p>}
    </section>}
+   {venue&&origin&&<section className={styles.card}>
+    <h2>Permanent contestant-entry QR</h2><p>Guests scan this code to enter the contest from their phones. It is separate from the voting QR.</p>
+    <div className={styles.row}><div className={styles.qr}><QRCodeSVG value={origin+'/go/venue/'+venue.id+'/contest/enter'} size={190}/></div>
+     <div><a className={styles.secondary} href={origin+'/go/venue/'+venue.id+'/contest/enter/print'} target="_blank" rel="noreferrer">Print entry QR</a>
+      <p style={{overflowWrap:'anywhere'}}>{origin+'/go/venue/'+venue.id+'/contest/enter'}</p>
+      <a className={styles.secondary} href={origin+'/go/venue/'+venue.id+'/contest/enter'} target="_blank" rel="noreferrer">Preview contestant entry</a>
+     </div>
+    </div>
+   </section>}
    {loading?<p>Loading…</p>:!contest?<form className={styles.card} onSubmit={create}>
     <label className={styles.field}><span>Contest name</span><input className={styles.input} required maxLength={120} value={title} onChange={e=>setTitle(e.target.value)}/></label>
     <label className={styles.field}><span>Winner options</span><select className={styles.input} value={mode} onChange={e=>setMode(e.target.value as 'overall'|'categories')}>
@@ -130,9 +139,24 @@ export default function HostSideContest() {
     <p className={styles.muted}>One vote per device{mode==='categories'?' in each category':''}. All contestants are eligible in every category. Configure categories and contestants before opening voting.</p>
     <button className={styles.button} disabled={busy||!ready}>{busy?'Creating…':'Create contest'}</button>
    </form>:<>
+    <section className={styles.card}><h2>Contestant entry</h2>
+     <p>{contest.status==='draft'&&contest.registrations_open?'Phone entries are open':'Phone entries are closed'}. Every phone submission needs host approval.</p>
+     {contest.status==='draft'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('registrations',{open:!contest.registrations_open})}>{contest.registrations_open?'Close entries':'Open entries'}</button>}
+     {!venue&&<p><a className={styles.secondary} href={origin+'/contest/'+contest.id+'/enter'} target="_blank" rel="noreferrer">Open entry page for this contest</a></p>}
+     <h3>Pending approval · {contest.pending_entries?.length||0}</h3>
+     <div className={styles.grid}>{contest.pending_entries?.map(entry=><article key={entry.id} className={styles.entry}>
+      {entry.photo_url&&<img className={styles.photo} src={entry.photo_url} alt={entry.name+' costume'}/>}
+      <h3>#{entry.number} · {entry.name}</h3><p>{entry.costume}</p>
+      <div className={styles.row}>
+       <button className={styles.button} disabled={busy||contest.status!=='draft'} onClick={()=>run('approve_entry',{entry_id:entry.id})}>Approve</button>
+       <button className={styles.secondary} disabled={busy||contest.status!=='draft'} onClick={()=>run('reject_entry',{entry_id:entry.id})}>Decline</button>
+      </div>
+     </article>)}</div>
+     <p className={styles.muted}>Only approved contestants appear on the ballot. Review all pending entries before opening voting. Opening voting also closes contestant entry.</p>
+    </section>
     <section className={styles.card}><h2>Voting controls</h2><p>Status: <strong>{contest.status==='draft'?'Setup':contest.status==='open'?'Voting open':'Voting closed'}</strong></p>
      <div className={styles.row}>
-      {contest.status!=='open'&&<button className={styles.button} disabled={busy||!contest.entries.length} onClick={()=>{if(contest.status==='closed'&&!window.confirm('Reopen voting? Existing votes stay locked and new guests can vote. Results will be hidden again.'))return;run('open');}}>{contest.status==='closed'?'Reopen voting':'Open voting'}</button>}
+      {contest.status!=='open'&&<button className={styles.button} disabled={busy||!contest.entries.length||!!contest.pending_entries?.length} onClick={()=>{if(contest.status==='closed'&&!window.confirm('Reopen voting? Existing votes stay locked and new guests can vote. Results will be hidden again.'))return;run('open');}}>{contest.status==='closed'?'Reopen voting':'Open voting'}</button>}
       {contest.status==='open'&&<button className={styles.button} disabled={busy} onClick={()=>run('close')}>Close voting</button>}
       {contest.status==='closed'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('reveal',{visible:!contest.results_visible})}>{contest.results_visible?'Hide results':'Reveal results'}</button>}
       <a className={styles.secondary} href={displayUrl} target="_blank" rel="noreferrer">Open results display</a>
