@@ -24,6 +24,31 @@ export default function HostSideContest() {
  const [fileKey,setFileKey]=useState(0);
  const [origin,setOrigin]=useState('');
  const [ready,setReady]=useState(false);
+ const [awardsCategory,setAwardsCategory]=useState('');
+ const [awardsStep,setAwardsStep]=useState(0);
+ useEffect(()=>{
+  if(!contest?.id)return;
+  setAwardsCategory(current=>current||contest.categories[0]?.id||'');
+  let active=true;
+  async function refresh(){
+   const {data,error}=await supabase.rpc('contest_awards_snapshot',{p_contest_id:contest!.id});
+   if(active&&!error)setAwardsStep(data?.step||0);
+  }
+  refresh();const timer=setInterval(refresh,2000);
+  return()=>{active=false;clearInterval(timer);};
+ },[contest?.id]);
+ async function presentAwards(step:number){
+  if(!contest||busy)return;
+  setBusy(true);setMessage('');
+  try{
+   const {error}=await supabase.rpc('set_contest_awards',{p_contest_id:contest.id,p_category_id:awardsCategory||contest.categories[0]?.id,p_step:step});
+   if(error)throw error;
+   setAwardsStep(step);
+   await action('reveal',{visible:false});
+   setMessage(step===0?'Awards stage reset.':step===1?'Third place revealed.':step===2?'Second place revealed.':'Winner revealed!');
+  }catch(error:any){setMessage(error.message||'Unable to reveal awards.');}
+  finally{setBusy(false);}
+ }
  const [venue,setVenue]=useState<{id:string;name:string;current_side_contest_id:string|null}|null>(null);
  async function loadVenue() {
   const {data:show}=await supabase.from('events').select('venue_id').eq('id',eventId).maybeSingle();
@@ -158,8 +183,8 @@ export default function HostSideContest() {
      <div className={styles.row}>
       {contest.status!=='open'&&<button className={styles.button} disabled={busy||!contest.entries.length||!!contest.pending_entries?.length} onClick={()=>{if(contest.status==='closed'&&!window.confirm('Reopen voting? Existing votes stay locked and new guests can vote. Results will be hidden again.'))return;run('open');}}>{contest.status==='closed'?'Reopen voting':'Open voting'}</button>}
       {contest.status==='open'&&<button className={styles.button} disabled={busy} onClick={()=>run('close')}>Close voting</button>}
-      {contest.status==='closed'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('reveal',{visible:!contest.results_visible})}>{contest.results_visible?'Hide results':'Reveal results'}</button>}
-      <a className={styles.secondary} href={displayUrl} target="_blank" rel="noreferrer">Open results display</a>
+      {contest.status==='closed'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('reveal',{visible:!contest.results_visible})}>{contest.results_visible?'Hide ballot results':'Publish all ballot results'}</button>}
+      <a className={styles.secondary} href={displayUrl} target="_blank" rel="noreferrer">Open awards display</a>
      </div>
      <p className={styles.muted}>Closing karaoke does not close this contest. Close contest voting here when you are ready. Tied leaders are shown as a tie.</p>
     </section>
@@ -182,6 +207,23 @@ export default function HostSideContest() {
       <h3>#{entry.number} · {entry.name}</h3><p>{entry.costume}</p>
       {contest.status==='draft'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('remove_entry',{entry_id:entry.id})}>Remove</button>}
      </article>)}</div>
+    </section>
+    <section className={styles.card}><h2>🏆 Dramatic awards reveal</h2>
+     <p>Open the awards display on your TV or projector. Reveal third place, second place, then first place with photos.</p>
+     <label className={styles.field}><span>Award category</span>
+      <select className={styles.input} value={awardsCategory||contest.categories[0]?.id||''} onChange={e=>setAwardsCategory(e.target.value)} disabled={busy}>
+       {contest.categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+      </select>
+     </label>
+     <div className={styles.row}>
+      <a className={styles.secondary} href={displayUrl} target="_blank" rel="noreferrer">Open awards display</a>
+      <button className={styles.secondary} disabled={busy||contest.status!=='closed'} onClick={()=>presentAwards(0)}>Prepare / reset stage</button>
+      <button className={styles.button} disabled={busy||contest.status!=='closed'} onClick={()=>presentAwards(1)}>Reveal 3rd</button>
+      <button className={styles.button} disabled={busy||contest.status!=='closed'} onClick={()=>presentAwards(2)}>Reveal 2nd</button>
+      <button className={styles.button} disabled={busy||contest.status!=='closed'} onClick={()=>presentAwards(3)}>👑 Reveal winner</button>
+     </div>
+     <p className={styles.muted}>Close voting first. Current stage: {awardsStep===0?'waiting':awardsStep===1?'third place':awardsStep===2?'second and third':'top three revealed'}. Ties share their placement; contestants with zero votes are not awarded a podium place. For category contests, select a category and reset the stage before its presentation.</p>
+     <p className={styles.muted}>The voting-page leaderboard stays hidden during awards. Use “Publish all ballot results” afterward if you want guests to see the full standings.</p>
     </section>
     <section className={styles.card}><h2>Host vote totals</h2><p className={styles.muted}>Guests only see these totals after voting closes and you reveal results.</p>
      {contest.categories.map(category=><div key={category.id}><h3>{category.name}</h3>{contestRanking(contest,category.id).map(r=><div className={styles.result} key={r.id}><span>#{r.number} {r.name}</span><strong>{r.votes} votes</strong></div>)}</div>)}

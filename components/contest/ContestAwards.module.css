@@ -1,0 +1,27 @@
+.page{min-height:100vh;background:radial-gradient(ellipse at 50% 15%,#392858 0,#110d20 45%,#030612 90%);color:#fff;padding:32px;overflow-x:hidden;text-align:center}
+.header{margin:0 auto 32px;max-width:1200px}
+.kicker{color:#fbbf24;letter-spacing:.25em;text-transform:uppercase;font-weight:800}
+.title{font-size:clamp(30px,4vw,64px);margin:12px 0}
+.category{font-size:clamp(22px,3vw,42px);color:#ddd6fe;margin:0}
+.stage{display:flex;align-items:flex-end;justify-content:center;gap:22px;max-width:1600px;margin:24px auto}
+.slot{flex:1;max-width:480px}
+.cards{display:grid;gap:16px}
+.card{padding:18px;border:2px solid var(--medal);border-radius:24px;background:linear-gradient(150deg,#211d36,#0b1020);box-shadow:0 0 35px color-mix(in srgb,var(--medal) 30%,transparent);animation:arrive 1.2s cubic-bezier(.2,.8,.2,1) both}
+.gold{--medal:#fbbf24}.silver{--medal:#cbd5e1}.bronze{--medal:#fb923c}
+.photo{width:100%;height:clamp(160px,25vh,320px);object-fit:cover;border-radius:16px}
+.placeholder{height:clamp(160px,25vh,320px);display:grid;place-items:center;font-size:72px;background:#2b2440;border-radius:16px}
+.name{font-size:clamp(22px,2.4vw,40px);margin:12px 0}
+.costume{font-size:20px;color:#cbd5e1;margin:8px 0}
+.medal{font-size:22px;font-weight:900;color:var(--medal);letter-spacing:.1em;padding:18px 0}
+.podium{border:2px solid var(--medal);background:linear-gradient(180deg,#211e36,#0c0a17);border-radius:18px 18px 0 0;padding:20px;margin-top:18px;font-size:42px;font-weight:900;color:var(--medal)}
+.gold .podium{min-height:130px}.silver .podium{min-height:85px}.bronze .podium{min-height:45px}
+.hidden{min-height:300px;display:grid;place-items:center;border:1px dashed #50465f;border-radius:22px;color:#b4a8c6;font-size:24px;padding:20px}
+.waiting{margin:60px auto;max-width:900px;border:1px solid #67517d;border-radius:28px;padding:50px;background:#19152a;font-size:28px}
+.controls{position:fixed;right:18px;top:18px;z-index:10}
+.controls button{background:#241d38;color:#fff;border:1px solid #67517d;border-radius:10px;padding:10px;cursor:pointer}
+.sparkles{position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden}
+.sparkles span{position:absolute;top:-30px;width:10px;height:20px;background:#fbbf24;animation:fall 5s ease-in both}
+@keyframes arrive{from{opacity:0;transform:translateY(55px) scale(.85)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes fall{to{transform:translateY(110vh) rotate(650deg);opacity:0}}
+@media(max-width:700px){.page{padding:20px 12px}.stage{flex-direction:column;align-items:stretch}.slot{max-width:none}.photo,.placeholder{height:260px}}
+@media(prefers-reduced-motion:reduce){.card{animation:none}.sparkles{display:none}}

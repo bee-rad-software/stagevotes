@@ -1,7 +1,7 @@
 'use client';
-import { useParams } from 'next/navigation';
-import SideContestBallot from '@/components/contest/SideContestBallot';
-export default function ContestPage() {
- const { contestId } = useParams<{contestId:string}>();
- return <SideContestBallot contestId={contestId} displayOnly />;
+import {useParams} from 'next/navigation';
+import ContestAwards from '@/components/contest/ContestAwards';
+export default function ContestAwardsPage(){
+ const {contestId}=useParams<{contestId:string}>();
+ return <ContestAwards contestId={contestId}/>;
 }
