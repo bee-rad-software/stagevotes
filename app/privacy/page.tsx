@@ -3,7 +3,7 @@ export default function PrivacyPage() {
     <main className="container">
       <div className="card">
         <h1>Privacy Policy</h1>
-        <p><strong>Last updated:</strong> September 23, 2026</p>
+        <p><strong>Last updated:</strong> October 13, 2026</p>
 
         <p>
           StageVotes collects the information needed to create accounts, manage karaoke events,
@@ -40,6 +40,22 @@ export default function PrivacyPage() {
         <p>
           You may reply STOP to opt out of SMS messages or HELP for assistance. Message and data
           rates may apply.
+        </p>
+
+        <h2>Optional Website Analytics</h2>
+        <p>
+          With your permission, we use Google Analytics to understand visits to our public website,
+          demo playback, download selections, host signup steps, trial activation, and first subscription
+          payments. Analytics uses browser identifiers and may link activity across www.stagevotes.com
+          and app.stagevotes.com. We do not send names, email addresses, phone numbers, karaoke song
+          entries, judge notes, or card details in these analytics events. Analytics is not used for advertising.
+          You can decline analytics or change your choice using Analytics preferences on the website or signup pages.
+        </p>
+        <p>
+          If you allow analytics when starting checkout, the browser identifier may be saved with your Stripe
+          subscription to attribute its first payment. Declining later stops browser tracking but does not
+          automatically remove that saved subscription identifier; contact us to request its removal.
+          Billing records in Stripe remain the source of truth regardless of your analytics choice.
         </p>
 
         <h2>Payments</h2>

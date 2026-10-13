@@ -3,6 +3,7 @@
 'use client';
 
 import Image from 'next/image';
+import { trackFunnel } from '@/lib/funnelAnalytics';
 import { useCallback, useEffect, useState } from 'react';
 
 import AccountStep from '@/components/onboarding/AccountStep';
@@ -58,6 +59,10 @@ export default function OnboardingPage() {
   goForward,
   goBack,
 } = onboarding;
+
+  useEffect(() => {
+    if (hasLoadedSavedState) trackFunnel('onboarding_step', { step: steps[currentStep].id }, 'onboarding_step_' + currentStep);
+  }, [currentStep, hasLoadedSavedState]);
 
   const handleCheckoutVerified = useCallback((data: { accountId: string }) => {
     if (downloadPlatform) {

@@ -37,7 +37,12 @@ export async function GET(req: Request) {
       );
     }
 
+    const subscription = typeof session.subscription === 'string'
+      ? await stripe.subscriptions.retrieve(session.subscription) : session.subscription;
+
     return NextResponse.json({
+      subscriptionStatus: subscription.status,
+      downloadPlatform: session.metadata?.download_platform || 'web',
       id: session.id,
       status: session.status,
       paymentStatus: session.payment_status,

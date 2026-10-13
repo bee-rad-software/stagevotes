@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { LoaderCircle } from 'lucide-react';
+import { trackFunnel } from '@/lib/funnelAnalytics';
 import { supabase } from '@/lib/supabase';
 
 type CheckoutDetails = {
@@ -66,6 +67,8 @@ export default function SuccessStep({
           setDetails(data);
 
           if (data.accountId) {
+            trackFunnel('checkout_complete', { platform: data.downloadPlatform || 'web' }, 'checkout_' + sessionId);
+            if (data.subscriptionStatus === 'trialing') trackFunnel('trial_started', { platform: data.downloadPlatform || 'web' }, 'trial_' + sessionId);
             onVerified({
               accountId: data.accountId,
             });

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { trackFunnel } from '@/lib/funnelAnalytics';
 import { supabase } from '@/lib/supabase';
 
 type DownloadState =
@@ -67,6 +68,7 @@ export default function MacDownloadPage() {
           throw new Error(result.error || 'Unable to prepare the download.');
         }
 
+        trackFunnel('download_started', { platform: 'mac' });
         setDownloadUrl(result.url);
         window.location.assign(result.url);
         return;

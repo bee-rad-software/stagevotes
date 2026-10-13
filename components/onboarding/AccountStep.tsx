@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { Eye, EyeOff, LockKeyhole, Mail, Building2 } from 'lucide-react';
 
+import { trackFunnel } from '@/lib/funnelAnalytics';
 import { signupHost } from '@/lib/auth/signupHost';
 
 type AccountStepProps = {
@@ -49,6 +50,8 @@ export default function AccountStep({
         email,
         password,
       });
+
+      if (result.userId && result.accountId) trackFunnel('sign_up', { method: 'host_account' }, 'host_signup_' + result.userId);
 
       if (result.emailConfirmationRequired) {
         setMessage(

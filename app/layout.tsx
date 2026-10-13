@@ -1,3 +1,4 @@
+import SVFunnelAnalytics from '@/components/SVFunnelAnalytics';
 import './globals.css';
 import type { Metadata } from 'next';
 import '../styles/theme.css';
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <meta name="apple-mobile-web-app-title" content="StageVotes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
-  <body>{children}</body>
+  <body>{children}<SVFunnelAnalytics /></body>
 </html>
   );
 }

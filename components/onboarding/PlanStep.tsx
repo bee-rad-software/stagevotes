@@ -8,6 +8,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { analyticsCheckoutContext, trackFunnel } from '@/lib/funnelAnalytics';
 import { desktopPlatform } from '@/lib/desktopDownloadIntent';
 
 type PlanStepProps = {
@@ -43,6 +44,7 @@ export default function PlanStep({
         throw new Error('Please sign in again to start your trial.');
       }
 
+      const analytics = await analyticsCheckoutContext();
       const response = await fetch(
         '/api/stripe/checkout',
         {
@@ -53,6 +55,7 @@ export default function PlanStep({
           },
           body: JSON.stringify({
             downloadPlatform,
+            analytics,
           }),
         }
       );
@@ -66,6 +69,7 @@ export default function PlanStep({
         );
       }
 
+      trackFunnel('begin_checkout', { platform: downloadPlatform || 'web' });
       window.location.href = data.url;
     } catch (error) {
       console.error(

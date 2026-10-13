@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { trackFirstSubscriptionPayment } from '@/lib/server/funnelAnalytics';
 import { getSupabaseAdmin } from '@/lib/server/stageVotesAuth';
 
 export const runtime = 'nodejs';
@@ -135,6 +136,9 @@ export async function POST(req: NextRequest) {
 
       if (subscription) {
         await updateAccountFromSubscription(subscription);
+        if (event.type === 'invoice.paid' && event.livemode) {
+          await trackFirstSubscriptionPayment(stripe, event.data.object as Stripe.Invoice, subscription);
+        }
       }
     }
 

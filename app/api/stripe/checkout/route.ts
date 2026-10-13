@@ -13,7 +13,11 @@ export async function POST(req: Request) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const { user, account } = await requireStageVotesAccount(req);
-    const requestedPlatform = desktopPlatform((await req.json().catch(() => ({})))?.downloadPlatform);
+    const body = await req.json().catch(() => ({}));
+    const requestedPlatform = desktopPlatform(body?.downloadPlatform);
+    const optedIn = req.headers.get('cookie')?.split('; ').includes('sv_analytics=accepted');
+    const analyticsMetadata: Record<string, string> = optedIn && typeof body?.analytics?.clientId === 'string' && typeof body?.analytics?.sessionId === 'string' && /^\d+\.\d+$/.test(body?.analytics?.clientId || '') && /^\d+$/.test(body?.analytics?.sessionId || '')
+      ? { ga_client_id: body.analytics.clientId.slice(0, 80), ga_session_id: body.analytics.sessionId.slice(0, 30) } : {};
 
     if (
       account.subscription_status === 'active' ||
@@ -70,7 +74,7 @@ export async function POST(req: Request) {
           ? new URL(existingSession.success_url).searchParams.get('download')
           : null
       );
-      if (existingPlatform === requestedPlatform) {
+      if (existingPlatform === requestedPlatform && existingSession.metadata?.ga_client_id === analyticsMetadata.ga_client_id) {
         return NextResponse.json({ url: existingSession.url });
       }
       await stripe.checkout.sessions.expire(existingSession.id);
@@ -109,11 +113,13 @@ export async function POST(req: Request) {
 
         metadata: {
           account_id: account.id,
+          download_platform: requestedPlatform || 'web',
         },
 
         subscription_data: {
           metadata: {
             account_id: account.id,
+            ...analyticsMetadata,
           },
           trial_period_days: 7,
         },
