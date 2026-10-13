@@ -25,6 +25,7 @@ import SVHostQueue, {
   SVHostQueueItem,
 } from '@/components/dashboard/SVHostQueue';
 import SVHostIQ from '@/components/dashboard/SVHostIQ';
+import SVAIRecap from '@/components/singer/SVAIRecap';
 import type {HostIQChatMessage} from '@/lib/hostIQChat';
 import { detectHostQueueIssues, type WatchdogAlert } from '@/lib/hostQueueWatchdog';
 import SVFirstShowWelcome from '@/components/dashboard/SVFirstShowWelcome';
