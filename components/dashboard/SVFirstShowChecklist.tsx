@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { ArrowRight, CalendarDays, Check, ChevronDown, ExternalLink, MapPin, Monitor, Music2, Smartphone, Sparkles, Trophy } from 'lucide-react';
+import styles from './SVFirstShowChecklist.module.css';
 import { supabase } from '@/lib/supabase';
 
 type Progress = { karaokeTest: boolean; skipKaraFun: boolean; signupTest: boolean; displayTest: boolean; collapsed: boolean };
 const initial: Progress = { karaokeTest: false, skipKaraFun: false, signupTest: false, displayTest: false, collapsed: false };
 
 export default function SVFirstShowChecklist({ accountId, venueCount }: { accountId: string; venueCount: number }) {
+  const checklistId = useId();
   const [progress, setProgress] = useState<Progress>(initial);
   const [ready, setReady] = useState(false);
   const [hasShow, setHasShow] = useState(false);
@@ -65,66 +69,78 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
   const completed = Number(venueCount > 0) + Number(hasShow)
     + Number(progress.karaokeTest || progress.skipKaraFun) + Number(progress.signupTest) + Number(progress.displayTest);
   const allDone = completed === 5;
-  const linkStyle = { color: '#7dd3fc', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 3 } as const;
-  const rowStyle = { padding: '16px 0', borderTop: '1px solid #334155' } as const;
 
-  return <section style={{ margin: '24px 0', padding: '20px 24px', border: '1px solid #334155', borderRadius: 18, background: '#0f172a', color: '#e2e8f0' }}>
-    <button type="button" aria-expanded={!progress.collapsed} aria-controls="first-show-checklist"
-      disabled={!ready} onClick={() => update({ collapsed: !progress.collapsed })}
-      style={{ width: '100%', display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', border: 0, background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', padding: 0, flexWrap: 'wrap' }}>
-      <strong style={{ fontSize: 20 }}>{allDone ? '✓ First-show setup complete' : 'Get ready for your first show'}</strong>
-      <span style={{ color: '#7dd3fc', fontWeight: 700 }}>{ready ? completed + '/5 · ' + (progress.collapsed ? 'Open checklist' : 'Collapse') : 'Checking setup…'}</span>
+  const checks = [venueCount > 0, hasShow, progress.karaokeTest || progress.skipKaraFun, progress.signupTest, progress.displayTest];
+
+  return <section className={styles.root} aria-label="First-show setup">
+    <button type="button" className={styles.toggle} aria-expanded={!progress.collapsed} aria-controls={checklistId}
+      disabled={!ready} onClick={() => update({ collapsed: !progress.collapsed })}>
+      <span className={styles.heroIcon} aria-hidden="true"><Sparkles size={23} /></span>
+      <span className={styles.heading}>
+        <span className={styles.eyebrow}>Your first night, made simple</span>
+        <span className={styles.title}>{allDone ? 'First-show setup complete' : 'Get ready for your first show'}</span>
+      </span>
+      <span className={styles.headerRight}>
+        <span className={styles.progressCopy}><strong>{ready ? completed + ' of 5 ready' : 'Checking setup…'}</strong><span>{progress.collapsed ? 'Open checklist' : 'Collapse'}</span></span>
+        <ChevronDown size={20} className={styles.chevron + (progress.collapsed ? '' : ' ' + styles.expanded)} aria-hidden="true" />
+      </span>
     </button>
-    {!progress.collapsed && <div id="first-show-checklist">
-      <p style={{ color: '#94a3b8', lineHeight: 1.5 }}>A quick practice run before singers arrive. Test confirmations are saved for this account on this device.</p>
-      {error && <p role="status">{error}</p>}
-      <div style={rowStyle}>
-        <strong>{venueCount > 0 ? '✓' : '1.'} Add your venue</strong>
-        <p>Set up the venue where you will host your show.</p>
-        <Link href="/my-venues" style={linkStyle}>{venueCount > 0 ? 'Review venues' : 'Add a venue'} →</Link>
+    <div className={styles.progressTrack} role="progressbar" aria-label="First-show setup progress" aria-valuemin={0} aria-valuemax={5}
+      aria-valuenow={ready ? completed : undefined} aria-valuetext={ready ? completed + ' of 5 steps complete' : 'Checking setup'}>
+      {checks.map((done, i) => <span key={i} className={styles.segment + (ready && done ? ' ' + styles.segmentDone : '')} />)}
+    </div>
+    {!progress.collapsed && <div id={checklistId} className={styles.body}>
+      <p className={styles.intro}>A quick practice run now means a smoother night when singers arrive.</p>
+      {error && <p className={styles.error} role="status">{error}</p>}
+      <div className={styles.grid}>
+        <SetupCard number={1} icon={<MapPin size={18} />} title="Add your venue" done={venueCount > 0} status={venueCount > 0 ? 'Added' : 'Start here'}>
+          <p className={styles.description}>Set up the place where you will host your show.</p>
+          <Link href="/my-venues" className={styles.action}>{venueCount > 0 ? 'Review venues' : 'Add a venue'}<ArrowRight size={14} /></Link>
+        </SetupCard>
+        <SetupCard number={2} icon={<CalendarDays size={18} />} title="Create a show" done={hasShow} status={hasShow ? 'Created' : 'To do'}>
+          <p className={styles.description}>Choose your venue and show type. Use a practice show to try things out.</p>
+          <Link href={activeEventId ? '/host/' + activeEventId : '/create'} className={styles.action}>{activeEventId ? 'Open current show' : 'Create a show'}<ArrowRight size={14} /></Link>
+        </SetupCard>
+        <SetupCard number={3} icon={<Music2 size={18} />} title="Test KaraFun" done={checks[2]} wide status={progress.skipKaraFun ? 'Manual playback' : progress.karaokeTest ? 'Tested' : 'Optional'}>
+          <p className={styles.description}>{hasChannel ? 'Your channel is saved. ' : 'Save your remote link in Account settings. '}Keep KaraFun running, connect from Mission Control, then test play and pause with the correct song.</p>
+          <div className={styles.actions}>
+            <Link href="/account" className={styles.action}>KaraFun settings<ArrowRight size={14} /></Link>
+            <a href="https://www.stagevotes.com/guides/karafun-setup" target="_blank" rel="noreferrer" className={styles.textLink}>Setup guide<ExternalLink size={13} /></a>
+          </div>
+          <div className={styles.checks}>
+            <label className={styles.checkLabel}><input type="checkbox" checked={progress.karaokeTest} disabled={!ready || progress.skipKaraFun} onChange={e => update({ karaokeTest: e.target.checked })} /><span>I tested KaraFun playback</span></label>
+            <label className={styles.checkLabel}><input type="checkbox" checked={progress.skipKaraFun} disabled={!ready} onChange={e => update({ skipKaraFun: e.target.checked, karaokeTest: false })} /><span>I am using another player or running playback manually</span></label>
+          </div>
+        </SetupCard>
+        <SetupCard number={4} icon={<Smartphone size={18} />} title="Test singer signup" done={progress.signupTest} status={progress.signupTest ? 'Tested' : activeEventId ? 'To do' : 'Needs a show'}>
+          <p className={styles.description}>Scan the singer QR code on a phone, add a test song, and check the host queue. Remove the entry afterward.</p>
+          {activeEventId ? <a href={'/signup/' + activeEventId} target="_blank" rel="noreferrer" className={styles.action}>Open singer signup<ExternalLink size={13} /></a>
+            : <p className={styles.hint}>Create or open an active show to test signup.</p>}
+          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.signupTest} disabled={!ready || (!activeEventId && !progress.signupTest)} onChange={e => update({ signupTest: e.target.checked })} /><span>I tested signup and checked the queue</span></label></div>
+        </SetupCard>
+        <SetupCard number={5} icon={<Monitor size={18} />} title="Test your show display" done={progress.displayTest} status={progress.displayTest ? 'Tested' : activeEventId ? 'To do' : 'Needs a show'}>
+          <p className={styles.description}>Open the live display on your TV or external screen. Keep the host dashboard on your main screen.</p>
+          {activeEventId ? <a href={'/display/' + activeEventId} target="_blank" rel="noreferrer" className={styles.action}>Open show display<ExternalLink size={13} /></a>
+            : <p className={styles.hint}>Create or open an active show to test the display.</p>}
+          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.displayTest} disabled={!ready || (!activeEventId && !progress.displayTest)} onChange={e => update({ displayTest: e.target.checked })} /><span>I checked the display on my screen</span></label></div>
+        </SetupCard>
       </div>
-      <div style={rowStyle}>
-        <strong>{hasShow ? '✓' : '2.'} Create a show</strong>
-        <p>Choose your venue and whether this is casual karaoke or a judged event. Use a practice show for testing.</p>
-        <Link href={activeEventId ? '/host/' + activeEventId : '/create'} style={linkStyle}>{activeEventId ? 'Open current show' : 'Create a show'} →</Link>
-      </div>
-      <div style={rowStyle}>
-        <strong>{progress.karaokeTest || progress.skipKaraFun ? '✓' : '3.'} Test KaraFun (optional)</strong>
-        <p>{hasChannel ? 'Your KaraFun channel is saved. ' : 'Save your KaraFun remote link in Account settings. '}Keep the player running, connect from Mission Control, and test the correct song’s play and pause controls.</p>
-        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
-          <Link href="/account" style={linkStyle}>KaraFun account settings →</Link>
-          <a href="https://www.stagevotes.com/guides/karafun-setup" target="_blank" rel="noreferrer" style={linkStyle}>Setup guide ↗</a>
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="checkbox" checked={progress.karaokeTest} disabled={!ready || progress.skipKaraFun}
-            onChange={e => update({ karaokeTest: e.target.checked })} /> I tested KaraFun playback
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10 }}>
-          <input type="checkbox" checked={progress.skipKaraFun} disabled={!ready}
-            onChange={e => update({ skipKaraFun: e.target.checked, karaokeTest: false })} /> I’m using another player or running playback manually
-        </label>
-      </div>
-      <div style={rowStyle}>
-        <strong>{progress.signupTest ? '✓' : '4.'} Test singer signup</strong>
-        <p>Open the show’s singer QR code on a phone, add a test song, and confirm the singer appears in the host queue. Remove the test entry when finished.</p>
-        {activeEventId ? <a href={'/signup/' + activeEventId} target="_blank" rel="noreferrer" style={linkStyle}>Open current singer signup ↗</a>
-          : <p style={{ color: '#94a3b8' }}>Create or open an active show to test its singer signup.</p>}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-          <input type="checkbox" checked={progress.signupTest} disabled={!ready || (!activeEventId && !progress.signupTest)}
-            onChange={e => update({ signupTest: e.target.checked })} /> I tested signup and checked the host queue
-        </label>
-      </div>
-      <div style={rowStyle}>
-        <strong>{progress.displayTest ? '✓' : '5.'} Test your show display</strong>
-        <p>Open the live display, move it to your TV or external screen, and confirm the queue is visible. Keep the host dashboard on your main screen.</p>
-        {activeEventId ? <a href={'/display/' + activeEventId} target="_blank" rel="noreferrer" style={linkStyle}>Open current show display ↗</a> : null}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
-          <input type="checkbox" checked={progress.displayTest} disabled={!ready || (!activeEventId && !progress.displayTest)}
-            onChange={e => update({ displayTest: e.target.checked })} /> I checked the display on my screen
-        </label>
-      </div>
-      <p style={{ color: '#94a3b8', lineHeight: 1.5 }}>Running a competition? Test judge access and a complete ballot before the first scored performance. <a href="https://www.stagevotes.com/faq#judging" target="_blank" rel="noreferrer" style={linkStyle}>Judging guide ↗</a></p>
-      {allDone && <p role="status" style={{ color: '#86efac' }}>Your checklist is complete. You can collapse it and reopen it whenever you need the links.</p>}
+      <div className={styles.footer}><Trophy size={18} aria-hidden="true" /><p><strong>Running a competition?</strong> Test judge access and a complete ballot before the first scored performance.<a href="https://www.stagevotes.com/faq#judging" target="_blank" rel="noreferrer" className={styles.textLink}>Judging guide<ExternalLink size={12} /></a></p></div>
+      {allDone && <p role="status" className={styles.success}><Check size={16} aria-hidden="true" />All five setup checks are complete. You can collapse this checklist anytime.</p>}
+      <p className={styles.saved}>Your test confirmations are saved for this account on this device.</p>
     </div>}
   </section>;
+}
+
+function SetupCard({ number, icon, title, done, status, wide = false, children }: {
+  number: number; icon: ReactNode; title: string; done: boolean; status: string; wide?: boolean; children: ReactNode;
+}) {
+  return <div className={[styles.card, done ? styles.done : '', wide ? styles.wide : ''].join(' ')}>
+    <div className={styles.cardHeader}>
+      <span className={styles.stepIcon} aria-hidden="true">{done ? <Check size={18} /> : icon}</span>
+      <h3 className={styles.stepTitle}><span className={styles.stepNumber}>{String(number).padStart(2, '0')}</span>{title}</h3>
+      <span className={styles.badge}>{status}</span>
+    </div>
+    {children}
+  </div>;
 }
