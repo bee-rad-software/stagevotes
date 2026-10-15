@@ -8,7 +8,9 @@ export function updateBreakMusicState(previous: BreakMusicState, online: boolean
   if (state === 4) return { armed: true, blocked: true, between: false };
   if (state === 5) return { armed: previous.armed, blocked: true, between: false };
   if (state === 3) return { armed: previous.armed, blocked: false, between: previous.armed };
-  return initialBreakMusicState;
+  // Loading/transient states must stay silent without forgetting the performance.
+  // Otherwise playing -> loading -> ready loses the automatic handoff.
+  return { armed: previous.armed, blocked: true, between: false };
 }
 
 export function nextBreakTrack(index: number, count: number, shuffle: boolean, random = Math.random): number {

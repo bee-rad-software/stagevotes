@@ -25,3 +25,10 @@ test('sequential playlists wrap and shuffle never repeats immediately',()=>{
  assert.equal(next(2,3,false),0);assert.equal(next(0,1,true),0);
  for(let i=0;i<4;i++)for(const r of [0,.25,.5,.999]){const n=next(i,4,true,()=>r);assert.notEqual(n,i);assert.ok(n>=0&&n<4);}
 });
+
+test('transient states preserve the performance until KaraFun is ready',()=>{
+ let state=step(initial,true,4);
+ for(const value of [null, 2, 99]) { state=step(state,true,value); assert.equal(state.blocked,true); assert.equal(state.between,false); }
+ assert.equal(step(state,true,3).between,true);
+ assert.equal(step(step(initial,true,2),true,3).between,false);
+});

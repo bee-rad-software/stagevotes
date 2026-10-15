@@ -20,6 +20,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState('');
   const [between, setBetween] = useState(false);
+  const [statusHistory, setStatusHistory] = useState<string[]>([]);
   const audio = useRef<HTMLAudioElement | null>(null);
   const filesInput = useRef<HTMLInputElement | null>(null);
   const folderInput = useRef<HTMLInputElement | null>(null);
@@ -99,6 +100,11 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   }, []);
 
   useEffect(() => {
+    const label = connected && online ? String(playbackState ?? 'unknown') : 'offline';
+    setStatusHistory(previous => previous[previous.length - 1] === label ? previous : [...previous.slice(-7), label]);
+  }, [connected, online, playbackState]);
+
+  useEffect(() => {
     const was = machine.current;
     const next = updateBreakMusicState(was, connected && online, playbackState);
     machine.current = next; setBetween(next.between);
@@ -111,7 +117,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     // Wait through transient ready/loading messages before bringing music back.
     const timer = window.setTimeout(() => { if (!blocked.current && !manualHold.current) void start(); }, 1200);
     return () => window.clearTimeout(timer);
-  }, [connected, online, playbackState, commandPending, ended, automatic, muted, start, stop]);
+  }, [connected, online, playbackState, commandPending, ended, automatic, muted, tracks.length, start, stop]);
 
   useEffect(() => { if (audio.current && !audio.current.paused) void fade(muted ? 0 : volume, 180); }, [volume, muted, fade]);
 
@@ -155,6 +161,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     </div>
     <div className={styles.row}><label className={styles.option}><input type="checkbox" checked={automatic} onChange={e => { setAutomatic(e.target.checked); if (!e.target.checked) void stop(); }} />Automatically play between KaraFun songs</label></div>
     {error && <p role="alert" className={styles.error}>{error}</p>}
+    {automatic && <details className={styles.note}><summary>Automatic playback troubleshooting</summary><p>KaraFun status sequence: {statusHistory.join(' → ')}. {between ? 'Between songs detected.' : 'Waiting for a completed playback transition.'} {commandPending ? 'Waiting for a playback command.' : ''}</p></details>}
     <p className={styles.note}>{ended ? 'Show ended. Break music is stopped.' : automatic && !connected ? 'Connect KaraFun for automatic playback. Manual controls are available.' : automatic && !between ? 'Waiting for a KaraFun performance. Pausing a singer will keep break music silent.' : 'Press Play in StageVotes to start each karaoke song. Break music never advances singers.'} Choose your playlist again after reloading or leaving this show. Use music you are authorized to play at your venue.</p>
   </section>;
 });
