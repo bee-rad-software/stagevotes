@@ -1,4 +1,5 @@
 'use client'
+import SVBreakMusic, { type BreakMusicHandle } from '@/components/host/SVBreakMusic';
 import {
   useCallback,
   useEffect,
@@ -211,6 +212,8 @@ const [
   setKarafunQueueItems,
 ] = useState<any[]>([]);
 
+const breakMusicRef = useRef<BreakMusicHandle | null>(null);
+const breakMusicPlayRequestRef = useRef(false);
 const [karafunPlaybackState, setKarafunPlaybackState] =
   useState<number | null>(null);
 const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
@@ -2553,8 +2556,8 @@ function toggleKaraFunConnection() {
   void connectKaraFun();
 }
 
-function playKaraFunSong() {
-  if (karafunControlBusyRef.current) return;
+async function playKaraFunSong() {
+  if (karafunControlBusyRef.current || breakMusicPlayRequestRef.current) return;
   const ws = karafunSocketRef.current;
   const currentSinger = getKaraFunSingerName(current).trim().toLowerCase();
   const playerSinger = karafunPlaybackSinger.trim().toLowerCase();
@@ -2576,9 +2579,15 @@ function playKaraFunSong() {
     return;
   }
 
+  breakMusicPlayRequestRef.current = true;
   setKarafunPlayPending(true);
   setKarafunPlayError('');
   try {
+    const expectedPerformanceId = currentPerformanceRef.current?.id;
+    await breakMusicRef.current?.silence();
+    if (karafunSocketRef.current !== ws || ws.readyState !== WebSocket.OPEN || currentPerformanceRef.current?.id !== expectedPerformanceId) {
+      throw new Error('KaraFun or the current singer changed while preparing playback.');
+    }
     ws.send(JSON.stringify({
       id: Date.now(),
       type: 'remote.PlayRequest',
@@ -2592,6 +2601,8 @@ function playKaraFunSong() {
   } catch {
     setKarafunPlayPending(false);
     setKarafunPlayError('Could not send Play to KaraFun. Check the connection.');
+  } finally {
+    breakMusicPlayRequestRef.current = false;
   }
 }
 
@@ -2635,6 +2646,8 @@ async function controlKaraFun(kind:'pause'|'skip') {
   }
   if(karafunSocketRef.current!==ws || ws.readyState!==WebSocket.OPEN)throw new Error('KaraFun disconnected. Please reconnect.');
   if(kind==='skip' && (currentPerformanceRef.current?.id!==current?.id || !karaFunSkipTargetReady()))throw new Error('The song changed while checking. Check the queue before trying again.');
+  await breakMusicRef.current?.silence();
+  if (karafunSocketRef.current !== ws || ws.readyState !== WebSocket.OPEN) throw new Error('KaraFun disconnected while preparing playback.');
   karafunControlRef.current={kind,previousItemId:karaFunCurrentItemIdRef.current};
   ws.send(JSON.stringify({id:Date.now(),type:kind==='pause'?'remote.PauseRequest':'remote.NextRequest',payload:{}}));
   karafunControlTimerRef.current=setTimeout(()=>{
@@ -6243,6 +6256,14 @@ karafunPlayerOnline={karafunPlayerOnline}
 />
 
 </div>
+<SVBreakMusic
+  ref={breakMusicRef}
+  connected={karafunConnected}
+  online={karafunPlayerOnline}
+  playbackState={karafunPlaybackState}
+  commandPending={karafunPlayPending || Boolean(karafunControlPending)}
+  ended={Boolean(event?.is_show_ended)}
+/>
 <SVHostIQ
   eventId={eventId}
   watchdogAlerts={watchdogAlerts}
