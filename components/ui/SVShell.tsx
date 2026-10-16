@@ -1,4 +1,5 @@
 import React from 'react';
+import SVTrialReminder from '@/components/billing/SVTrialReminder';
 import SVSidebar from '@/components/layout/SVSidebar';
 
 type SVShellProps = {
@@ -35,7 +36,7 @@ export default function SVShell({ children, title, subtitle }: SVShellProps) {
 </span>
         </header>
 
-        <div className="sv-page">{children}</div>
+        <div className="sv-page"><SVTrialReminder />{children}</div>
       </main>
     </div>
   );
