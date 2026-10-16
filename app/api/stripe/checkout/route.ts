@@ -60,26 +60,6 @@ export async function POST(req: Request) {
       }
     }
 
-    const existingSessions = await stripe.checkout.sessions.list({
-      customer: customerId,
-      status: 'open',
-      limit: 1,
-    });
-
-    const existingSession = existingSessions.data[0];
-
-    if (existingSession?.url) {
-      const existingPlatform = desktopPlatform(
-        existingSession.success_url
-          ? new URL(existingSession.success_url).searchParams.get('download')
-          : null
-      );
-      if (existingPlatform === requestedPlatform && existingSession.metadata?.ga_client_id === analyticsMetadata.ga_client_id) {
-        return NextResponse.json({ url: existingSession.url });
-      }
-      await stripe.checkout.sessions.expire(existingSession.id);
-    }
-
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
       status: 'all',
@@ -107,13 +87,40 @@ export async function POST(req: Request) {
       );
     }
 
+    // A returning customer can subscribe, but cannot repeatedly restart the trial.
+    const eligibleForTrial = subscriptions.data.length === 0 &&
+      !account.stripe_subscription_id;
+    const checkoutPolicy = eligibleForTrial ? 'trial-14-no-card-v1' : 'paid-v1';
+
+    const existingSessions = await stripe.checkout.sessions.list({
+      customer: customerId,
+      status: 'open',
+      limit: 1,
+    });
+
+    const existingSession = existingSessions.data[0];
+
+    if (existingSession?.url) {
+      const existingPlatform = desktopPlatform(
+        existingSession.success_url
+          ? new URL(existingSession.success_url).searchParams.get('download')
+          : null
+      );
+      if (existingPlatform === requestedPlatform && existingSession.metadata?.ga_client_id === analyticsMetadata.ga_client_id && existingSession.metadata?.checkout_policy === checkoutPolicy) {
+        return NextResponse.json({ url: existingSession.url });
+      }
+      await stripe.checkout.sessions.expire(existingSession.id);
+    }
+
     const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         customer: customerId,
+        payment_method_collection: eligibleForTrial ? 'if_required' : 'always',
 
         metadata: {
           account_id: account.id,
           download_platform: requestedPlatform || 'web',
+          checkout_policy: checkoutPolicy,
         },
 
         subscription_data: {
@@ -121,7 +128,12 @@ export async function POST(req: Request) {
             account_id: account.id,
             ...analyticsMetadata,
           },
-          trial_period_days: 7,
+          ...(eligibleForTrial ? {
+            trial_period_days: 14,
+            trial_settings: {
+              end_behavior: { missing_payment_method: 'cancel' as const },
+            },
+          } : {}),
         },
 
         line_items: [

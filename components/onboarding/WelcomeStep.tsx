@@ -49,9 +49,9 @@ export default function WelcomeStep() {
       </div>
 
       <div className="onboarding-trust-list">
-        <TrustItem label="7-Day Free Trial" />
+        <TrustItem label="14-Day Free Trial" />
         <TrustItem label="No Setup Fees" />
-        <TrustItem label="Cancel Anytime" />
+        <TrustItem label="No Credit Card Required" />
       </div>
     </div>
   );

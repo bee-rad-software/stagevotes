@@ -25,6 +25,8 @@ export default function AccountPage() {
   const [venueId, setVenueId] = useState('');
   const [name, setName] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const manageExistingBilling = ['active', 'trialing', 'past_due', 'unpaid', 'paused'].includes(subscriptionStatus) || (subscriptionStatus === 'incomplete' && hasSubscription);
   const [venmoUrl, setVenmoUrl] = useState('');
   const [cashappUrl, setCashappUrl] = useState('');
   const [applePayUrl, setApplePayUrl] = useState('');
@@ -67,7 +69,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-.select('id, name, subscription_status, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, max_songs_per_singer, karafun_channel')      .eq('id', accountUser.account_id)
+.select('id, name, subscription_status, stripe_subscription_id, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, max_songs_per_singer, karafun_channel')      .eq('id', accountUser.account_id)
       .single();
 
     if (accountError || !account) {
@@ -88,6 +90,7 @@ if (venue?.id) {
 }
     setName(account.name || '');
     setSubscriptionStatus(account.subscription_status || '');
+    setHasSubscription(Boolean(account.stripe_subscription_id));
     setTipsEnabled(account.tips_enabled || false);
     setVenmoUrl(account.venmo_url || '');
     setCashappUrl(account.cashapp_url || '');
@@ -152,7 +155,9 @@ if (venue?.id) {
     return;
   }
 
-  const response = await fetch('/api/stripe/portal', {
+  const response = await fetch(
+    manageExistingBilling
+      ? '/api/stripe/portal' : '/api/stripe/checkout', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1051,8 +1056,9 @@ return (
             }}
           >
             <ExternalLink size={16} />
-            Manage Subscription
+            {manageExistingBilling ? 'Manage Subscription' : 'Subscribe'}
           </button>
+          {subscriptionStatus === 'trialing' && <p style={{ fontSize: 13, lineHeight: 1.5 }}>To continue after your trial, add a payment method under Manage Subscription. Without one, your trial expires without a charge.</p>}
         </section>
 
         <section className="sv-card">

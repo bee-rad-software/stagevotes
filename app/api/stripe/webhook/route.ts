@@ -9,7 +9,9 @@ export const dynamic = 'force-dynamic';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function subscriptionEnd(subscription: Stripe.Subscription) {
-  const value = (subscription as any).current_period_end;
+  const value = subscription.status === 'trialing'
+    ? subscription.trial_end
+    : (subscription as any).current_period_end ?? (subscription.items.data[0] as any)?.current_period_end;
   return value ? new Date(value * 1000).toISOString() : null;
 }
 

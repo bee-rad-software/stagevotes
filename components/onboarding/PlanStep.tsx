@@ -96,8 +96,8 @@ export default function PlanStep({
       <h1>Start your free trial</h1>
 
       <p className="onboarding-lead">
-        Get full access to StageVotes for seven
-        days. Cancel anytime.
+        Get full access to StageVotes for 14 days.
+        No credit card required.
       </p>
 
       <div className="onboarding-plan-card">
@@ -117,7 +117,7 @@ export default function PlanStep({
           </div>
 
           <div className="onboarding-plan-trial">
-            <strong>7 days</strong>
+            <strong>14 days</strong>
             <span>free</span>
           </div>
         </div>
@@ -130,7 +130,7 @@ export default function PlanStep({
           <PlanFeature label="TV display mode" />
           <PlanFeature label="Show history and reporting" />
           <PlanFeature label="Multiple venue support" />
-          <PlanFeature label="Cancel anytime" />
+          <PlanFeature label="No credit card required for your trial" />
         </div>
 
         <div className="onboarding-plan-assurance">
@@ -141,7 +141,7 @@ export default function PlanStep({
 
           <div>
             <CreditCard size={19} />
-            Your trial begins after checkout
+            No credit card required to start
           </div>
         </div>
       </div>
@@ -163,13 +163,14 @@ export default function PlanStep({
       >
         {isLoading
           ? 'Opening secure checkout...'
-          : 'Continue to Secure Checkout'}
+          : 'Start My 14-Day Free Trial'}
       </button>
 
       <p className="onboarding-plan-note">
-        You will review the subscription price before
-        confirming. Your payment method will be charged
-        when the 7-day trial ends unless you cancel first.
+        New accounts receive 14 days free. No payment details are needed.
+        Add a payment method in Account → Manage Subscription if you want
+        to continue afterward; otherwise, your trial expires without a charge.
+        Returning subscribers review the paid plan in Stripe.
       </p>
       {downloadPlatform && (
         <p className="onboarding-plan-note">
