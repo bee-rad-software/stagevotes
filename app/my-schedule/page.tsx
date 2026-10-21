@@ -14,6 +14,7 @@ import {
   type SingerShowPlan,
 } from '@/lib/singerShowPlans';
 import styles from './schedule.module.css';
+import SVShowAttendance from '@/components/schedule/SVShowAttendance';
 
 type ScheduledShow = {
   id: string;
@@ -174,6 +175,7 @@ export default function MySchedulePage() {
           </button>
           <Link href={`/venues/${show.venueSlug}`}>Venue details →</Link>
         </div>
+        <SVShowAttendance showId={show.id} date={show.date} title={show.title} venueName={show.venueName} venueSlug={show.venueSlug} onPlan={() => { if (!selected) void togglePlan(show); }} />
       </article>
     );
   }
@@ -211,3 +213,4 @@ export default function MySchedulePage() {
     </SVSingerShell>
   );
 }
+
