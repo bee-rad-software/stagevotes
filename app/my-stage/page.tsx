@@ -1,5 +1,6 @@
 'use client';
 
+import styles from '@/components/my-stage/MyStage.module.css';
 import { Suspense } from 'react';
 import useMyStage from '@/hooks/useMyStage';
 import Link from 'next/link';
@@ -692,7 +693,7 @@ const championshipWin = (() => {
     <main
       style={{
         minHeight: '100vh',
-        padding: '24px 16px 80px',
+        padding: '20px 16px calc(160px + env(safe-area-inset-bottom))',
         color: '#f8fafc',
         background:
           'radial-gradient(circle at top left, rgba(56,189,248,0.14), transparent 34rem), radial-gradient(circle at top right, rgba(249,115,22,0.12), transparent 30rem), #07111f',
@@ -1249,18 +1250,7 @@ const active =
   />
 )}
 
-        <PerformanceSummary
-  performances={stats.performances}
-  venues={stats.venues}
-  averageScore={stats.averageScore}
-  championshipStory={
-  championshipWin
-    ? `You conquered the road to the title and became the ${championshipWin.tournamentName} Champion.`
-    : championshipStory
-}
-/>
-
-        <PersonalBests bests={personalBests} />
+        <ExploreGrid />
 
                <AchievementGrid
           achievements={achievements}
@@ -1276,6 +1266,22 @@ const active =
   />
 )}
 
+        <details className={styles.disclosure}><summary>My stats & personal bests</summary>
+        <PerformanceSummary
+  performances={stats.performances}
+  venues={stats.venues}
+  averageScore={stats.averageScore}
+  championshipStory={
+  championshipWin
+    ? `You conquered the road to the title and became the ${championshipWin.tournamentName} Champion.`
+    : championshipStory
+}
+/>
+
+        <PersonalBests bests={personalBests} />
+
+        </details>
+        <details className={styles.disclosure}><summary>Recent activity & this month</summary>
         <section style={{ marginTop: 28 }}>
           <div style={{ marginBottom: 14 }}>
             <p
@@ -1326,7 +1332,9 @@ const active =
 
         <CareerTimeline entries={timeline} />
 
-        <ExploreGrid />
+
+
+        </details>
 
         {message && (
           <p

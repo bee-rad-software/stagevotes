@@ -1,0 +1,20 @@
+.links { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
+.links a { flex:1 1 160px; min-width:0; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:14px 16px; border:1px solid #2c3d53; border-radius:12px; color:#e2e8f0; background:#101e30; text-decoration:none; font-size:14px; font-weight:700; }
+.collection { margin:24px 0; scroll-margin-top:20px; }
+.sectionHead { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+.sectionHead h2 { margin:0; font-size:22px; }
+.sectionHead span,.empty { color:#94a3b8; font-size:13px; }
+.badges { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; padding-top:12px; }
+.badge { min-width:0; border:1px solid #f9731640; border-radius:16px; background:linear-gradient(145deg,#f9731614,#101e30); }
+.badge > summary { display:flex; flex-direction:column; align-items:center; text-align:center; gap:9px; padding:16px 10px; cursor:pointer; list-style:none; }
+.badge > summary::-webkit-details-marker { display:none; }
+.badge strong { font-size:14px; line-height:1.35; overflow-wrap:anywhere; }
+.badge small { color:#a9b9cc; font-size:10px; }
+.medallion { width:76px; height:76px; border-radius:50%; display:grid; place-items:center; font-size:38px; background:radial-gradient(circle at 35% 25%,#fbbf2438,#f9731620 65%,#0f172a); border:3px solid #eaa84b; box-shadow:inset 0 0 0 4px #07111f,0 5px 16px #0004; }
+.locked { border-color:#334155; background:#0f1b2b; }
+.locked .medallion { border-color:#475569; filter:grayscale(1); opacity:.65; }
+.badgeDetails { padding:0 12px 12px; font-size:12px; line-height:1.5; color:#cbd5e1; }
+.disclosure { margin:18px 0; padding:16px; border:1px solid #2c3d53; border-radius:14px; background:#0d1929; }
+.disclosure > summary { cursor:pointer; color:#cbd5e1; font-size:14px; font-weight:700; }
+.links a:focus-visible,.collection summary:focus-visible,.disclosure > summary:focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }
+@media(max-width:480px) { .links { display:grid; grid-template-columns:1fr; } .badges { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; } }
