@@ -1,8 +1,8 @@
 {
   "name": "StageVotes",
   "short_name": "StageVotes",
-  "description": "Karaoke queue, voting, and event display software",
-  "start_url": "/",
+  "description": "Your karaoke nights, songs, badges, and show memories",
+  "start_url": "/my-schedule",
   "scope": "/",
   "display": "standalone",
   "background_color": "#020617",
