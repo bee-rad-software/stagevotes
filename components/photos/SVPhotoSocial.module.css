@@ -1,0 +1,17 @@
+.social { margin-top:12px; border-top:1px solid #334155; padding-top:12px; font-size:12px; color:#cbd5e1; }
+.reactions { display:flex; gap:7px; margin-bottom:8px; flex-wrap:wrap; }
+.social button { min-height:36px; padding:7px 10px; border:1px solid #334155; border-radius:9px; background:#142238; color:#e2e8f0; cursor:pointer; font-size:12px; }
+.social button[aria-pressed='true'] { border-color:#38bdf8; background:#0c4a6e; }
+.social button:disabled { opacity:.55; cursor:default; }
+.social small { display:block; color:#94a3b8; line-height:1.5; }
+.social a { color:#7dd3fc; }
+.tags { line-height:1.5; overflow-wrap:anywhere; }
+.invite { padding:10px; background:#38bdf810; border-radius:10px; margin:10px 0; }
+.invite button { margin-right:6px; }
+.social .quiet { background:transparent; margin-bottom:8px; }
+.social summary { cursor:pointer; padding:8px 0; color:#7dd3fc; }
+.social form { display:grid; gap:8px; }
+.social label { display:grid; gap:6px; }
+.social select { max-width:100%; width:100%; background:#0b1222; color:#e2e8f0; border:1px solid #334155; border-radius:8px; padding:9px; font-size:12px; }
+.social .error { color:#fed7aa; }
+.social :is(button,summary,select,a):focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }

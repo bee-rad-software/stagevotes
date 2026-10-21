@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { EventPhoto, PHOTO_CAPTION_LIMIT } from '@/lib/eventPhotos';
 import { prepareEventPhoto } from '@/lib/prepareEventPhoto';
 import styles from './SVEventPhotos.module.css';
+import SVPhotoSocial from './SVPhotoSocial';
 
 type Receipt = { id: string; removalToken: string; label: string };
 type Gallery = { enabled: boolean; closed: boolean; eventName: string; photoCount?: number; photos: EventPhoto[]; reports: { photoId: string; reason: string }[] };
@@ -127,7 +128,7 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
       {data && !shown.length && <p className={styles.empty}>{host && filter === 'pending' ? 'No photos waiting for review.' : 'No approved photos yet. Photos appear here after host approval.'}</p>}
       <div className={styles.grid}>{shown.map(photo => <article className={styles.photo} key={photo.id}>
         <a href={photo.url} target="_blank" rel="noopener noreferrer" aria-label="Open photo at full size"><img src={photo.url} alt={photo.caption || 'Photo from this karaoke show'} loading="lazy" /></a>
-        <div className={styles.caption}>{photo.caption && <p>{photo.caption}</p>}{photo.displayName && <small>Shared by {photo.displayName}</small>}
+        <div className={styles.caption}>{photo.status === 'approved' && <SVPhotoSocial eventId={eventId} photoId={photo.id} />}{photo.caption && <p>{photo.caption}</p>}{photo.displayName && <small>Shared by {photo.displayName}</small>}
         {host ? <><span className={styles.badge}>{photo.status === 'pending' ? 'Awaiting approval' : 'Approved'}{photo.reports ? ` · ${photo.reports} reported` : ''}</span>
           {data?.reports.filter(r => r.photoId === photo.id).map((r,i) => <p className={styles.report} key={i}>Report: {r.reason}</p>)}
           <div className={styles.controls}>{photo.status === 'pending' && <button type="button" className={styles.primary} disabled={Boolean(busy)} onClick={() => void action(photo.id,async () => { await mutate('PATCH',{ action:'approve',photoId:photo.id },true); })}>Approve photo & caption</button>}
@@ -145,3 +146,4 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
     </div>}
   </section>;
 }
+
