@@ -144,6 +144,18 @@ export default function SVHostIQ({
         background: 'linear-gradient(145deg, rgba(15,23,42,.98), rgba(10,30,55,.96))',
       }}
     >
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap', fontSize:13 }}>
+        <strong>🧠 Host IQ</strong><span>Projected finish: <strong>{projectedEndTime || '—'}</strong> · Queue: {queueMinutes} min</span>
+        <span style={{ color: watchdogAlerts.length ? '#fbbf24' : '#6ee7b7' }}>{watchdogAlerts.length ? `${watchdogAlerts.length} queue alerts` : 'No queue issues detected'}</span>
+      </div>
+      {watchdogAlerts.length > 0 && (      <SVHostWatchdog eventId={eventId} alerts={watchdogAlerts} karaFunAvailable={karaFunWatchdogAvailable}
+        onReview={onReviewWatchdog} onFix={onFixWatchdog} onExplain={generateBriefing} explaining={briefingLoading} />)}
+      {(recommendation.status === 'warning' || recommendation.status === 'watch') && <div role="status" style={{ marginTop:12, color:accent, fontSize:13 }}>
+        <strong>{recommendation.title}</strong><p style={{ margin:'5px 0', color:'#cbd5e1' }}>{recommendation.message}</p>
+        {recommendation.action && recommendation.actionLabel && <button type="button" className="btn-small" disabled={acting} onClick={runAction}>{acting ? 'Updating…' : recommendation.actionLabel}</button>}
+      </div>}
+      <details style={{ marginTop:12 }}>
+        <summary style={{ cursor:'pointer', color:'#7dd3fc', fontWeight:800, padding:'8px 0' }}>Open Host IQ · Plan, ask, and brief</summary>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
         <div>
           <div className="sv-card-eyebrow">🧠 HOST IQ</div>
@@ -225,8 +237,7 @@ export default function SVHostIQ({
 
       <SVAskHostIQ eventId={eventId} onAsk={onAskHostIQ} />
 
-      <SVHostWatchdog eventId={eventId} alerts={watchdogAlerts} karaFunAvailable={karaFunWatchdogAvailable}
-        onReview={onReviewWatchdog} onFix={onFixWatchdog} onExplain={generateBriefing} explaining={briefingLoading} />
+
 
       <div style={{ marginTop: 14, padding: 14, borderRadius: 12, border: '1px solid rgba(56,189,248,.25)', background: 'rgba(14,116,144,.09)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -299,6 +310,8 @@ export default function SVHostIQ({
           AI suggestions are advisory and never change your queue or signup settings automatically.
         </p>
       </div>
+      </details>
     </section>
   );
 }
+

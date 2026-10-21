@@ -1,0 +1,13 @@
+.compact { padding:20px !important; min-height:0 !important; margin-bottom:14px !important; }
+.compact :global(.sv-host-hero-top) { margin-bottom:12px; }
+.compact :global(.sv-host-show-name),.compact :global(.sv-host-hero-glow),.compact :global(.sv-host-hero-footer-status) { display:none; }
+.compact :global(.sv-host-hero-main) { padding:0; gap:18px; min-height:0; }
+.compact :global(.sv-host-avatar) { width:72px; height:72px; border-radius:20px; font-size:28px; }
+.compact :global(.sv-host-performer) { min-width:0; }
+.compact :global(.sv-host-performer h1) { font-size:30px; margin:4px 0; line-height:1.15; }
+.compact :global(.sv-host-song) { font-size:19px; margin-top:4px; }
+.compact :global(.sv-host-artist) { font-size:14px; margin-top:3px; }
+.compact :global(.sv-host-hero-footer) { margin-top:14px; padding-top:12px; gap:20px; flex-wrap:wrap; }
+.compact :global(.sv-host-timer) { gap:8px; }
+.compact :global(.sv-host-timer strong) { font-size:18px; }
+@media(max-width:600px) { .compact { padding:16px !important; } .compact :global(.sv-host-avatar) { width:56px; height:56px; } .compact :global(.sv-host-performer h1) { font-size:25px; } .compact :global(.sv-host-song) { font-size:16px; } }

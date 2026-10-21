@@ -1,5 +1,6 @@
 'use client';
 
+import styles from './SVHostHero.module.css';
 import { useEffect, useState } from 'react';
 import {
   Clock3,
@@ -99,8 +100,8 @@ const displaySingerName = singerName
     <section
       className={
         hasCurrentSinger
-          ? 'sv-host-hero is-live'
-          : 'sv-host-hero is-waiting'
+          ? `sv-host-hero is-live ${styles.compact}`
+          : `sv-host-hero is-waiting ${styles.compact}`
       }
     >
       <div className="sv-host-hero-glow" />
@@ -126,7 +127,7 @@ const displaySingerName = singerName
           </div>
         </div>
 
-        <div
+        {judgingEnabled && (        <div
           className={
             votingOpen
               ? 'sv-host-hero-status is-open'
@@ -139,6 +140,7 @@ const displaySingerName = singerName
             ? 'Voting open'
             : 'Voting closed'}
         </div>
+        )}
       </div>
 
       <div className="sv-host-hero-main">
@@ -186,12 +188,7 @@ const displaySingerName = singerName
           )}
         </div>
 
-        <div className="sv-host-mic-art">
-          <Mic2
-            size={118}
-            strokeWidth={1.8}
-          />
-        </div>
+
       </div>
 
       <div className="sv-host-hero-footer">

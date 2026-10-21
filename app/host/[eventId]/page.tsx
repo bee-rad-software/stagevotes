@@ -5755,6 +5755,172 @@ if (!isSubscribed) {
   }
 />
 
+<div id="watchdog-mission-controls">
+<SVMissionControl
+  judgingEnabled={event?.judging_enabled === true}
+  onStartShow={startShow}
+  onEndShow={endShow}
+  onAddSinger={() =>
+    setShowSingerSignup(true)
+  }
+  onNextSinger={() => nextSinger()}
+  onToggleVoting={() =>
+    toggleVoting(!event?.is_voting_open)
+  }
+  onOpenDisplay={() =>
+    window.open(
+      `/display/${eventId}`,
+      '_blank'
+    )
+  }
+
+karafunDisplayOpen={karafunDisplayOpen}
+
+onOpenKaraFunDisplay={() => {
+  const desktop =
+    (window as any).stagevotesDesktop;
+
+  if (desktop?.toggleKarafunDisplay) {
+  desktop.toggleKarafunDisplay(eventId);
+  return;
+}
+
+  window.open(
+    `/karafun-display/${eventId}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}}
+
+  onAwards={() =>
+    window.open(
+      `/awards/${eventId}`,
+      '_blank'
+    )
+  }
+  onConnectKaraFun={toggleKaraFunConnection}
+  onPlayKaraFun={playKaraFunSong}
+  onPauseKaraFun={() => { void controlKaraFun('pause'); }}
+  onSkipKaraFun={() => { void controlKaraFun('skip'); }}
+  karafunPauseReady={karafunConnected && karafunPlayerOnline && karafunPlaybackState === 4}
+  karafunSkipReady={karaFunSkipTargetReady()}
+  karafunControlPending={karafunControlPending}
+  karafunControlError={karafunControlError}
+  karafunPlaybackReady={
+    karafunConnected &&
+    karafunPlayerOnline &&
+    [3, 5].includes(karafunPlaybackState ?? -1) &&
+    getKaraFunSingerName(current).trim().toLowerCase() ===
+      karafunPlaybackSinger.trim().toLowerCase() &&
+    Boolean(karafunPlaybackSinger.trim())
+  }
+  karafunPlayPending={karafunPlayPending}
+  karafunPlayError={karafunPlayError}
+  karafunConnected={karafunConnected}
+  karafunConnecting={karafunConnecting}
+karafunConnectionError={karafunConnectionError}
+karafunPlayerOnline={karafunPlayerOnline}
+  showStarted={!!current}
+  votingOpen={!!event?.is_voting_open}
+  hasCurrentSinger={!!current}
+  advancingSinger={advancingSinger}
+  currentSingerName={current?.singer_name}
+  nextSingerName={upNext?.singer_name}
+/>
+
+</div>
+{isBrandNewEmptyShow ? (
+  <SVEmptyQueueState
+    onAudienceAccess={() =>
+      window.open(
+        `/audience/${eventId}`,
+        '_blank'
+      )
+    }
+    onAddSinger={() =>
+      setShowSingerSignup(true)
+    }
+  />
+) : isFinishedEmptyShow ? (
+  <SVFinishedQueueState
+    onAddSinger={() =>
+      setShowSingerSignup(true)
+    }
+    onOpenAwards={() =>
+      window.open(
+        `/awards/${eventId}`,
+        '_blank'
+      )
+    }
+    onEndShow={endShow}
+  />
+) : (
+  <div id="watchdog-host-queue">
+  <SVHostQueue
+    items={hostQueueItems}
+    completedCount={completedPerformanceCount}
+    estimatedQueueMinutes={estimatedQueueMinutes}
+    projectedEndTime={projectedQueueEndTime}
+    singerView={singerView}
+    editingId={editingId}
+    editSingerName={editSingerName}
+    editSongTitle={editSongTitle}
+    editArtist={editArtist}
+    editPerformanceNote={editPerformanceNote}
+    onToggleSingerView={() =>
+      setSingerView((current) => !current)
+    }
+    onEditSingerName={setEditSingerName}
+    onEditSongTitle={setEditSongTitle}
+    onEditArtist={setEditArtist}
+    onEditPerformanceNote={setEditPerformanceNote}
+    onStartEdit={(item) =>
+      startEditing(item.performance)
+    }
+        onSaveEdit={saveEdit}
+
+    onMoveSongEarlier={(performanceId) =>
+      moveSingerSong(
+        performanceId,
+        'earlier'
+      )
+    }
+
+    onMoveSongLater={(performanceId) =>
+      moveSingerSong(
+        performanceId,
+        'later'
+      )
+    }
+
+    onCancelEdit={cancelEditing}
+    onChooseEditSong={() => {
+    setPickerSongs([]);
+    setShowEditSongPicker(true);
+    }}
+    onSkip={skipSinger}
+    onMoveToNextRound={
+    moveSingerToNextRound
+    }
+    onRemove={removeSinger}
+    onCheckIn={checkInSinger}
+    onReorder={handleQueueReorder}
+    onSendToKaraFun={(item) =>
+    sendPerformanceToKaraFun(item.performance)
+    }
+    karafunSentPerformanceIds={
+    karafunSentPerformanceIds
+    }
+    karafunConnected={
+    karafunConnected && karafunPlayerOnline
+    }
+/>
+  </div>
+)}
+
+
+
+
 {(event as any)?.competition_mode ===
   'tournament' &&
   current &&
@@ -5911,46 +6077,8 @@ if (!isSubscribed) {
     }}
   >
     <div>
-      <div
-        style={{
-          color:
-            event?.signups_open === false
-              ? '#fca5a5'
-              : '#7dd3fc',
-          fontSize: 12,
-          fontWeight: 900,
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Singer Signups
-      </div>
+      <strong style={{ fontSize:14 }}>{event?.signups_open === false ? 'Signups closed' : event?.additional_songs_open === false ? 'Signups open · Extra songs paused' : 'Signups open'}</strong>
 
-      <h2
-        style={{
-          margin: '5px 0 0',
-          fontSize: 20,
-        }}
-      >
-        {event?.signups_open === false
-          ? 'Signups are closed'
-          : 'Signups are open'}
-      </h2>
-
-      <p
-        style={{
-          margin: '6px 0 0',
-          color: '#94a3b8',
-          fontSize: 13,
-          lineHeight: 1.5,
-        }}
-      >
-        {event?.signups_open === false
-          ? 'Singers cannot join or add songs. Host controls remain available.'
-          : event?.additional_songs_open === false
-          ? 'New singers can still join. Singers already in the queue cannot add another song.'
-          : 'Singers can join and add songs within the venue queue limit.'}
-      </p>
     </div>
 
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -6002,23 +6130,7 @@ if (!isSubscribed) {
       </button>
     </div>
   </div>
-  <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(148,163,184,.25)' }}>
-    <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
-      <input
-        type="checkbox"
-        checked={event?.exclude_explicit_songs === true}
-        disabled={!karafunChannel}
-        onChange={toggleExplicitSongs}
-        style={{ width: 20, height: 20, accentColor: '#38bdf8' }}
-      />
-      Exclude explicit songs from singer choices
-    </label>
-    <p style={{ color: '#94a3b8', fontSize: 13, margin: '8px 0 0' }}>
-      {karafunChannel
-        ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
-        : 'Available when a KaraFun catalog is connected.'}
-    </p>
-  </div>
+
 </section>
 
 {singerRecoveryRequests.length > 0 && (
@@ -6185,80 +6297,6 @@ if (!isSubscribed) {
 {event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
 {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
 
-<div id="watchdog-mission-controls">
-<SVMissionControl
-  judgingEnabled={event?.judging_enabled === true}
-  onStartShow={startShow}
-  onEndShow={endShow}
-  onAddSinger={() =>
-    setShowSingerSignup(true)
-  }
-  onNextSinger={() => nextSinger()}
-  onToggleVoting={() =>
-    toggleVoting(!event?.is_voting_open)
-  }
-  onOpenDisplay={() =>
-    window.open(
-      `/display/${eventId}`,
-      '_blank'
-    )
-  }
-
-karafunDisplayOpen={karafunDisplayOpen}
-
-onOpenKaraFunDisplay={() => {
-  const desktop =
-    (window as any).stagevotesDesktop;
-
-  if (desktop?.toggleKarafunDisplay) {
-  desktop.toggleKarafunDisplay(eventId);
-  return;
-}
-
-  window.open(
-    `/karafun-display/${eventId}`,
-    "_blank",
-    "noopener,noreferrer"
-  );
-}}
-
-  onAwards={() =>
-    window.open(
-      `/awards/${eventId}`,
-      '_blank'
-    )
-  }
-  onConnectKaraFun={toggleKaraFunConnection}
-  onPlayKaraFun={playKaraFunSong}
-  onPauseKaraFun={() => { void controlKaraFun('pause'); }}
-  onSkipKaraFun={() => { void controlKaraFun('skip'); }}
-  karafunPauseReady={karafunConnected && karafunPlayerOnline && karafunPlaybackState === 4}
-  karafunSkipReady={karaFunSkipTargetReady()}
-  karafunControlPending={karafunControlPending}
-  karafunControlError={karafunControlError}
-  karafunPlaybackReady={
-    karafunConnected &&
-    karafunPlayerOnline &&
-    [3, 5].includes(karafunPlaybackState ?? -1) &&
-    getKaraFunSingerName(current).trim().toLowerCase() ===
-      karafunPlaybackSinger.trim().toLowerCase() &&
-    Boolean(karafunPlaybackSinger.trim())
-  }
-  karafunPlayPending={karafunPlayPending}
-  karafunPlayError={karafunPlayError}
-  karafunConnected={karafunConnected}
-  karafunConnecting={karafunConnecting}
-karafunConnectionError={karafunConnectionError}
-karafunPlayerOnline={karafunPlayerOnline}
-  showStarted={!!current}
-  votingOpen={!!event?.is_voting_open}
-  hasCurrentSinger={!!current}
-  advancingSinger={advancingSinger}
-  currentSingerName={current?.singer_name}
-  nextSingerName={upNext?.singer_name}
-/>
-
-</div>
 <SVBreakMusic
   ref={breakMusicRef}
   connected={karafunConnected}
@@ -6292,96 +6330,6 @@ karafunPlayerOnline={karafunPlayerOnline}
   onGenerateBriefing={generateAIHostBriefing}
   onAskHostIQ={askAIHostIQ}
 />
-
-{isBrandNewEmptyShow ? (
-  <SVEmptyQueueState
-    onAudienceAccess={() =>
-      window.open(
-        `/audience/${eventId}`,
-        '_blank'
-      )
-    }
-    onAddSinger={() =>
-      setShowSingerSignup(true)
-    }
-  />
-) : isFinishedEmptyShow ? (
-  <SVFinishedQueueState
-    onAddSinger={() =>
-      setShowSingerSignup(true)
-    }
-    onOpenAwards={() =>
-      window.open(
-        `/awards/${eventId}`,
-        '_blank'
-      )
-    }
-    onEndShow={endShow}
-  />
-) : (
-  <div id="watchdog-host-queue">
-  <SVHostQueue
-    items={hostQueueItems}
-    completedCount={completedPerformanceCount}
-    estimatedQueueMinutes={estimatedQueueMinutes}
-    projectedEndTime={projectedQueueEndTime}
-    singerView={singerView}
-    editingId={editingId}
-    editSingerName={editSingerName}
-    editSongTitle={editSongTitle}
-    editArtist={editArtist}
-    editPerformanceNote={editPerformanceNote}
-    onToggleSingerView={() =>
-      setSingerView((current) => !current)
-    }
-    onEditSingerName={setEditSingerName}
-    onEditSongTitle={setEditSongTitle}
-    onEditArtist={setEditArtist}
-    onEditPerformanceNote={setEditPerformanceNote}
-    onStartEdit={(item) =>
-      startEditing(item.performance)
-    }
-        onSaveEdit={saveEdit}
-
-    onMoveSongEarlier={(performanceId) =>
-      moveSingerSong(
-        performanceId,
-        'earlier'
-      )
-    }
-
-    onMoveSongLater={(performanceId) =>
-      moveSingerSong(
-        performanceId,
-        'later'
-      )
-    }
-
-    onCancelEdit={cancelEditing}
-    onChooseEditSong={() => {
-    setPickerSongs([]);
-    setShowEditSongPicker(true);
-    }}
-    onSkip={skipSinger}
-    onMoveToNextRound={
-    moveSingerToNextRound
-    }
-    onRemove={removeSinger}
-    onCheckIn={checkInSinger}
-    onReorder={handleQueueReorder}
-    onSendToKaraFun={(item) =>
-    sendPerformanceToKaraFun(item.performance)
-    }
-    karafunSentPerformanceIds={
-    karafunSentPerformanceIds
-    }
-    karafunConnected={
-    karafunConnected && karafunPlayerOnline
-    }
-/>
-  </div>
-)}
-
 
 {showEditSongPicker && (
   <div
@@ -6469,50 +6417,30 @@ karafunPlayerOnline={karafunPlayerOnline}
   </div>
 )}
 
-<h2 style={{ color: '#38bdf8', marginTop: 24 }}>
-  📊 Show Summary
-</h2>
-      
-<div
-  style={{
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: 16,
-    marginBottom: 24
-  }}
->
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎤 Singers</h3>
-    <div style={{ fontSize: 28, fontWeight: 900 }}>
-      {new Set(performances.map((p) => p.singer_name.trim().toLowerCase())).size}
-    </div>
-  </div>
-
-  <div className="card">
-    <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🎵 Songs</h3>
-    <div style={{ fontSize: 28, fontWeight: 900 }}>
-      {performances.length}
-    </div>
-  </div>
-
-  {event?.judging_enabled === true && (
-    <>
-      <div className="card">
-        <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🧑‍⚖️ Judge Ballots</h3>
-        <div style={{ fontSize: 28, fontWeight: 900 }}>
-          {judgeBallotCount}
-        </div>
-      </div>
-
-      <div className="card">
-        <h3 style={{ color: '#38bdf8', marginTop: 0 }}>🏆 Leader</h3>
-        <div style={{ fontSize: 28, fontWeight: 900, color: '#c2410c' }}>
-          {leaderboard[0]?.singer_name || 'No votes yet'}
-        </div>
-      </div>
-    </>
-  )}
+<div className="sv-card" style={{ padding:'14px 18px', marginBottom:16, display:'flex', gap:18, flexWrap:'wrap', fontSize:14 }} aria-label="Show summary">
+  <span><strong>{new Set(performances.map(p => p.singer_name.trim().toLowerCase())).size}</strong> singers tonight</span>
+  <span><strong>{hostQueueItems.length}</strong> songs in rotation</span>
+  <span><strong>{completedPerformanceCount}</strong> sung</span>
+  {event?.judging_enabled === true && <><span><strong>{judgeBallotCount}</strong> judge ballots</span><span>Leader: <strong>{leaderboard[0]?.singer_name || 'No votes yet'}</strong></span></>}
 </div>
+<details className="sv-host-song-history"><summary><span>⚙️ Show settings</span><span className="sv-host-song-history-count">Song choices</span></summary>
+<div style={{ padding:16 }}>
+    <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
+      <input
+        type="checkbox"
+        checked={event?.exclude_explicit_songs === true}
+        disabled={!karafunChannel}
+        onChange={toggleExplicitSongs}
+        style={{ width: 20, height: 20, accentColor: '#38bdf8' }}
+      />
+      Exclude explicit songs from singer choices
+    </label>
+    <p style={{ color: '#94a3b8', fontSize: 13, margin: '8px 0 0' }}>
+      {karafunChannel
+        ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
+        : 'Available when a KaraFun catalog is connected.'}
+    </p>
+  </div></details>
 
 <SVEventPhotos key={eventId} eventId={eventId} host />
 
@@ -7242,4 +7170,5 @@ if (added) {
 </SVShell>
   );
     }
+
 
