@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ReactNode } from 'react';
 import SVSingerNavigation from './SVSingerNavigation';
+import SVSingerSignIn from './SVSingerSignIn';
 
 type Props = {
   children: ReactNode;
@@ -42,6 +43,7 @@ export default function SVSingerShell({
       </header>
 
       <main className="sv-singer-shell-content">
+        <SVSingerSignIn />
         {children}
       </main>
 
@@ -49,3 +51,4 @@ export default function SVSingerShell({
     </div>
   );
 }
+
