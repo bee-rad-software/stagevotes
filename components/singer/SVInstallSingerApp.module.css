@@ -11,3 +11,11 @@
 .body button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 16px; border:1px solid #c2410c; border-radius:10px; background:#c2410c; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
 .body button:disabled { opacity:.5; cursor:wait; }
 .panel :is(summary,button):focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }
+
+.installRow { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:14px 16px; color:#bae6fd; font-size:13px; font-weight:700; }
+.installRow > span { flex:1; }
+.panel .installButton { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:44px; padding:10px 16px; border:1px solid #c2410c; border-radius:10px; background:#c2410c; color:#fff; font-size:14px; font-weight:700; cursor:pointer; }
+.panel .installButton:disabled { opacity:.5; cursor:wait; }
+.panel button:focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }
+.body .close { margin-top:12px; background:transparent; border-color:#34435b; color:#bae6fd; font-size:12px; }
+@media(max-width:420px) { .installRow .installButton { width:100%; } }
