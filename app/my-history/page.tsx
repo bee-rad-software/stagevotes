@@ -5,6 +5,7 @@ import Link from 'next/link';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
 import { supabase } from '@/lib/supabase';
 import styles from '../my-schedule/schedule.module.css';
+import SVShareMyNight from '@/components/my-stage/SVShareMyNight';
 
 type FinishedNight = {
   eventId: string;
@@ -123,6 +124,7 @@ export default function MyHistoryPage() {
                   <div className={styles.actions}>
                     <Link className={styles.primaryLink} href={`/shows/${night.eventId}`}>See my recap →</Link>
                     <Link href={`/venues/${night.venueSlug}`}>Venue details →</Link>
+                    <SVShareMyNight night={night} />
                   </div>
                 </article>
               ))}</div> : <p className={styles.empty}>Your history will appear here after you sing at a finished show. Guest performances show on the device you used to join; sign in to see songs linked to your singer profile.</p>}
@@ -132,3 +134,4 @@ export default function MyHistoryPage() {
     </SVSingerShell>
   );
 }
+
