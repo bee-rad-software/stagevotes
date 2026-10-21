@@ -1,5 +1,6 @@
 'use client';
 
+import { loginReturnPath } from '@/lib/loginReturnPath';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FormEvent, useState } from 'react';
@@ -52,11 +53,9 @@ export default function LoginPage() {
   window.location.search
 ).get('next');
 
-const safeNextPath =
-  nextPath?.startsWith('/') &&
-  !nextPath.startsWith('//')
-    ? nextPath
-    : '/';
+const standalone = window.matchMedia('(display-mode: standalone)').matches || Boolean((window.navigator as Navigator & {standalone?:boolean}).standalone);
+const isHostDesktop = Boolean((window as Window & {stagevotesDesktop?:{isDesktop?:boolean}}).stagevotesDesktop?.isDesktop);
+const safeNextPath = loginReturnPath(nextPath, standalone && !isHostDesktop);
 
 router.push(safeNextPath);
     router.refresh();

@@ -1,5 +1,6 @@
 'use client';
 
+import { safeLoginReturn } from '@/lib/loginReturnPath';
 import { useState } from 'react';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -39,6 +40,7 @@ function SingerLoginLoading() {
 function SingerLoginContent() {
   const searchParams = useSearchParams();
   const eventId = searchParams.get('event');
+  const nextPath = safeLoginReturn(searchParams.get('next'), '/my-schedule');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,10 +78,10 @@ function SingerLoginContent() {
 
       if (eventId) {
         window.location.href =
-          `/signup/${eventId}`;
+          `/signup/${encodeURIComponent(eventId)}`;
       } else {
         window.location.href =
-          '/my-stage';
+          nextPath;
       }
     } catch (error) {
       console.error(

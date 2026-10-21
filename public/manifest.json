@@ -5,18 +5,20 @@
   "start_url": "/my-schedule",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#020617",
+  "background_color": "#000000",
   "theme_color": "#38bdf8",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/singer-icon?size=192&v=2",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/singer-icon?size=512&v=2",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

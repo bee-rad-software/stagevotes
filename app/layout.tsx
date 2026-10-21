@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   description: 'Live karaoke voting and queue management',
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.jpg',
-    apple: '/icon.jpg'
+    icon: '/singer-icon?size=192&v=2',
+    apple: [{ url: '/singer-icon?size=180&v=2', sizes: '180x180', type: 'image/png' }]
   },
   appleWebApp: {
     capable: true,
@@ -37,3 +37,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 </html>
   );
 }
+
