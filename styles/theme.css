@@ -3356,3 +3356,83 @@ overflow: hidden;
   transform: translateX(3px);
   border-color: rgba(56, 189, 248, 0.28);
 }
+
+
+/* Shared host and singer finish. Status colors and badge artwork keep their meaning. */
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) {
+  --sv-surface: #0e192a;
+  --sv-surface-2: #142238;
+  --sv-border: rgba(148,163,184,.18);
+  --sv-radius: 16px;
+  --sv-shadow: 0 6px 20px rgba(2,6,23,.12);
+  --sv-muted: #a0aec0;
+  -webkit-font-smoothing: antialiased;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-card, .sv-mobile-card, .sv-tip-card) {
+  border-radius:16px;
+  padding:20px;
+  box-shadow:var(--sv-shadow);
+  background:var(--sv-surface);
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-card-header h2, .sv-dashboard-section-heading h2, .sv-mobile-card h2, .sv-tip-card h2) {
+  color:#f1f5f9;
+  font-size:21px;
+  line-height:1.3;
+  letter-spacing:-.025em;
+  font-weight:750;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-mobile-kicker, .sv-card-eyebrow) {
+  font-size:11px;
+  line-height:1.5;
+  letter-spacing:.09em;
+  font-weight:750;
+  color:var(--sv-muted);
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-btn, .btn-small, .sv-song-add-button, .sv-song-submit-button, .sv-photo-button) {
+  min-height:44px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:750;
+  line-height:1.35;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-btn-primary, .sv-song-submit-button) {
+  color:#fff;
+  background:#c2410c;
+  border-color:#c2410c;
+  box-shadow:none;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-btn-secondary, .sv-photo-button) {
+  color:#bae6fd;
+  background:#142238;
+  border:1px solid #34435b;
+  box-shadow:none;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-btn-primary, .sv-song-submit-button):hover:not(:disabled) {
+  background:#9a3412;
+}
+:is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-btn, .btn-small, .sv-song-add-button, .sv-song-submit-button, .sv-photo-button):focus-visible {
+  outline:2px solid #7dd3fc;
+  outline-offset:3px;
+}
+.sv-app .sv-host-song-history {
+  background:#0e192a;
+  border-color:var(--sv-border);
+  border-radius:16px;
+  box-shadow:none;
+}
+.sv-app .sv-host-song-history > summary {
+  min-height:56px;
+  padding:16px 18px;
+  font-size:15px;
+  font-weight:750;
+  gap:12px;
+}
+.sv-app .sv-host-song-history-count { font-size:12px; font-weight:600; }
+.sv-app .sv-topbar h1 { letter-spacing:-.035em; line-height:1.2; }
+.sv-app .sv-topbar p { font-size:14px; color:var(--sv-muted); }
+.sv-mobile-page .sv-mobile-actions button { min-height:64px; border-radius:14px; font-size:14px; font-weight:750; }
+@media(max-width:600px) {
+  :is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-card, .sv-mobile-card, .sv-tip-card) { padding:16px; border-radius:14px; }
+  :is(.sv-app, .sv-singer-shell, .sv-mobile-page) :is(.sv-card-header h2, .sv-dashboard-section-heading h2, .sv-mobile-card h2, .sv-tip-card h2) { font-size:19px; }
+  .sv-app .sv-host-song-history > summary { padding:14px; font-size:14px; }
+}
