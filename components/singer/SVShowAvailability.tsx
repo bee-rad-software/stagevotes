@@ -4,7 +4,7 @@ import { singerShowAvailability, type SignupEventState } from '@/lib/singerShowA
 import styles from './SVShowAvailability.module.css';
 
 export default function SVShowAvailability({ event, eventId, showName, hasJoined = false }: {
-  event: SignupEventState | null | undefined; eventId: string; showName?: string; hasJoined?: boolean;
+  event: SignupEventState | null | undefined; eventId: string; showName?: string | null; hasJoined?: boolean;
 }) {
   const state = singerShowAvailability(event);
   if (state === 'open' || state === 'loading') return null;
