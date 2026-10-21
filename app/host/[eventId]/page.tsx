@@ -6187,6 +6187,7 @@ if (!isSubscribed) {
 
 <div id="watchdog-mission-controls">
 <SVMissionControl
+  judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
   onEndShow={endShow}
   onAddSinger={() =>
@@ -7241,3 +7242,4 @@ if (added) {
 </SVShell>
   );
     }
+

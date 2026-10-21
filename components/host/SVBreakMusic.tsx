@@ -134,8 +134,8 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   if (!desktop) return null;
   const singerBusy = connected && online && (playbackState === 4 || playbackState === 5);
   const cannotPlay = !tracks.length || singerBusy || commandPending || ended;
-  return <section className={styles.panel} aria-label="Break music">
-    <div className={styles.head}><Music2 size={20} /><h3>Break music</h3><span className={styles.status}>{playing ? 'Playing' : singerBusy ? 'Singer on stage' : 'Ready when you are'}</span></div>
+  return <details className={styles.panel} aria-label="Break music">
+    <summary className={styles.head}><Music2 size={20} /><h3>Break music</h3><span className={styles.status}>{error ? 'Needs attention' : playing ? 'Playing' : singerBusy ? 'Singer on stage' : 'Ready when you are'}</span></summary>
     <p>Your playlist, between singers. Files stay on this computer and play through its selected audio output.</p>
     <input className={styles.hidden} ref={filesInput} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" multiple onChange={e => { void chooseFiles(e.target.files); e.target.value = ''; }} />
     <input className={styles.hidden} ref={folderInput} type="file" multiple {...{ webkitdirectory: '' }} onChange={e => { void chooseFiles(e.target.files); e.target.value = ''; }} />
@@ -163,6 +163,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {automatic && <details className={styles.note}><summary>Automatic playback troubleshooting</summary><p>KaraFun status sequence: {statusHistory.join(' → ')}. {between ? 'Between songs detected.' : 'Waiting for a completed playback transition.'} {commandPending ? 'Waiting for a playback command.' : ''}</p></details>}
     <p className={styles.note}>{ended ? 'Show ended. Break music is stopped.' : automatic && !connected ? 'Connect KaraFun for automatic playback. Manual controls are available.' : automatic && !between ? 'Waiting for a KaraFun performance. Pausing a singer will keep break music silent.' : 'Press Play in StageVotes to start each karaoke song. Break music never advances singers.'} Choose your playlist again after reloading or leaving this show. Use music you are authorized to play at your venue.</p>
-  </section>;
+  </details>;
 });
 export default SVBreakMusic;
+
