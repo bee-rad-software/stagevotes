@@ -1,4 +1,5 @@
 'use client';
+import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
 import SVShowAvailability from '@/components/singer/SVShowAvailability';
 import { canRequestSingerSong } from '@/lib/singerShowAvailability';
@@ -582,6 +583,7 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
 
     if (event?.is_show_ended) return <main className="sv-mobile-page">
       <SVShowAvailability event={event} eventId={eventId} showName={event.name} hasJoined={hasJoined} />
+      <SVInstallSingerApp />
       <SVEventPhotos key={eventId} eventId={eventId} readOnly />
     </main>;
 
@@ -655,7 +657,8 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
   />
 )}
 
-   <SVEventPhotos key={eventId} eventId={eventId} />
+   <SVInstallSingerApp />
+      <SVEventPhotos key={eventId} eventId={eventId} />
 
    <SVTipCard
       tipsEnabled={tipsEnabled}
@@ -785,3 +788,4 @@ onSelect={async (selected) => {
   </main>
 );
 }
+

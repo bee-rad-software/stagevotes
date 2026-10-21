@@ -1,4 +1,5 @@
 'use client';
+import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
 import Link from 'next/link';
 import { ReactNode } from 'react';
@@ -45,10 +46,12 @@ export default function SVSingerShell({
       <main className="sv-singer-shell-content">
         <SVSingerSignIn />
         {children}
+        <SVInstallSingerApp />
       </main>
 
       <SVSingerNavigation />
     </div>
   );
 }
+
 

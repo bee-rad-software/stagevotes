@@ -1,4 +1,5 @@
 'use client';
+import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
 import SVShowAvailability from '@/components/singer/SVShowAvailability';
 import { canRequestSingerSong } from '@/lib/singerShowAvailability';
@@ -3422,6 +3423,7 @@ function openCompetitionSong() {
   if (event?.is_show_ended) {
     return <main className="sv-mobile-page">
       <SVShowAvailability event={event} eventId={eventId} showName={event.name || venueName} hasJoined={hasJoined} />
+      <SVInstallSingerApp />
       <SVEventPhotos key={eventId} eventId={eventId} readOnly />
       <SVJudgeFeedback eventId={eventId} />
       {achievementOverlay}
@@ -4243,6 +4245,7 @@ currentArtist={
         </section>
       )}
 
+      <SVInstallSingerApp />
       <SVEventPhotos key={eventId} eventId={eventId} />
 
       <SVTipCard
@@ -4547,3 +4550,4 @@ currentArtist={
 </main>
   );
 }
+
