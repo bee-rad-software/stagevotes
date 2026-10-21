@@ -108,20 +108,6 @@ const displaySingerName = singerName
 
       <div className="sv-host-hero-top">
         <div>
-          <div
-            className={
-              hasCurrentSinger
-                ? 'sv-live-pill'
-                : 'sv-live-pill is-waiting'
-            }
-          >
-            <span />
-
-            {hasCurrentSinger
-              ? 'Live now'
-              : 'Waiting to begin'}
-          </div>
-
           <div className="sv-host-show-name">
             {showName}
           </div>
