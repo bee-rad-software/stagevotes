@@ -1,5 +1,8 @@
 'use client';
 
+import SVShowAvailability from '@/components/singer/SVShowAvailability';
+import { canRequestSingerSong } from '@/lib/singerShowAvailability';
+
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 
 import { useCallback, useEffect, useState } from 'react';
@@ -107,6 +110,7 @@ useEffect(() => {
       { event: '*', schema: 'public', table: 'performances', filter: `event_id=eq.${eventId}` },
       loadQueue
     )
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` }, loadEvent)
     .subscribe();
 
   return () => {
@@ -309,6 +313,7 @@ async function checkDuplicateSong(songTitle: string) {
 }
   
 async function addSelectedSongToRotation(selected: SVSongOption) {
+  if (!canAddAnotherSong) { setMessage('Song requests are closed for this show.'); return false; }
   const cleanName = singerName.trim();
 
   if (!cleanName) {
@@ -411,6 +416,7 @@ async function addSelectedSongToRotation(selected: SVSongOption) {
 }
 
   async function submitSignup() {
+    if (!canAddAnotherSong) { setMessage('Song requests are closed for this show.'); return; }
     setMessage('');
 
     const validSongs = songs.filter((song) => song.songTitle.trim());
@@ -534,6 +540,16 @@ const queueState =
     : 'waiting';
 
    const hasJoined = myIndex >= 0;
+   const canAddAnotherSong = canRequestSingerSong(event, hasJoined);
+   useEffect(() => {
+     if (event?.is_show_ended || (!editingPerformanceId && !canAddAnotherSong)) setSongSheetOpen(false);
+   }, [event?.is_show_ended, canAddAnotherSong, editingPerformanceId]);
+   useEffect(() => {
+     const refresh = () => { if (document.visibilityState === 'visible') void loadEvent(); };
+     window.addEventListener('focus', refresh);
+     const timer = window.setInterval(refresh, 60_000);
+     return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
+   }, [eventId]);
 
    const singerKey = (savedSingerName || singerName)
   .trim()
@@ -564,8 +580,14 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
     artist: performance.artist || '',
   }));
 
+    if (event?.is_show_ended) return <main className="sv-mobile-page">
+      <SVShowAvailability event={event} eventId={eventId} showName={event.name} hasJoined={hasJoined} />
+      <SVEventPhotos key={eventId} eventId={eventId} readOnly />
+    </main>;
+
     return (
   <main className="sv-mobile-page">
+   <SVShowAvailability event={event} eventId={eventId} showName={event?.name} hasJoined={hasJoined} />
    <SVSingerHero
   singerName={singerName}
   venueName={event?.venue_name || event?.name || "Tonight's Karaoke"}
@@ -589,6 +611,8 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
 
 {hasJoined ? (
 <SVSongsCard
+  canAddSong={canAddAnotherSong}
+  addSongLabel={event?.signups_open === false ? 'Signups closed' : 'Additional songs paused'}
   songs={mySavedSongs}
   singerName={savedSingerName || singerName}
   isCurrentSinger={isCurrentSinger}
@@ -607,7 +631,7 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
   }}
   message={message}
 />
-) : (
+) : event && event.signups_open !== false ? (
   <SVJoinCard
     singerName={singerName}
     songCount={songs.filter((song) => song.songTitle.trim()).length}
@@ -618,7 +642,7 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
     }}
     onJoin={submitSignup}
   />
-)}
+) : null}
 
 {hasJoined && (
   <SVSingerActions
@@ -641,7 +665,7 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
     />
 
 <SVBottomSheet
-  open={songSheetOpen}
+  open={songSheetOpen && !event?.is_show_ended && (Boolean(editingPerformanceId) || canAddAnotherSong)}
 title={editingPerformanceId === null ? 'Add Song' : 'Change Song'}
   onClose={() => {
     setSongSheetOpen(false);

@@ -5,6 +5,8 @@ type SongDraft = {
 
 type Props = {
   songs: SongDraft[];
+  canAddSong?: boolean;
+  addSongLabel?: string;
   singerName?: string;
   isCurrentSinger: boolean;
   onAddSong: () => void;
@@ -15,6 +17,8 @@ type Props = {
 
 export default function SVSongsCard({
   songs,
+  canAddSong = true,
+  addSongLabel = 'Song requests closed',
   singerName,
   isCurrentSinger,
   onAddSong,
@@ -85,9 +89,10 @@ export default function SVSongsCard({
   className="sv-song-add-button"
   type="button"
   onClick={onAddSong}
+  disabled={!canAddSong}
 >
   <span className="sv-song-add-icon">+</span>
-  Add another song
+  {canAddSong ? 'Add another song' : addSongLabel}
 </button>
 
 

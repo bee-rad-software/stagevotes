@@ -1,5 +1,8 @@
 'use client';
 
+import SVShowAvailability from '@/components/singer/SVShowAvailability';
+import { canRequestSingerSong } from '@/lib/singerShowAvailability';
+
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 
 import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
@@ -1322,10 +1325,23 @@ return Boolean(
   event?.competition_mode === 'tournament';
 
   const signupsAreOpen =
-  event?.signups_open !== false;
+  Boolean(event) && !event?.is_show_ended && event?.signups_open !== false;
 
   const additionalSongsAreOpen =
-  event?.additional_songs_open !== false;
+  Boolean(event) && !event?.is_show_ended && event?.additional_songs_open !== false;
+
+  useEffect(() => {
+    if (event?.is_show_ended || (!editingPerformanceId && (!signupsAreOpen || (hasJoined && !additionalSongsAreOpen)))) {
+      setSongSheetOpen(false);
+    }
+  }, [event?.is_show_ended, signupsAreOpen, additionalSongsAreOpen, hasJoined, editingPerformanceId]);
+
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === 'visible') void loadEvent(); };
+    window.addEventListener('focus', refresh);
+    const timer = window.setInterval(refresh, 60_000);
+    return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
+  }, [eventId]);
 
   const additionalSongsPaused =
   hasJoined && !additionalSongsAreOpen;
@@ -3062,6 +3078,7 @@ async function removeQueuedSong(
 }
 
 async function confirmSongSelection(song: SVSongOption) {
+  if (event?.is_show_ended) { setMessage('This show has ended. Song changes are closed.'); closeSongSheet(); return; }
   setPendingConflictSong(null);
   setSongConflictWarning('');
   setDuplicateWarning('');
@@ -3206,6 +3223,10 @@ function openCompetitionSong() {
   }
 
   function openAddSong() {
+    if (!canRequestSingerSong(event, hasJoined)) {
+      setMessage(event?.is_show_ended ? 'This show has ended.' : !signupsAreOpen ? 'Signups are closed for this show.' : 'The host has paused additional songs.');
+      return;
+    }
     setFavoriteSongs(getSingerFavoriteSongs().map((song) => ({ ...song, status: 'favorite' })));
     setEditingPerformanceId(null);
     setPerformanceNote('');
@@ -3332,8 +3353,84 @@ function openCompetitionSong() {
     !singerProfile &&
     !hasJoined;
 
+  const achievementOverlay = activeAchievementCelebration && (
+        <SVFirstPerformanceCelebration
+          singerName={
+            activeAchievementCelebration
+              .singerName
+          }
+          songTitle={
+            activeAchievementCelebration
+              .songTitle
+          }
+          venueName={
+            activeAchievementCelebration
+              .venueName
+          }
+          achievementTitle={
+            activeAchievementCelebration
+              .achievementTitle
+          }
+          achievementDescription={
+            activeAchievementCelebration
+              .achievementDescription
+          }
+          achievementIcon={
+            activeAchievementCelebration
+              .achievementIcon
+          }
+          isSecret={
+            activeAchievementCelebration
+              .isSecret
+          }
+          earnedCount={
+            activeAchievementCelebration
+              .earnedCount
+          }
+          earnedPercentage={
+            activeAchievementCelebration
+              .earnedPercentage
+          }
+          earnedBadges={
+            activeAchievementCelebration
+              .earnedBadges
+          }
+          totalBadges={
+            activeAchievementCelebration
+              .totalBadges
+          }
+          hasProfile={Boolean(
+            singerProfile?.id
+          )}
+          onDismiss={
+            dismissAchievementCelebration
+          }
+          onSave={() => {
+            if (singerProfile?.id) {
+              window.location.href =
+                `/my-stage?event=${eventId}`;
+
+              return;
+            }
+
+            window.location.href =
+              `/singer-signup?event=${eventId}&claim=first-performance`;
+          }}
+        />
+      );
+
+  if (event?.is_show_ended) {
+    return <main className="sv-mobile-page">
+      <SVShowAvailability event={event} eventId={eventId} showName={event.name || venueName} hasJoined={hasJoined} />
+      <SVEventPhotos key={eventId} eventId={eventId} readOnly />
+      <SVJudgeFeedback eventId={eventId} />
+      {achievementOverlay}
+    </main>;
+  }
+
   return (
     <main className="sv-mobile-page">
+      <SVShowAvailability event={event} eventId={eventId} showName={event?.name} hasJoined={hasJoined} />
       {isGuestEntry ? (
         <div className="sv-guest-venue-heading">
           <div className="sv-mobile-kicker">Welcome to StageVotes</div>
@@ -3501,7 +3598,7 @@ currentArtist={
         </section>
       )}
 
-      {!hasJoined && (
+      {!hasJoined && signupsAreOpen && (
         <section className={`sv-mobile-card${isGuestEntry ? ' sv-guest-entry-card' : ''}`}>
           {isGuestEntry && (
             <div className="sv-guest-entry-heading">
@@ -3702,7 +3799,7 @@ currentArtist={
   </section>
 )}
 
-      {(!isGuestEntry || myPerformances.length > 0) && (
+      {(signupsAreOpen || hasJoined || myPerformances.length > 0) && (!isGuestEntry || myPerformances.length > 0) && (
       <section className="sv-mobile-card">
         <div className="sv-mobile-card-header">
           <div>
@@ -3967,7 +4064,7 @@ currentArtist={
           }
         )}
 
-        {myPerformances.length === 0 && (
+        {myPerformances.length === 0 && signupsAreOpen && (
           <div className="sv-empty-song-state">
             <ListMusic size={28} />
 
@@ -4445,71 +4542,7 @@ currentArtist={
 
         </SVBottomSheet>
 
-            {activeAchievementCelebration && (
-        <SVFirstPerformanceCelebration
-          singerName={
-            activeAchievementCelebration
-              .singerName
-          }
-          songTitle={
-            activeAchievementCelebration
-              .songTitle
-          }
-          venueName={
-            activeAchievementCelebration
-              .venueName
-          }
-          achievementTitle={
-            activeAchievementCelebration
-              .achievementTitle
-          }
-          achievementDescription={
-            activeAchievementCelebration
-              .achievementDescription
-          }
-          achievementIcon={
-            activeAchievementCelebration
-              .achievementIcon
-          }
-          isSecret={
-            activeAchievementCelebration
-              .isSecret
-          }
-          earnedCount={
-            activeAchievementCelebration
-              .earnedCount
-          }
-          earnedPercentage={
-            activeAchievementCelebration
-              .earnedPercentage
-          }
-          earnedBadges={
-            activeAchievementCelebration
-              .earnedBadges
-          }
-          totalBadges={
-            activeAchievementCelebration
-              .totalBadges
-          }
-          hasProfile={Boolean(
-            singerProfile?.id
-          )}
-          onDismiss={
-            dismissAchievementCelebration
-          }
-          onSave={() => {
-            if (singerProfile?.id) {
-              window.location.href =
-                `/my-stage?event=${eventId}`;
-
-              return;
-            }
-
-            window.location.href =
-              `/singer-signup?event=${eventId}&claim=first-performance`;
-          }}
-        />
-      )}
+            {achievementOverlay}
     <SVJudgeFeedback eventId={eventId} />
 </main>
   );

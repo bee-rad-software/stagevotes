@@ -1,0 +1,15 @@
+.card { display: flex; align-items: flex-start; gap: 16px; border: 2px solid #fb923c; border-radius: 24px; padding: 26px; margin: 0 0 24px; background: linear-gradient(130deg,#352317,#111827); color: #f8fafc; text-align: left; }
+.ended { border-color: #64748b; background: linear-gradient(130deg,#1e293b,#0f172a); }
+.icon { display: grid; place-items: center; flex: 0 0 50px; width: 50px; height: 50px; border-radius: 15px; color: #fdba74; background: rgba(249,115,22,.14); }
+.ended .icon { color: #bae6fd; background: rgba(56,189,248,.12); }
+.content { min-width: 0; flex: 1; }
+.badge { display: inline-block; font-size: 11px; letter-spacing: .08em; font-weight: 900; color: #fed7aa; margin-bottom: 12px; }
+.ended .badge { color: #bae6fd; }
+.card h1, .card h2 { color: #f8fafc; font-size: clamp(25px,6vw,34px); line-height: 1.15; margin: 0 0 14px; font-weight: 900; }
+.card p { color: #cbd5e1; font-size: 15px; line-height: 1.6; margin: 0; }
+.card .showName { color: #94a3b8; font-size: 14px; margin-bottom: 9px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.actions a { display: inline-flex; align-items: center; justify-content: center; padding: 12px 15px; border: 1px solid #475569; border-radius: 12px; color: #e2e8f0; font-size: 14px; font-weight: 800; text-decoration: none; }
+.actions .primary { color: #071020; border-color: #f97316; background: #f97316; }
+.actions a:focus-visible { outline: 3px solid #38bdf8; outline-offset: 3px; }
+@media(max-width: 500px) { .card { padding: 21px; gap: 12px; flex-direction: column; } .actions { flex-direction: column; } .actions a { width: 100%; box-sizing: border-box; } }
