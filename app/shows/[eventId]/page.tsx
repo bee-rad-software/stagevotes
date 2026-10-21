@@ -1,5 +1,7 @@
 'use client';
 
+import SVEventPhotos from '@/components/photos/SVEventPhotos';
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -348,6 +350,7 @@ export default function ShowRecapPage() {
                 </ol>
               )}
             </section>
+            <SVEventPhotos key={eventId} eventId={eventId} readOnly />
             {mySongs.length === 0 && (
               <p className={styles.state}>Sang at this show? Sign in to your singer profile to see your personal recap. Guest songs appear on the device you used to join.</p>
             )}

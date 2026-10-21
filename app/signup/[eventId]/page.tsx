@@ -1,5 +1,7 @@
 'use client';
 
+import SVEventPhotos from '@/components/photos/SVEventPhotos';
+
 import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import {
   useEffect,
@@ -4143,6 +4145,8 @@ currentArtist={
           </button>
         </section>
       )}
+
+      <SVEventPhotos key={eventId} eventId={eventId} />
 
       <SVTipCard
         tipsEnabled={tipsEnabled}

@@ -1,5 +1,7 @@
 'use client';
 
+import SVEventPhotos from '@/components/photos/SVEventPhotos';
+
 import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -132,6 +134,7 @@ export default function SingerHistoryPage() {
             </div>
           ))}
       </section>
+    <SVEventPhotos key={eventId} eventId={eventId} readOnly />
     <SVJudgeFeedback eventId={eventId} />
     </main>
   );

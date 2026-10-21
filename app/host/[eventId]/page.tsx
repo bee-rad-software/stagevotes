@@ -1,4 +1,6 @@
 'use client'
+
+import SVEventPhotos from '@/components/photos/SVEventPhotos';
 import SVBreakMusic, { type BreakMusicHandle } from '@/components/host/SVBreakMusic';
 import {
   useCallback,
@@ -6510,6 +6512,8 @@ karafunPlayerOnline={karafunPlayerOnline}
     </>
   )}
 </div>
+
+<SVEventPhotos key={eventId} eventId={eventId} host />
 
 <details className="sv-host-song-history">
   <summary>

@@ -1,5 +1,7 @@
 'use client';
 
+import SVEventPhotos from '@/components/photos/SVEventPhotos';
+
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams } from 'next/navigation';
@@ -628,6 +630,8 @@ const mySavedSongs: SongEntry[] = myPerformances.map(
     }}
   />
 )}
+
+   <SVEventPhotos key={eventId} eventId={eventId} />
 
    <SVTipCard
       tipsEnabled={tipsEnabled}
