@@ -257,7 +257,8 @@ setIsFinalRound(
   official_score,
   status,
   tournament_entries!inner (
-          singer_profile_id,
+          guest_name,
+      singer_profile_id,
           singer_profiles (
             display_name,
             stage_name,
@@ -359,7 +360,7 @@ setIsFinalRound(
      * Normalize Supabase relation shapes.
      */
     const normalized: ResultRow[] =
-      (entryData || []).map(
+      (entryData || []).filter((entry: any) => entry.average_score != null || Number(entry.peoples_choice_votes || 0) > 0).map(
         (entry: any) => {
           const tournamentEntry =
             Array.isArray(
@@ -389,6 +390,7 @@ setIsFinalRound(
               ?.stage_name?.trim() ||
             singerProfile
               ?.display_name?.trim() ||
+            tournamentEntry?.guest_name?.trim() ||
             'Tournament Singer';
 
           return {

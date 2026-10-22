@@ -291,7 +291,8 @@ if (eventData.tournament_event_id) {
       average_score,
       tournament_entry_id,
       tournament_entries!inner (
-  singer_profile_id,
+  guest_name,
+      singer_profile_id,
   singer_profiles (
     stage_name,
     display_name,
@@ -422,7 +423,7 @@ const destinationLookup = new Map<
             singerName:
               profile?.stage_name?.trim() ||
               profile?.display_name?.trim() ||
-              'Tournament Singer',
+              entry?.guest_name?.trim() || 'Tournament Singer',
 
             photoUrl:
               profile?.photo_url || null,

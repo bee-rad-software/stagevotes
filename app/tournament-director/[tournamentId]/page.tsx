@@ -502,6 +502,7 @@ const {
     placement,
     average_score,
     tournament_entries!inner (
+      guest_name,
       singer_profile_id,
       singer_profiles (
         display_name,
@@ -604,7 +605,7 @@ if (eventEntryError) {
               ?.singer_profile_id || '',
           display_name:
             singerProfile
-              ?.display_name || null,
+              ?.display_name || tournamentEntry?.guest_name || null,
           stage_name:
             singerProfile
               ?.stage_name || null,

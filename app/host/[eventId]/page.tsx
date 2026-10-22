@@ -887,7 +887,7 @@ async function endShow() {
     return;
   }
 
-  if (olympicScoring) {
+  if (olympicScoring || (event as any)?.competition_mode === 'tournament') {
     const { error } = await supabase.rpc('validate_olympic_event', { p_event_id: eventId });
     if (error) { alert(error.message); return; }
   }
@@ -1063,8 +1063,9 @@ if (processingError) {
   );
 
   alert(
-    `The show ended, but post-show processing failed: ${processingError.message}`
+    `The show ended, but results could not be finalized: ${processingError.message}`
   );
+  return;
 } else {
   console.log(
     'Completed event processing:',
@@ -5382,6 +5383,7 @@ useEffect(() => {
   >();
 
   performances.forEach((p) => {
+    if (p.status === 'skipped' || (p.status !== 'completed' && p.id !== event?.current_performance_id)) return;
     const pv = votes.filter((v) => v.performance_id === p.id);
 
     if (pv.length === 0) return;

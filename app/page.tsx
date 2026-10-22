@@ -769,6 +769,7 @@ if (
     tournament_entry_id,
     seed,
     tournament_entries!inner (
+      guest_name,
       singer_profile_id,
       singer_profiles (
         display_name,
@@ -815,10 +816,12 @@ const seededPerformances =
       const singerName =
         singerProfile?.stage_name?.trim() ||
         singerProfile?.display_name?.trim() ||
-        'Tournament Singer';
+        tournamentEntry?.guest_name?.trim() ||
+            'Tournament Singer';
 
       return {
         event_id: newEventId,
+        tournament_entry_id: entry.tournament_entry_id,
         account_id: accountId,
         singer_profile_id:
           tournamentEntry?.singer_profile_id ||
@@ -834,7 +837,7 @@ const seededPerformances =
   )
   .filter(
     (performance) =>
-      performance.singer_profile_id
+      performance.tournament_entry_id
   );
 
 if (seededPerformances.length > 0) {

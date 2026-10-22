@@ -341,6 +341,7 @@ export default function PublicTournamentPage() {
           placement,
           average_score,
           tournament_entries!inner (
+            guest_name,
             tournament_id,
             singer_profile_id,
             singer_profiles (
@@ -415,7 +416,7 @@ export default function PublicTournamentPage() {
                     ?.stage_name || null,
                 display_name:
                   singerProfile
-                    ?.display_name || null,
+                    ?.display_name || tournamentEntry?.guest_name || null,
                 photo_url:
                   singerProfile
                     ?.photo_url || null,
