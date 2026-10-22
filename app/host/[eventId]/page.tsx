@@ -1,6 +1,7 @@
 'use client'
 
 import noteSharingStyles from './judge-note-sharing.module.css';
+import { awardsPath } from '@/lib/awardsRoute';
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 import SVBreakMusic, { type BreakMusicHandle } from '@/components/host/SVBreakMusic';
 import {
@@ -5793,7 +5794,7 @@ onOpenKaraFunDisplay={() => {
 
   onAwards={() =>
     window.open(
-      `/awards/${eventId}`,
+      awardsPath(eventId, (event as any)?.competition_mode),
       '_blank'
     )
   }
@@ -5847,7 +5848,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     }
     onOpenAwards={() =>
       window.open(
-        `/awards/${eventId}`,
+        awardsPath(eventId, (event as any)?.competition_mode),
         '_blank'
       )
     }
