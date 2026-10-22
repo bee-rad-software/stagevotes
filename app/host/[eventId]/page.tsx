@@ -167,6 +167,8 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   }>>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(true);
 const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
+const [savingContestVisibility, setSavingContestVisibility] = useState(false);
+const [contestVisibilityMessage, setContestVisibilityMessage] = useState('');
   const [copiedLink, setCopiedLink] = useState('');
   const [accountId, setAccountId] = useState('');
 const [staticSignupQr, setStaticSignupQr] = useState(false);
@@ -6292,16 +6294,41 @@ karafunPlayerOnline={karafunPlayerOnline}
   </details>
 )}
 
+{(event?.show_peoples_choice_qr === true || Number((event as any)?.peoples_choice_weight) > 0 || peoplesChoiceResults.length > 0) && (
+  <details className="sv-host-song-history">
+    <summary>
+      <span>👏 Singer People’s Choice</span>
+      <span className="sv-host-song-history-count">{peoplesChoiceResults.reduce((sum, singer) => sum + singer.votes, 0)} votes</span>
+    </summary>
+    <div style={{ padding: '16px 20px' }}>
+      <p style={{ marginTop: 0, color: '#94a3b8', fontSize: 14 }}>Audience votes for karaoke singers. Updates as votes arrive.</p>
+      {peoplesChoiceResults.length === 0 ? <p>No audience votes yet.</p> : <>
+        <p style={{ color: '#7dd3fc', fontWeight: 700 }}>
+          {peoplesChoiceResults.filter(singer => singer.votes === peoplesChoiceResults[0].votes).length > 1 ? 'Tied leaders: ' : 'Current leader: '}
+          {peoplesChoiceResults.filter(singer => singer.votes === peoplesChoiceResults[0].votes).map(singer => singer.singer_name).join(', ')}
+        </p>
+        <ol className="sv-host-song-history-list" aria-label="Singer audience vote totals">
+          {peoplesChoiceResults.map(singer => <li key={singer.singer_name}>
+            <div><strong>{singer.singer_name}</strong></div>
+            <strong>{singer.votes} {singer.votes === 1 ? 'vote' : 'votes'}</strong>
+          </li>)}
+        </ol>
+      </>}
+    </div>
+  </details>
+)}
+{(event as any)?.show_side_contest_controls === true && (
 <details className="sv-host-song-history" style={{ margin: '20px 0' }}>
   <summary>
-    <span>🏆 People’s Choice contest</span>
-    <span className="sv-host-song-history-count">Optional</span>
+    <span>🏆 Separate audience contest</span>
+    <span className="sv-host-song-history-count">Enabled</span>
   </summary>
   <div style={{ padding: 20 }}>
     <p style={{ marginTop: 0 }}>Run a costume contest or another audience vote alongside karaoke, with its own contestants and QR code.</p>
     <Link href={`/host/${eventId}/contest`} className="btn">Manage contest →</Link>
   </div>
 </details>
+)}
 
 {event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
 {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
@@ -6432,7 +6459,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   <span><strong>{completedPerformanceCount}</strong> sung</span>
   {event?.judging_enabled === true && <><span><strong>{judgeBallotCount}</strong> judge ballots</span><span>Leader: <strong>{leaderboard[0]?.singer_name || 'No votes yet'}</strong></span></>}
 </div>
-<details className="sv-host-song-history"><summary><span>⚙️ Show settings</span><span className="sv-host-song-history-count">Song choices</span></summary>
+<details className="sv-host-song-history"><summary><span>⚙️ Show settings</span><span className="sv-host-song-history-count">Preferences</span></summary>
 <div style={{ padding:16 }}>
     <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
       <input
@@ -6449,6 +6476,40 @@ karafunPlayerOnline={karafunPlayerOnline}
         ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
         : 'Available when a KaraFun catalog is connected.'}
     </p>
+    <div style={{ borderTop: '1px solid #334155', marginTop: 20, paddingTop: 18 }}>
+      <label className={noteSharingStyles.setting}>
+        <span className={noteSharingStyles.copy}>
+          <strong>Show separate contest controls</strong>
+          <span>For a costume contest or another audience vote alongside karaoke.</span>
+        </span>
+        <input className={noteSharingStyles.toggle} type="checkbox" role="switch"
+          aria-label="Show separate audience contest controls"
+          checked={(event as any)?.show_side_contest_controls === true}
+          disabled={savingContestVisibility}
+          onChange={async (e) => {
+            const enabled = e.target.checked;
+            setSavingContestVisibility(true);
+            setContestVisibilityMessage('');
+            try {
+              const accountId = await getMyAccountId();
+              if (!accountId) throw new Error('Please sign in again.');
+              const { data, error } = await supabase.from('events')
+                .update({ show_side_contest_controls: enabled })
+                .eq('id', eventId).eq('account_id', accountId).select('id').single();
+              if (error || !data) throw error || new Error('Unable to save show settings.');
+              setEvent(previous => previous ? { ...previous, show_side_contest_controls: enabled } : previous);
+              setContestVisibilityMessage(enabled ? 'Separate contest controls are visible.' : 'Separate contest controls are hidden.');
+            } catch (error: any) {
+              setContestVisibilityMessage(error?.code === 'PGRST204' || error?.code === '42703'
+                ? 'Apply the contest visibility SQL update before changing this option.'
+                : error?.message || 'Unable to save show settings.');
+            } finally { setSavingContestVisibility(false); }
+          }} />
+      </label>
+      <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 0 }}>Separate contestants and votes. Hiding these controls does not close an existing contest.</p>
+      {(event as any)?.show_side_contest_controls === true && <p><Link href={`/host/${eventId}/contest`} className="btn">Manage separate contest →</Link></p>}
+      {contestVisibilityMessage && <p role="status">{contestVisibilityMessage}</p>}
+    </div>
   </div></details>
 
 <SVEventPhotos key={eventId} eventId={eventId} host />
