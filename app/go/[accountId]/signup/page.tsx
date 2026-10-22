@@ -1,161 +1,67 @@
 'use client';
 
-import { useEffect } from 'react';
-import {
-  useParams,
-  useRouter,
-} from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { chooseSignupEvent } from '@/lib/chooseSignupEvent';
 
 export default function StaticSignupRedirect() {
   const params = useParams();
   const router = useRouter();
+  const accountId = typeof params.accountId === 'string' ? params.accountId : '';
+  const [status, setStatus] = useState<'loading' | 'empty' | 'error'>('loading');
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    loadCurrentEvent();
-  }, []);
+    let active = true;
+    const controller = new AbortController();
+    setStatus('loading');
+    const timeout = setTimeout(() => {
+      if (active) setStatus('error');
+      controller.abort();
+    }, 12000);
 
-  async function loadCurrentEvent() {
-    const accountId =
-      params.accountId as string;
-
-    /*
-     * First check the venue's saved current event.
-     */
-    const {
-      data: venue,
-      error: venueError,
-    } = await supabase
-      .from('venues')
-      .select('current_event_id')
-      .eq('account_id', accountId)
-      .not('current_event_id', 'is', null)
-      .limit(1)
-      .maybeSingle();
-
-    if (venueError) {
-      console.error(
-        'Unable to resolve static signup venue:',
-        venueError
-      );
-    }
-
-    /*
-     * Use the saved event ONLY if it is:
-     *
-     * 1. Active
-     * 2. Not archived
-     * 3. Not ended
-     * 4. NOT a tournament
-     */
-    if (venue?.current_event_id) {
-      const {
-        data: currentEvent,
-      } = await supabase
-        .from('events')
-        .select(
-          'id, is_archived, is_show_ended, competition_mode'
-        )
-        .eq(
-          'id',
-          venue.current_event_id
-        )
-        .eq('account_id', accountId)
-        .maybeSingle();
-
-      const isRegularShow =
-        currentEvent &&
-        !currentEvent.is_archived &&
-        !currentEvent.is_show_ended &&
-        currentEvent.competition_mode !==
-          'tournament';
-
-      if (isRegularShow) {
-        router.replace(
-          `/signup/${currentEvent.id}`
-        );
-
-        return;
+    async function resolve() {
+      try {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(accountId)) {
+          throw new Error('Invalid signup link.');
+        }
+        const [venueResult, eventResult] = await Promise.all([
+          supabase.from('venues').select('current_event_id')
+            .eq('account_id', accountId).not('current_event_id', 'is', null)
+            .abortSignal(controller.signal),
+          supabase.from('events').select('id,created_at,is_archived,is_show_ended')
+            .eq('account_id', accountId)
+            .not('is_archived', 'is', true).not('is_show_ended', 'is', true)
+            .order('created_at', { ascending: false }).abortSignal(controller.signal),
+        ]);
+        if (eventResult.error) throw eventResult.error;
+        // A missing venue pointer can fall back to the account's latest active show.
+        const event = chooseSignupEvent(eventResult.data || [], (venueResult.data || []).map(v => v.current_event_id));
+        if (!active || controller.signal.aborted) return;
+        if (!event) { setStatus('empty'); return; }
+        router.replace(`/signup/${event.id}`);
+      } catch (error) {
+        if (active && !controller.signal.aborted) {
+          console.error('Unable to open singer signup:', error);
+          setStatus('error');
+        }
+      } finally {
+        clearTimeout(timeout);
       }
     }
-
-    /*
-     * The venue pointer is stale or points
-     * at a tournament.
-     *
-     * Find the newest ACTIVE REGULAR karaoke
-     * event for this account.
-     */
-    const {
-      data: activeEvents,
-      error: eventError,
-    } = await supabase
-      .from('events')
-      .select(
-        'id, name, competition_mode, created_at'
-      )
-      .eq('account_id', accountId)
-      .eq('is_archived', false)
-      .eq('is_show_ended', false)
-      .order('created_at', {
-        ascending: false,
-      })
-      .limit(20);
-
-    if (eventError) {
-      console.error(
-        'Unable to find active signup event:',
-        eventError
-      );
-
-      return;
-    }
-
-    /*
-     * Ignore tournament events.
-     */
-    const activeEvent =
-      (activeEvents || []).find(
-        (event) =>
-          event.competition_mode !==
-          'tournament'
-      );
-
-    if (!activeEvent) {
-      console.warn(
-        'No active regular karaoke show found.'
-      );
-
-      return;
-    }
-
-    console.log(
-      'Static signup routing to:',
-      activeEvent.name,
-      activeEvent.id
-    );
-
-    /*
-     * Repair the venue pointer.
-     */
-    await supabase
-      .from('venues')
-      .update({
-        current_event_id:
-          activeEvent.id,
-      })
-      .eq('account_id', accountId);
-
-    router.replace(
-      `/signup/${activeEvent.id}`
-    );
-  }
+    void resolve();
+    return () => { active = false; clearTimeout(timeout); controller.abort(); };
+  }, [accountId, router, attempt]);
 
   return (
     <main className="container">
-      <div className="card">
-        <h1>Loading Signup...</h1>
-        <p>Please wait.</p>
+      <div className="card" role="status">
+        <h1>{status === 'loading' ? 'Opening singer signup…' : status === 'empty' ? 'No active show right now' : 'Unable to load signup'}</h1>
+        <p>{status === 'loading' ? 'Finding this venue’s current show.' : status === 'empty'
+          ? 'There isn’t an active show available through this link. Check with your host, or try again when the show opens.'
+          : 'Please check your connection and try again. If this continues, ask your host for the show’s direct signup link.'}</p>
+        {status !== 'loading' && <button type="button" className="btn" onClick={() => setAttempt(value => value + 1)}>Try again</button>}
       </div>
     </main>
   );
