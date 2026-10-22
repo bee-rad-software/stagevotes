@@ -93,7 +93,7 @@ async function loadEvent() {
   }
 
   async function loadVotes() {
-    const { data } = await supabase.from('votes').select('*').eq('event_id', eventId);
+    const { data } = await supabase.from('scoring_votes').select('*').eq('event_id', eventId);
     setVotes(data || []);
   }
 
@@ -391,3 +391,4 @@ const uniqueSingerCount = new Set(
   </main>
 );
 }
+

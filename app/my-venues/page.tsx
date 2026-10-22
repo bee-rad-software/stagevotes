@@ -207,7 +207,7 @@ if (venueIds.length > 0) {
         data: voteData,
         error: voteError,
       } = await supabase
-        .from('votes')
+        .from('scoring_votes')
         .select('performance_id, score')
         .in(
           'performance_id',
@@ -455,3 +455,4 @@ all in one place.
     </SVSingerShell>
   );
 }
+

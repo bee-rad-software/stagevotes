@@ -1,4 +1,5 @@
 'use client';
+import {defaultPointCategories,validatePointCategories,type PointCategory} from '@/lib/tournamentScoring';
 
 import {
   FormEvent,
@@ -70,6 +71,8 @@ type TournamentEvent = {
   advancement_count: number | null;
   expected_judges: number | null;
   olympic_scoring?: boolean;
+  scoring_mode?: string;
+  scoring_categories?: PointCategory[];
   venues:
     | {
         id: string;
@@ -195,6 +198,8 @@ export default function TournamentDirectorDetailPage() {
   const [rounds, setRounds] =
     useState<TournamentRound[]>([]);
 
+  const [eventScoringMode,setEventScoringMode]=useState('stars');
+  const [eventPointCategories,setEventPointCategories]=useState<PointCategory[]>(defaultPointCategories);
   const [eventOlympicScoring, setEventOlympicScoring] = useState(false);
 
   const [loading, setLoading] =
@@ -808,6 +813,8 @@ function openEventForm(
         : ''
     );
 
+    setEventScoringMode(tournamentEvent.scoring_mode || 'stars');
+    setEventPointCategories(tournamentEvent.scoring_categories?.length ? tournamentEvent.scoring_categories : defaultPointCategories);
     setEventOlympicScoring(tournamentEvent.olympic_scoring === true);
     setEventExpectedJudges(
   tournamentEvent.expected_judges
@@ -835,6 +842,7 @@ function openEventForm(
 
   setEventExpectedJudges('3');
   setEventOlympicScoring(false);
+  setEventScoringMode('stars');setEventPointCategories(defaultPointCategories);
 }
 
 function openEditRound(round: TournamentRound) {
@@ -1004,7 +1012,10 @@ const hostAccountId =
     return;
   }
 
+  let rubric:PointCategory[]=[];
+  try{if(eventScoringMode==='points')rubric=validatePointCategories(eventPointCategories);}catch(error){setMessage(error instanceof Error?error.message:'Invalid scoring categories');setSavingEvent(false);return;}
   const eventValues = {
+  scoring_mode:eventScoringMode,scoring_categories:rubric,
   ...((eventOlympicScoring || editingTournamentEvent?.olympic_scoring !== undefined)
     ? { olympic_scoring: eventOlympicScoring } : {}),
   tournament_id: tournamentId,
@@ -1902,6 +1913,22 @@ const incomingSingerCount =
     competitor.
   </span>
 </label>
+
+      <fieldset disabled={Boolean(editingTournamentEvent?.event_id)} style={{border:'1px solid #334155',borderRadius:12,padding:16}}>
+        <legend>Scoring system</legend>
+        <label>Score format<select value={eventScoringMode} onChange={e=>setEventScoringMode(e.target.value)}><option value="stars">Five stars per category (current system)</option><option value="points">100-point category scorecard</option></select></label>
+        {eventScoringMode==='points' && <div style={{display:'grid',gap:12,marginTop:14}}>
+          <p>Assign a maximum to each category. Judges enter whole-number points from 0 to that maximum.</p>
+          {eventPointCategories.map((category,index)=><div key={index} style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <label style={{flex:'1 1 180px'}}>Category name<input maxLength={80} value={category.name} onChange={e=>setEventPointCategories(rows=>rows.map((r,i)=>i===index?{...r,name:e.target.value}:r))}/></label>
+            <label style={{width:110}}>Max points<input type="number" min={1} max={100} step={1} value={category.maxPoints} onChange={e=>setEventPointCategories(rows=>rows.map((r,i)=>i===index?{...r,maxPoints:Number(e.target.value)}:r))}/></label>
+            <button type="button" disabled={eventPointCategories.length===1} onClick={()=>setEventPointCategories(rows=>rows.filter((_,i)=>i!==index))}>Remove</button>
+          </div>)}
+          <strong style={{color:eventPointCategories.reduce((s,c)=>s+c.maxPoints,0)===100?'#6ee7b7':'#fbbf24'}}>Total: {eventPointCategories.reduce((s,c)=>s+c.maxPoints,0)} / 100</strong>
+          <button type="button" disabled={eventPointCategories.length>=12} onClick={()=>setEventPointCategories(rows=>[...rows,{name:'',maxPoints:0}])}>Add category</button>
+        </div>}
+        <small style={{display:'block',marginTop:10}}>Configure before launch. Scoring categories are fixed once the show is launched.</small>
+      </fieldset>
 
       <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <input type="checkbox" checked={eventOlympicScoring}

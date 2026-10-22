@@ -1,6 +1,8 @@
+import {validatePointCategories,type PointCategory} from '@/lib/tournamentScoring';
 import { supabase } from '@/lib/supabase';
 
 type CreateStageVotesEventInput = {
+  scoringCategories?: PointCategory[];
   accountId: string;
   venueId?: string;
   venueName: string;
@@ -18,6 +20,7 @@ type CreateStageVotesEventResult = {
 };
 
 export async function createStageVotesEvent({
+  scoringCategories,
   accountId,
   venueId,
   venueName,
@@ -29,10 +32,12 @@ export async function createStageVotesEvent({
   showVotingQR,
   showPeoplesChoiceQR,
 }: CreateStageVotesEventInput): Promise<CreateStageVotesEventResult> {
+  const pointRubric=scoringCategories?validatePointCategories(scoringCategories):null;
+  if(pointRubric&&!judgingEnabled)throw Error('This tournament requires judging for its 100-point scorecard.');
   const cleanName = name.trim();
   const cleanVenueName = venueName.trim();
 
-  const validCategories = categories
+  const validCategories = (pointRubric ? pointRubric.map(c=>c.name) : categories)
     .map((category) => category.trim())
     .filter(Boolean);
 
@@ -60,6 +65,7 @@ export async function createStageVotesEvent({
   } = await supabase
     .from('events')
     .insert({
+      ...(pointRubric?{scoring_mode:'points'}:{}),
       name: cleanName,
       venue: cleanVenueName,
       venue_id: venueId || null,
@@ -100,7 +106,8 @@ export async function createStageVotesEvent({
       await supabase
         .from('vote_categories')
         .insert(
-          validCategories.map((category) => ({
+          validCategories.map((category,index) => ({
+            ...(pointRubric?{max_points:pointRubric[index].maxPoints}:{}),
             event_id: event.id,
             category_name: category,
           }))

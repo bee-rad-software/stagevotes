@@ -1183,13 +1183,8 @@ async function loadPeoplesChoice() {
   if (!accountId) return;
 
   const { data, error } = await supabase
-    .from('votes')
-    .select(`
-      *,
-      vote_categories!votes_category_id_fkey (
-        category_name
-      )
-    `)
+    .from('scoring_votes')
+    .select('*')
     .eq('event_id', eventId)
     .eq('account_id', accountId);
 
@@ -2638,7 +2633,7 @@ async function controlKaraFun(kind:'pause'|'skip') {
    const [judges,cats,ballots]=await Promise.all([
     supabase.from('tournament_events').select('expected_judges').eq('id',(event as any).tournament_event_id).maybeSingle(),
     supabase.from('vote_categories').select('id').eq('event_id',eventId),
-    supabase.from('votes').select('device_id,category_id').eq('event_id',eventId).eq('performance_id',current.id)
+    supabase.from('scoring_votes').select('device_id,category_id').eq('event_id',eventId).eq('performance_id',current.id)
    ]);
    if(judges.error||cats.error||ballots.error)throw new Error('Unable to verify judge ballots. Please try again.');
    const expected=judges.data?.expected_judges;
@@ -4605,7 +4600,7 @@ async function nextSinger(automatic = false) {
         supabase.from('tournament_events').select('expected_judges')
           .eq('id', (event as any).tournament_event_id).maybeSingle(),
         supabase.from('vote_categories').select('id').eq('event_id', eventId),
-        supabase.from('votes').select('device_id, category_id')
+        supabase.from('scoring_votes').select('device_id, category_id')
           .eq('event_id', eventId).eq('performance_id', completedId),
       ]);
 
@@ -5994,7 +5989,7 @@ karafunPlayerOnline={karafunPlayerOnline}
       ? 'Final Score'
       : 'Current Average'}
     {': '}
-    {currentAverageScore.toFixed(2)} / 5
+    {(currentAverageScore * (event?.scoring_mode==='points'?20:1)).toFixed(2)} / {event?.scoring_mode==='points'?100:5}
   </div>
 )}
 
@@ -7170,5 +7165,6 @@ if (added) {
 </SVShell>
   );
     }
+
 
 

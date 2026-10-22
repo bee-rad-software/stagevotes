@@ -263,7 +263,7 @@ if (performanceError) {
       data: voteData,
       error: voteError,
     } = await supabase
-      .from('votes')
+      .from('scoring_votes')
       .select('performance_id, score')
       .in(
         'performance_id',
@@ -377,7 +377,7 @@ if (venuePerformanceError) {
       data: venueVoteData,
       error: venueVoteError,
     } = await supabase
-      .from('votes')
+      .from('scoring_votes')
       .select(`
         performance_id,
         score
@@ -638,7 +638,7 @@ if (queueError) {
 
 if (activeEventData) {
   const { data: voteData, error: voteError } = await supabase
-    .from('votes')
+    .from('scoring_votes')
     .select(`
       performance_id,
       score
@@ -1551,3 +1551,4 @@ async function toggleFollowVenue() {
   </SVSingerShell>
   );
 }
+

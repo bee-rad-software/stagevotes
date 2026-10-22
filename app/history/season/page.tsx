@@ -81,7 +81,7 @@ const { data: singerProfiles } =
     : { data: [] };
 
     const { data: votes } = await supabase
-      .from('votes')
+      .from('scoring_votes')
       .select('performance_id, score')
       .in('event_id', eventIds);
 
@@ -420,3 +420,4 @@ stats[key] = {
   </SVShell>
   );
 }
+

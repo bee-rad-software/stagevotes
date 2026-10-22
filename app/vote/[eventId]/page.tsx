@@ -10,6 +10,7 @@ type VoteCategory = {
   id: string;
   event_id: string;
   category_name: string;
+  max_points?: number;
 };
 
 function getPerformanceName(
@@ -100,16 +101,16 @@ const [scores, setScores] = useState<Record<string, number>>({});
     setSubmitted(false);
     if (!current?.id) return;
     let cancelled = false;
-    supabase.from('votes').select('category_id,score').eq('performance_id', current.id)
+    supabase.from('votes').select('category_id,score,points_awarded').eq('performance_id', current.id)
       .eq('device_id', getDeviceId()).then(({ data }) => {
         if (!cancelled && data?.length) {
           setSubmitted(true);
-          setScores(Object.fromEntries(data.filter(v => v.category_id).map(v => [v.category_id, v.score])));
+          setScores(Object.fromEntries(data.filter(v => v.category_id).map(v => [v.category_id, event?.scoring_mode==='points' ? v.points_awarded : v.score])));
           setMessage('Thanks. Your ballot was already submitted.');
         }
       });
     return () => { cancelled = true; };
-  }, [current?.id]);
+  }, [current?.id, event?.scoring_mode]);
 
  const [currentCategoryIndex, setCurrentCategoryIndex] =
   useState(0); 
@@ -130,7 +131,7 @@ useEffect(() => {
   setScores({});
   setMessage('');
   setCurrentCategoryIndex(0);
-}, [current?.id]);
+}, [current?.id, event?.scoring_mode]);
 
   async function load() {
     const { data: ev } = await supabase.from('events').select('*').eq('id', eventId).single();
@@ -223,13 +224,14 @@ async function submitCategoryVotes() {
     return;
   }
 
-  const missingScore = categories.some((category) => !scores[category.id]);
+  const missingScore = categories.some((category) => !Number.isInteger(scores[category.id]) || scores[category.id] < (event?.scoring_mode==='points'?0:1) || scores[category.id] > (event?.scoring_mode==='points'?(category.max_points||0):5));
 
   if (missingScore) {
     setMessage('Please vote in every category.');
     return;
   }
 
+  if(event?.scoring_mode==='points'&&!judgeFeatures){setMessage('Judge check-in is required for this scorecard. Please reload.');return;}
   if (judgeFeatures) {
     if (!judgeReady) { setMessage('Check in with your judge name first.'); return; }
     setSubmitting(true);
@@ -294,7 +296,7 @@ const singerPhotoUrl =
 const activeCategory =
   categories[currentCategoryIndex] || null;
 
-const completed = Object.keys(scores).length;
+const completed = categories.filter(c=>Number.isInteger(scores[c.id]) && scores[c.id]>=(event?.scoring_mode==='points'?0:1) && scores[c.id]<=(event?.scoring_mode==='points'?(c.max_points||5):5)).length;
 const allCategoriesScored = completed === categories.length;
   
   return (
@@ -463,12 +465,12 @@ const allCategoriesScored = completed === categories.length;
     <span
       key={category.id}
       className={
-        scores[category.id]
+        Number.isFinite(scores[category.id])
           ? styles.progressStepComplete
           : ''
       }
     >
-      {scores[category.id] ? '✓' : '•'}
+      {Number.isFinite(scores[category.id]) ? '✓' : '•'}
     </span>
   ))}
 </div>
@@ -502,6 +504,12 @@ const allCategoriesScored = completed === categories.length;
         </div>
       </div>
 
+      {event?.scoring_mode==='points' ? <div style={{display:'grid',gap:14}}>
+        <label>Points for {activeCategory.category_name} (0–{activeCategory.max_points})
+          <input type="number" inputMode="numeric" min={0} max={activeCategory.max_points} step={1} value={scores[activeCategory.id] ?? ''} disabled={!event?.is_voting_open || submitted} onChange={e=>{const value=e.target.value;setScores(previous=>{const next={...previous};if(value==='')delete next[activeCategory.id];else next[activeCategory.id]=Number(value);return next;});}} style={{fontSize:26,padding:14,width:'100%'}}/>
+        </label>
+        {currentCategoryIndex<categories.length-1&&<button type="button" disabled={!Number.isInteger(scores[activeCategory.id])||scores[activeCategory.id]<0||scores[activeCategory.id]>(activeCategory.max_points||0)} onClick={()=>setCurrentCategoryIndex(i=>i+1)}>Next category →</button>}
+      </div> : <>
       <div className={styles.scoreButtons}>
         {[1, 2, 3, 4, 5].map((score) => (
           <button
@@ -551,6 +559,7 @@ const allCategoriesScored = completed === categories.length;
           </button>
         ))}
       </div>
+      </>}
 
       {currentCategoryIndex > 0 && (
         <button
@@ -601,23 +610,23 @@ const allCategoriesScored = completed === categories.length;
           </span>
 
           <strong>
-            ★ {scores[category.id]} / 5
+            {event?.scoring_mode==='points'?'':'★ '}{scores[category.id]} / {event?.scoring_mode==='points'?category.max_points:5}
           </strong>
         </div>
       ))}
     </div>
 
     <div className={styles.ballotAverage}>
-      <span>Judge Average</span>
+      <span>{event?.scoring_mode==='points'?'Judge total':'Judge Average'}</span>
 
       <strong>
         {(
           Object.values(scores).reduce(
             (sum, score) => sum + score,
             0
-          ) / categories.length
+          ) / (event?.scoring_mode==='points'?1:categories.length)
         ).toFixed(2)}
-        {' / 5'}
+        {event?.scoring_mode==='points'?' / 100':' / 5'}
       </strong>
     </div>
   </article>
@@ -684,3 +693,4 @@ one official judge score for {getPerformanceName(current)}.
   </main>
 );
 }
+

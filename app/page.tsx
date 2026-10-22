@@ -1,4 +1,5 @@
 'use client';
+import type {PointCategory} from '@/lib/tournamentScoring';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -66,6 +67,8 @@ type TournamentEvent = {
   advancement_count: number | null;
   expected_judges: number | null;
   olympic_scoring?: boolean;
+  scoring_mode?: string;
+  scoring_categories?: PointCategory[];
   event_id: string | null;
 
   venues:
@@ -575,9 +578,9 @@ async function launchAssignedTournament() {
     }
 
     const cleanCategories =
-      tournamentCategories
+      (assignedEvent.scoring_mode==='points' ? (assignedEvent.scoring_categories||[]).map((c:PointCategory)=>c.name) : tournamentCategories)
         .map(
-          (category) =>
+          (category:string) =>
             category.trim()
         )
         .filter(Boolean);
@@ -591,12 +594,14 @@ async function launchAssignedTournament() {
       );
     }
 
+    if(assignedEvent.scoring_mode==='points'&&!tournamentJudgingEnabled)throw Error('Enable judging for this 100-point tournament.');
     if (assignedEvent.olympic_scoring && (!tournamentJudgingEnabled || tournamentExpectedJudges < 5)) {
       throw new Error('This event uses Olympic scoring. Enable judging and confirm at least five judges before launching.');
     }
 
     const result =
       await createStageVotesEvent({
+        scoringCategories: assignedEvent.scoring_mode==='points' ? assignedEvent.scoring_categories : undefined,
         accountId,
         venueName:
           venue.name,
@@ -613,7 +618,7 @@ async function launchAssignedTournament() {
 
         tiebreakerCategory:
           tournamentJudgingEnabled
-            ? tournamentTiebreaker ||
+            ? (cleanCategories.includes(tournamentTiebreaker) ? tournamentTiebreaker : cleanCategories[0]) ||
               cleanCategories[0] ||
               ''
             : '',
@@ -1636,7 +1641,7 @@ setTournamentExpectedJudges(
             Judging categories
           </label>
 
-          {tournamentCategories.map(
+          {setupTournamentEvent.scoring_mode==='points' ? <p>100-point scorecard: {(setupTournamentEvent.scoring_categories||[]).map(c=>`${c.name}: ${c.maxPoints}`).join(' · ')}. Configured by the tournament director.</p> : tournamentCategories.map(
             (category, index) => (
               <input
                 key={index}
@@ -1674,7 +1679,7 @@ setTournamentExpectedJudges(
                 )
               }
             >
-              {tournamentCategories
+              {(setupTournamentEvent.scoring_mode==='points' ? (setupTournamentEvent.scoring_categories||[]).map(c=>c.name) : tournamentCategories)
                 .filter(Boolean)
                 .map((category) => (
                   <option
@@ -1938,3 +1943,4 @@ setTournamentExpectedJudges(
     </div>
   );
 }
+

@@ -147,7 +147,7 @@ export default function ShowRecapPage() {
 
       let judgeVotes: Vote[] = [];
       if (event.judging_enabled && ownIds.length) {
-        const { data: voteRows } = await supabase.from('votes')
+        const { data: voteRows } = await supabase.from('scoring_votes')
           .select('performance_id, score').in('performance_id', ownIds);
         judgeVotes = (voteRows || []) as Vote[];
       }
@@ -360,3 +360,4 @@ export default function ShowRecapPage() {
     </SVSingerShell>
   );
 }
+

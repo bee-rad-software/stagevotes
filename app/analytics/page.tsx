@@ -76,7 +76,7 @@ const { data: performanceData } = await supabase
 setPerformances(performanceData || []);
 
 const { data: voteData } = await supabase
-  .from('votes')
+  .from('scoring_votes')
   .select('*')
   .in('event_id', eventIds);
 
@@ -233,3 +233,4 @@ const biggestAudience = Object.values(peopleVotesByEvent).reduce(
     </main>
   );
 }
+

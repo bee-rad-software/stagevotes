@@ -138,7 +138,7 @@ const signupUrl =
   }
 
   async function loadVotes() {
-    const { data } = await supabase.from('votes').select('*').eq('event_id', eventId);
+    const { data } = await supabase.from('scoring_votes').select('*').eq('event_id', eventId);
     setVotes(data || []);
   }
 
@@ -571,3 +571,4 @@ if (tiebreakerVotes.length > 0) {
   </main>
 );
 }
+

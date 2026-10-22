@@ -327,7 +327,7 @@ if (recentEventError) {
           data: recentVoteData,
           error: recentVoteError,
         } = await supabase
-          .from('votes')
+          .from('scoring_votes')
           .select(`
             performance_id,
             score
@@ -1289,3 +1289,4 @@ const otherVenues = liveVenues.slice(1);
   </SVSingerShell>
 );
 }
+

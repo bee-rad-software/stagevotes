@@ -7,6 +7,7 @@ export const supabase = createClient(url, anonKey);
 
 export type EventRow = {
   id: string;
+  scoring_mode?: 'stars'|'points';
   name: string;
   venue: string | null;
   venue_id?: string | null;
@@ -67,3 +68,4 @@ export type VoteRow = {
   score: number;
   created_at: string;
 };
+

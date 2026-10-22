@@ -44,7 +44,7 @@ export default function WinnerGraphicPage() {
       .eq('event_id', eventId);
 
     const { data: votes } = await supabase
-      .from('votes')
+      .from('scoring_votes')
       .select('*')
       .eq('event_id', eventId);
 
@@ -183,3 +183,4 @@ async function downloadGraphic() {
     </main>
   );
 }
+

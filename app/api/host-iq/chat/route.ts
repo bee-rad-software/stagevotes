@@ -57,7 +57,7 @@ export async function POST(request:NextRequest){
   if(event.judging_enabled===true&&current){
    const [categories,ballots,configuration,sessions]=await Promise.all([
     admin.from('vote_categories').select('id').eq('event_id',event.id),
-    admin.from('votes').select('device_id,category_id').eq('event_id',event.id).eq('performance_id',current.id),
+    admin.from('scoring_votes').select('device_id,category_id').eq('event_id',event.id).eq('performance_id',current.id),
     event.tournament_event_id?admin.from('tournament_events').select('expected_judges,olympic_scoring').eq('id',event.tournament_event_id).maybeSingle():Promise.resolve({data:null,error:null}),
     admin.from('judge_sessions').select('device_id,judge_name,last_seen_at').eq('event_id',event.id)
    ]);
@@ -109,3 +109,4 @@ export async function POST(request:NextRequest){
   return NextResponse.json({answer},{headers:{'Cache-Control':'no-store'}});
  }catch(error){console.error('Ask Host IQ error',error instanceof Error?error.name:'unknown');return NextResponse.json({error:'Unable to answer right now. Please try again.'},{status:500});}
 }
+

@@ -533,7 +533,7 @@ if (upcomingStageVotesEventId) {
   data: voteRows,
   error: voteError,
 } = await supabase
-  .from('votes')
+  .from('scoring_votes')
   .select('performance_id, score')
   .in(
     'performance_id',

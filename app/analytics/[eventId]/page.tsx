@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
         }),
 
       supabase
-        .from('votes')
+        .from('scoring_votes')
         .select('*')
         .eq('event_id', eventId)
         .eq('account_id', accountId),
