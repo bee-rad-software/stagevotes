@@ -1,5 +1,6 @@
 'use client'
 
+import noteSharingStyles from './judge-note-sharing.module.css';
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 import SVBreakMusic, { type BreakMusicHandle } from '@/components/host/SVBreakMusic';
 import {
@@ -6266,14 +6267,27 @@ karafunPlayerOnline={karafunPlayerOnline}
 {judgePanelAvailable && event?.judging_enabled === true && (
   <details className="sv-host-song-history">
     <summary><span>📝 Judge note sharing</span><span className="sv-host-song-history-count">{(event as any)?.share_judge_notes ? 'Shared' : 'Private'}</span></summary>
-    <div style={{ padding: 20 }}>
-      <label style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <input type="checkbox" checked={(event as any)?.share_judge_notes === true}
-          disabled={savingNoteSharing} onChange={(e) => setNoteSharing(e.target.checked)} />
-        <strong>Share judge notes with singers</strong>
+    <div className={noteSharingStyles.content}>
+      <label className={noteSharingStyles.setting}>
+        <span className={noteSharingStyles.copy}>
+          <strong>Share feedback with singers</strong>
+          <span>Let singers see their own judge notes after their performance.</span>
+        </span>
+        <input
+          className={noteSharingStyles.toggle}
+          type="checkbox"
+          role="switch"
+          aria-label="Share judge notes with singers"
+          checked={(event as any)?.share_judge_notes === true}
+          disabled={savingNoteSharing}
+          onChange={(e) => setNoteSharing(e.target.checked)}
+        />
       </label>
-      <p>Off by default. Signed-in singers can see their own feedback and the judge's name after each performance is completed. Turning this off hides previously shared notes.</p>
-      {noteSharingMessage && <p role="status">{noteSharingMessage}</p>}
+      <p className={noteSharingStyles.hint}>
+        Includes the judge’s name. Only signed-in singers can view their own feedback.
+        Turning sharing off also hides previously shared notes.
+      </p>
+      {noteSharingMessage && <p className={noteSharingStyles.status} role="status">{noteSharingMessage}</p>}
     </div>
   </details>
 )}
