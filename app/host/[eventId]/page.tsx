@@ -1233,14 +1233,13 @@ async function logout() {
 }
   
   async function loadCategories() {
-  const accountId = await getMyAccountId();
-  if (!accountId) return;
-
+  // Categories belong to the show. Older creation paths omit category.account_id;
+  // filtering that optional field hides the scorecard and makes complete ballots
+  // appear incomplete. Event scoping and existing RLS protect this read.
   const { data, error } = await supabase
     .from('vote_categories')
     .select('id, category_name')
-    .eq('event_id', eventId)
-    .eq('account_id', accountId);
+    .eq('event_id', eventId);
 
   if (error) {
     console.error(error.message);
