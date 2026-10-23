@@ -1,0 +1,45 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const vm = require('node:vm');
+const { PGlite } = require(process.env.STAGEVOTES_PGLITE_MODULE || '@electric-sql/pglite');
+(async () => {
+  const db = new PGlite();
+  await db.exec(`create role anon; create role authenticated; create role service_role; create schema auth;
+    create table auth.users(id uuid primary key, email text);
+    create table public.accounts(id uuid primary key, name text, subscription_status text);
+    create table public.account_users(account_id uuid references accounts, user_id uuid references auth.users, role text);
+    insert into accounts values ('10000000-0000-0000-0000-000000000001','Existing','active');
+    insert into auth.users values ('20000000-0000-0000-0000-000000000001','host@example.test');`);
+  const migration=fs.readFileSync('supabase/migrations/20261023190000_host_signup_notifications.sql','utf8');
+  await db.exec(migration);
+  await db.exec(`insert into accounts values ('10000000-0000-0000-0000-000000000002','New Venue','incomplete');
+    insert into account_users values ('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','member');`);
+  assert.equal((await db.query('select count(*)::int as n from host_signup_notifications where not suppressed')).rows[0].n,0);
+  await db.exec(`insert into account_users values ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','owner'),('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','owner'),('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','owner');`);
+  assert.equal((await db.query('select count(*)::int as n from host_signup_notifications where not suppressed')).rows[0].n,1);
+  let row=(await db.query('select * from claim_host_signup_notification(null)')).rows[0];
+  assert.equal(row.payload.email,'host@example.test'); assert.equal(row.payload.status,'incomplete');
+  assert.equal((await db.query('select * from claim_host_signup_notification(null)')).rows.length,0);
+  await db.exec(`update host_signup_notifications set locked_until=now()-interval '1 minute' where not suppressed;`);
+  const retried=(await db.query('select * from claim_host_signup_notification(null)')).rows[0];assert.notEqual(row.lock_token,retried.lock_token);
+  assert.equal((await db.query('update host_signup_notifications set sent_at=now() where lock_token=$1 returning account_id',[row.lock_token])).rows.length,0);
+  await db.exec(`update host_signup_notifications set sent_at=now() where not suppressed;`);
+  assert.equal((await db.query('select * from claim_host_signup_notification(null)')).rows.length,0);
+  await db.exec(migration);
+  assert.equal((await db.query('select count(*)::int as n from host_signup_notifications')).rows[0].n,2);
+  for (const role of ['anon','authenticated']) {
+    await db.exec('set role '+role);
+    await assert.rejects(db.query('select * from host_signup_notifications'));
+    await assert.rejects(db.query('select * from claim_host_signup_notification(null)'));
+    await db.exec('reset role');
+  }
+  console.log('Database: new owners only, historical suppression, deduplication, leases, stale lock rejection, replay safety, rerun and permissions passed.');
+  const code=ts.transpileModule(fs.readFileSync('lib/server/hostSignupNotification.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+  const exports={};let called;
+  vm.runInNewContext(code,{exports,process:{env:{RESEND_API_KEY:'test',SIGNUP_NOTIFICATION_FROM:'StageVotes <support@stagevotes.com>'}},AbortSignal,fetch:async(url,args)=>{called={url,args};return {ok:true,json:async()=>({id:'email-1'})};}});
+  assert.equal(await exports.sendHostSignupNotification('account-1',{email:'new@example.test',status:'incomplete'}),'email-1');
+  const body=JSON.parse(called.args.body);assert.deepEqual(body.to,['brad@stagevotes.com']);assert.match(body.text,/incomplete/);assert.equal(called.args.headers['Idempotency-Key'],'host-signup/account-1');assert.equal(body.html,undefined);
+  console.log('Email: fixed Brad recipient, plain-text content, status wording and stable idempotency passed.');
+  await db.close();
+})().catch(e=>{console.error(e);process.exit(1);});

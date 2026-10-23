@@ -1,0 +1,22 @@
+const assert=require('node:assert/strict'),fs=require('fs'),ts=require('typescript'),vm=require('node:vm');
+let claims=0,sends=0,updates=[],claimRows=[],fail=false;
+const admin={rpc:async()=>{claims++;return {data:claimRows.splice(0,1),error:null}},from:()=>({update:values=>{updates.push(values);const query={eq:()=>query,select:async()=>({data:[{account_id:'x'}],error:null}),then:resolve=>Promise.resolve({error:null}).then(resolve)};return query}})};
+const exportsRoute={};const env={SIGNUP_NOTIFICATION_WEBHOOK_SECRET:'hook-secret',CRON_SECRET:'cron-secret',RESEND_API_KEY:'key',SIGNUP_NOTIFICATION_FROM:'sender'};
+const code=ts.transpileModule(fs.readFileSync('app/api/notifications/host-signup/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText;
+vm.runInNewContext(code,{exports:exportsRoute,require:name=>name==='node:crypto'?require(name):name.includes('stageVotesAuth')?{getSupabaseAdmin:()=>admin}:{sendHostSignupNotification:async()=>{sends++;if(fail)throw Error('provider unavailable');return 'email-id'}},process:{env},Buffer,Response,Date,console:{error:()=>{}},setTimeout});
+const account='10000000-0000-0000-0000-000000000001';
+const request=(body,token='hook-secret')=>new Request('https://example.test/api',{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json'},body:JSON.stringify(body)});
+const event={type:'INSERT',schema:'public',table:'host_signup_notifications',record:{account_id:account}};
+(async()=>{
+ assert.equal((await exportsRoute.POST(request(event,'wrong'))).status,401);assert.equal(claims,0);
+ assert.equal((await exportsRoute.GET(new Request('https://example.test/api'))).status,401);
+ assert.equal((await exportsRoute.POST(request({...event,table:'singer_profiles'}))).status,400);
+ const savedKey=env.RESEND_API_KEY;delete env.RESEND_API_KEY;
+ assert.equal((await exportsRoute.POST(request(event))).status,503);assert.equal(claims,0);env.RESEND_API_KEY=savedKey;
+ claimRows=[{account_id:account,payload:{},lock_token:'lease'}];
+ assert.equal((await exportsRoute.POST(request(event))).status,200);assert.equal(sends,1);assert.ok(updates[0].sent_at);
+ assert.equal((await exportsRoute.POST(request(event))).status,200);assert.equal(sends,1);
+ claimRows=[{account_id:account,payload:{},lock_token:'lease2'}];fail=true;
+ assert.equal((await exportsRoute.POST(request(event))).status,502);assert.ok(updates.at(-1).next_attempt_at);assert.equal(updates.at(-1).lock_token,null);
+ console.log('Route: secret checks, event validation, missing config, success, replay and retry passed.');
+})().catch(e=>{console.error(e);process.exit(1)});
