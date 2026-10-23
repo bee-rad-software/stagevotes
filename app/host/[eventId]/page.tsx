@@ -2,6 +2,7 @@
 
 import noteSharingStyles from './judge-note-sharing.module.css';
 import { awardsPath } from '@/lib/awardsRoute';
+import SVLeagueShowLink from '@/components/leagues/SVLeagueShowLink';
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 import SVBreakMusic, { type BreakMusicHandle } from '@/components/host/SVBreakMusic';
 import {
@@ -6514,6 +6515,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     </div>
   </div></details>
 
+<SVLeagueShowLink eventId={eventId} />
 <SVEventPhotos key={eventId} eventId={eventId} host />
 
 <details className="sv-host-song-history">

@@ -32,6 +32,11 @@ export const navigation = [
         label: 'Tournaments',
         href: '/tournament-director',
       },
+      {
+        icon: Trophy,
+        label: 'Leagues',
+        href: '/league-director',
+      },
     ],
   },
   {
