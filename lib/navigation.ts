@@ -6,6 +6,7 @@ import {
   ChartColumn,
   History,
   Settings,
+  LifeBuoy,
 } from 'lucide-react';
 
 export const navigation = [
@@ -61,6 +62,11 @@ export const navigation = [
         icon: Settings,
         label: 'Account',
         href: '/account',
+      },
+      {
+        icon: LifeBuoy,
+        label: 'Help & Support',
+        href: '/contact',
       },
     ],
   },

@@ -1,0 +1,21 @@
+.support { max-width: 1080px; margin: 0 auto; padding: clamp(16px, 3vw, 36px) 0; color: #f8fafc; }
+.heading { max-width: 680px; margin-bottom: 28px; }
+.heading > svg, .card > svg { color: #38bdf8; }
+.eyebrow { margin: 16px 0 8px; color: #7dd3fc; text-transform: uppercase; letter-spacing: .1em; font-size: .75rem; font-weight: 700; }
+.heading h1 { margin: 0 0 12px; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.15; }
+.heading > p:last-child, .card p, .tip p { color: #cbd5e1; line-height: 1.65; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.card { display: flex; flex-direction: column; align-items: flex-start; padding: 24px; border: 1px solid #334155; border-radius: 20px; background: #0f172a; }
+.card h2 { margin: 18px 0 0; font-size: 1.2rem; line-height: 1.4; }
+.card p { margin: 12px 0 24px; flex: 1; }
+.primary, .secondary { display: inline-flex; justify-content: center; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; min-height: 48px; padding: 12px 16px; border-radius: 12px; text-decoration: none; font-weight: 700; text-align: center; }
+.primary { background: #f97316; color: #080b14; border: 1px solid #f97316; }
+.secondary { color: #bae6fd; background: #082f49; border: 1px solid #0e7490; }
+.primary:hover { background: #fb923c; }
+.secondary:hover { background: #0c4a6e; }
+.email { margin-top: 14px; color: #cbd5e1; font-size: .9rem; overflow-wrap: anywhere; }
+.tip { margin-top: 24px; padding: 22px 24px; border: 1px solid #334155; border-radius: 16px; background: #101827; }
+.tip p { margin: 8px 0 14px; }
+.tip a { display: inline-flex; align-items: center; gap: 8px; color: #7dd3fc; }
+.support a:focus-visible { outline: 3px solid #fbbf24; outline-offset: 4px; }
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } .card { padding: 22px; } }
