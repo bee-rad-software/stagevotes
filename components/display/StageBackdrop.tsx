@@ -119,6 +119,29 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
 
   return <main className={styles.screen} data-theme={theme}>
     <div className={styles.aurora} aria-hidden="true" /><div className={styles.floor} aria-hidden="true" />
+    {theme === 'halloween' && <svg className={styles.halloweenArt} viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <radialGradient id="spooky-moon"><stop stopColor="#ffcc85" stopOpacity=".38" /><stop offset="1" stopColor="#ff9b36" stopOpacity="0" /></radialGradient>
+        <linearGradient id="spooky-hills" x1="0" x2="1" y1="0" y2="1"><stop stopColor="#3b1854" /><stop offset="1" stopColor="#140d22" /></linearGradient>
+      </defs>
+      <circle cx="1390" cy="95" r="250" fill="url(#spooky-moon)" />
+      <g fill="none" stroke="#e5b7f8" strokeOpacity=".26" strokeWidth="2">
+        <path d="M0 0 L0 200 M0 0 L55 190 M0 0 L115 155 M0 0 L165 105 M0 0 L200 50" />
+        <path d="M0 45 Q15 35 28 48 Q36 30 52 37 Q60 20 77 22 M0 90 Q24 78 50 95 Q65 66 92 74 Q107 48 130 52 M0 135 Q38 119 76 143 Q96 101 136 110 Q155 75 181 78" />
+        <path d="M1600 0 L1600 200 M1600 0 L1545 190 M1600 0 L1485 155 M1600 0 L1435 105 M1600 0 L1400 50" />
+        <path d="M1600 45 Q1585 35 1572 48 Q1564 30 1548 37 Q1540 20 1523 22 M1600 90 Q1576 78 1550 95 Q1535 66 1508 74 Q1493 48 1470 52" />
+      </g>
+      <g fill="#bd8bd3" fillOpacity=".35">
+        <path d="M1210 120 q-20-18-36-4 q18-2 17 13 q12-8 19 6 q7-14 19-6 q-1-15 17-13 q-16-14-36 4z" />
+        <path d="M1310 190 q-16-15-29-3 q14-1 14 10 q9-5 15 5 q6-10 15-5 q0-11 14-10 q-13-12-29 3z" />
+        <path d="M1120 185 q-13-12-24-3 q12-1 12 9 q8-5 12 4 q5-9 13-4 q0-10 12-9 q-11-9-25 3z" />
+      </g>
+      <path fill="url(#spooky-hills)" fillOpacity=".38" d="M0 820 Q130 730 290 820 Q370 855 480 820 Q660 780 820 850 Q1010 800 1170 850 Q1390 770 1600 830 L1600 900 L0 900Z" />
+      <g transform="translate(38 790)" fill="#fa923c" fillOpacity=".36">
+        <ellipse cx="58" cy="63" rx="43" ry="35"/><ellipse cx="58" cy="63" rx="19" ry="35" fill="#ffc078" fillOpacity=".15"/><path d="M55 29 q2-20 13-21 q-4 13-3 23z" fill="#8db886"/>
+        <path d="M37 56 l10-7 3 11z M67 60 l3-11 10 7z M39 72 q19 20 39 0 q-3 19-19 19 q-16 0-20-19" fill="#100c19" />
+      </g>
+    </svg>}
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
