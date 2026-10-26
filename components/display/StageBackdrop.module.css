@@ -78,3 +78,14 @@
 .dragHandle::after { content:''; position:absolute; width:55px; height:4px; border-radius:4px; top:5px; left:calc(50% - 27px); background:#475569; }
 @media(max-width:900px) { .screen { grid-template-columns:210px minmax(0,1fr); } .queueNumber { display:none; } .queueItem .avatar { display:none; } .join { flex-direction:column; align-items:flex-start; gap:7px; } .join > div:first-child { display:block; } .tools { left:58%; max-width:90%; } }
 @media(max-height:650px) { .screen { grid-template-rows:85px minmax(0,1fr); } .queueTitle { display:none; } .queueItem .kicker { display:none; } .queueItem .avatar { width:30px; } .queueItem h2 { font-size:16px; } .queueItem p { font-size:11px; } .qr svg { width:90px; } .tools { top:95px; } }
+
+/* A short entrance beside the external lyric window; keep the QR visible. */
+.entrance { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(10px, 1.7vh, 22px); text-align: center; overflow: hidden; animation: singerEntrance 450ms ease-out both; }
+.entrance > .kicker { color: #ff8b28; font-size: clamp(18px, 2vw, 34px); letter-spacing: .12em; }
+.entrance .largeAvatar { width: clamp(90px, 12vw, 200px); height: clamp(90px, 12vw, 200px); flex-shrink: 1; aspect-ratio: 1; }
+.entrance h2 { margin: 0; font-size: clamp(26px, 3vw, 52px); line-height: 1.06; overflow-wrap: anywhere; }
+.entrance p { margin: 0; font-size: clamp(18px, 1.6vw, 28px); overflow-wrap: anywhere; }
+.entrance button { border: 1px solid #ffffff30; border-radius: 999px; padding: 8px 16px; background: #ffffff08; color: #cbd5e1; cursor: pointer; }
+.entrance button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; }
+@keyframes singerEntrance { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .entrance { animation: none; } }

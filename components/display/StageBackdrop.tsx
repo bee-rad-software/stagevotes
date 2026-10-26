@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
@@ -71,6 +71,29 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const upcoming = buildRotationQueue(singers.filter(row => row.status !== 'removed'), event?.current_performance_id).filter(row => row.id !== current?.id).slice(0, 5);
   const next = upcoming[0];
   const ended = Boolean(event?.is_show_ended);
+  const entranceEvent = useRef<string | null>(null);
+  const lastPerformance = useRef<string | null | undefined>(undefined);
+  const entranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [entranceId, setEntranceId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!ready || !event) return;
+    const id = !ended ? event.current_performance_id : null;
+    // Seed the initial view without announcing a performance already underway.
+    if (lastPerformance.current === undefined || entranceEvent.current !== event.id) {
+      entranceEvent.current = event.id;
+      if (entranceTimer.current) clearTimeout(entranceTimer.current);
+      setEntranceId(null);
+      lastPerformance.current = id;
+      return;
+    }
+    if (lastPerformance.current === id) return;
+    lastPerformance.current = id;
+    if (entranceTimer.current) clearTimeout(entranceTimer.current);
+    setEntranceId(id);
+    if (id) entranceTimer.current = setTimeout(() => setEntranceId(null), 5000);
+  }, [ready, event?.id, event?.current_performance_id, ended]);
+  useEffect(() => () => { if (entranceTimer.current) clearTimeout(entranceTimer.current); }, []);
+  const entrance = !ended && current?.id === entranceId ? current : null;
   const showNext = !ended && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
@@ -87,11 +110,12 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : 'KARAOKE NIGHT'}</span></div></div>
     </header>
     <aside className={styles.sidebar} aria-label="Next five singers">
-      <div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
+      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>YOU’RE UP!</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
       <div className={styles.queue}>
         {!ended && upcoming.map((singer, index) => <article key={singer.id} className={styles.queueItem}><span className={styles.queueNumber}>{String(index + 1).padStart(2, '0')}</span><Avatar singer={singer} /><div><span className={styles.kicker}>{index === 0 ? 'UP NEXT' : 'SINGER ' + (index + 1)}</span><h2>{nameOf(singer)}</h2><p>{singer.song_title}</p></div></article>)}
         {(!upcoming.length || ended) && <p className={styles.footerMessage}>{ended ? 'See you next time.' : event?.signups_open === false ? 'Signups closed · Enjoy the show' : 'Good songs. Great company.'}</p>}
       </div>
+      </>}
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
