@@ -7,6 +7,7 @@ import Link from 'next/link';
 import SVTrialReminder from '@/components/billing/SVTrialReminder';
 import SVFirstShowChecklist from '@/components/dashboard/SVFirstShowChecklist';
 import SVSidebar from '@/components/layout/SVSidebar';
+import SVActiveShows from '@/components/dashboard/SVActiveShows';
 import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import {
   CalendarDays,
@@ -1227,6 +1228,8 @@ if (currentEventError) {
         </header>
 
         {account?.id && <SVTrialReminder key={account.id} />}
+
+        {account?.id && <SVActiveShows accountId={account.id} />}
 
         {account?.id && <SVFirstShowChecklist key={account.id} accountId={account.id} venueCount={venues.length} />}
 
