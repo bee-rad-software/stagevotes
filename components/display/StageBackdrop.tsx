@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
+import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
@@ -124,6 +125,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
         {next ? <><Avatar singer={next} large /><h2>{nameOf(next)}</h2><p>{next.song_title}</p><span className={styles.artist}>{next.artist}</span></> : <><h2>{current ? 'Enjoy the show.' : 'Your next song starts here.'}</h2><p>{event.signups_open === false ? 'Singer signups are closed.' : 'Choose a song. Make a memory.'}</p></>}
       </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Press G to hide guides.</small></div> : null}
     </section>
+    {event && <StageShoutoutTicker eventId={event.id} active={Boolean(current) && !ended} />}
     {error && <div role="status" className={styles.connection}>{error}</div>}
     <nav aria-label="Stage display controls" className={styles.tools + (toolsVisible ? '' : ' ' + styles.hiddenTools)}>
       <button type="button" aria-pressed={view === 'lyrics'} onClick={() => setView('lyrics')}>Lyrics · L</button>

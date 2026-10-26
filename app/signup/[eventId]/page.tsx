@@ -5,6 +5,7 @@ import SVShowAvailability from '@/components/singer/SVShowAvailability';
 import { canRequestSingerSong } from '@/lib/singerShowAvailability';
 
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
+import ShowShoutouts from '@/components/shoutouts/ShowShoutouts';
 
 import SVJudgeFeedback from '@/components/singer/SVJudgeFeedback';
 import {
@@ -4246,6 +4247,7 @@ currentArtist={
       )}
 
       <SVInstallSingerApp />
+      <ShowShoutouts key={eventId} eventId={eventId} />
       <SVEventPhotos key={eventId} eventId={eventId} />
 
       <SVTipCard
