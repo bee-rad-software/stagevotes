@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import StageBackdrop, { type StageEvent, type StageSinger } from '@/components/display/StageBackdrop';
+import StageBackdrop, { type StageEvent, type StageSinger, type StageBadge } from '@/components/display/StageBackdrop';
 
 export default function StageDisplayPage() {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<StageEvent | null>(null);
   const [singers, setSingers] = useState<StageSinger[]>([]);
+  const [badges, setBadges] = useState<StageBadge[]>([]);
   const [logo, setLogo] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
@@ -19,7 +20,7 @@ export default function StageDisplayPage() {
     let active = true;
     let loading = false;
     const controller = new AbortController();
-    setReady(false); setEvent(null); setSingers([]); setLogo(''); setError('');
+    setReady(false); setEvent(null); setSingers([]); setBadges([]); setLogo(''); setError('');
     async function refresh() {
       if (loading || !active) return;
       loading = true;
@@ -44,16 +45,24 @@ export default function StageDisplayPage() {
         if (active) { setError('Connection interrupted. Reconnecting…'); setReady(true); }
       } finally { loading = false; }
     }
-    void refresh();
+    async function refreshBadges() {
+      try {
+        const response = await fetch('/api/stage-display/' + encodeURIComponent(eventId) + '/badges', { cache: 'no-store', signal: controller.signal });
+        if (!response.ok) return;
+        const result = await response.json();
+        if (active && Array.isArray(result.badges)) setBadges(result.badges);
+      } catch { /* Badge availability must not interrupt the stage display. */ }
+    }
+    void refresh(); void refreshBadges();
     const channel = supabase.channel('stage-display-' + eventId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: 'id=eq.' + eventId }, () => { void refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'performances', filter: 'event_id=eq.' + eventId }, () => { void refresh(); })
       .subscribe();
-    const timer = window.setInterval(() => { void refresh(); }, 10_000);
-    const focus = () => { void refresh(); };
+    const timer = window.setInterval(() => { void refresh(); void refreshBadges(); }, 10_000);
+    const focus = () => { void refresh(); void refreshBadges(); };
     window.addEventListener('focus', focus);
     return () => { active = false; controller.abort(); window.clearInterval(timer); window.removeEventListener('focus', focus); void supabase.removeChannel(channel); };
   }, [eventId]);
 
-  return <StageBackdrop event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} />;
+  return <StageBackdrop event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} badges={badges} />;
 }

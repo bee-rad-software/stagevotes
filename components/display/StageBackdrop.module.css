@@ -113,3 +113,13 @@
 .screen[data-theme="halloween"] .header { border-bottom-color:#f9731645; }
 .screen[data-theme="halloween"] .queueItem:first-child { border-bottom-color:#fb923c75; }
 .screen[data-theme="halloween"] .join strong { color:#ffbc70; }
+
+/* Keep a celebration alongside the queue, clear of the separate lyrics window. */
+.badgeCelebration { display:flex; align-items:center; flex-shrink:0; gap:.7vw; min-width:0; padding:clamp(6px,.8vh,12px); border:1px solid #fbbf2455; border-radius:12px; background:linear-gradient(110deg,#713f1238,#1e293b99); }
+.badgeCelebration > div { min-width:0; }
+.badgeCelebration strong,.badgeCelebration span:not(.badgeIcon) { display:block; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.badgeIcon { font-size:clamp(23px,2.2vw,42px); }
+.badgeCelebration strong { font-size:clamp(13px,1.15vw,22px); color:#fff; }
+.badgeCelebration span:not(.badgeIcon) { color:#fde68a; font-size:clamp(11px,.9vw,17px); }
+.badgeCelebration .badgeLabel { font-size:clamp(8px,.65vw,12px)!important; letter-spacing:.1em; font-weight:800; color:#fbbf24!important; margin-bottom:3px; }
+@media(max-height:650px) { .badgeCelebration { padding:4px 7px; } .badgeCelebration .badgeLabel { display:none!important; } }

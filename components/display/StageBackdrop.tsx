@@ -6,6 +6,7 @@ import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
+export type StageBadge = { id: string; singer: string; title: string; icon: string };
 export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
 const themes = ['classic', 'halloween', 'neon', 'country', 'holiday'] as const;
@@ -21,8 +22,8 @@ function Avatar({ singer, large = false }: { singer: StageSinger; large?: boolea
   </span>;
 }
 
-export default function StageBackdrop({ event, singers, logo, origin, ready, error }: {
-  event: StageEvent | null; singers: StageSinger[]; logo: string; origin: string; ready: boolean; error: string;
+export default function StageBackdrop({ event, singers, logo, origin, ready, error, badges = [] }: {
+  event: StageEvent | null; singers: StageSinger[]; logo: string; origin: string; ready: boolean; error: string; badges?: StageBadge[];
 }) {
   const [theme, setTheme] = useState<StageTheme>('classic');
   useEffect(() => {
@@ -157,6 +158,9 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
         {(!upcoming.length || ended) && <p className={styles.footerMessage}>{ended ? 'See you next time.' : event?.signups_open === false ? 'Signups closed · Enjoy the show' : 'Good songs. Great company.'}</p>}
       </div>
       </>}
+      {!ended && badges[0] && <div className={styles.badgeCelebration} aria-label="Latest badge earned tonight">
+        <span className={styles.badgeIcon} aria-hidden="true">{badges[0].icon}</span><div><span className={styles.badgeLabel}>BADGE EARNED TONIGHT</span><strong>{badges[0].singer}</strong><span>{badges[0].title}</span></div>
+      </div>}
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
