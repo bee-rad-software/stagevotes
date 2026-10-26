@@ -122,7 +122,9 @@ export default function HostSideContest() {
  const displayUrl=contest&&origin?origin+'/contest/'+contest.id+'/display':'';
  return <SVShell title="People’s Choice Contest" subtitle="Run a separate contest alongside karaoke">
   <div className={styles.wrap}>
-   <Link className={styles.secondary} href={'/host/'+eventId}>← Back to karaoke</Link>
+   <Link className={styles.secondary} href={'/host/'+eventId} onClick={e=>{
+    if(window.parent !== window) { e.preventDefault(); window.parent.postMessage({type:'stagevotes-close-contest'},window.location.origin); }
+   }}>← Back to karaoke</Link>
    <div className={styles.hero}><span className={styles.kicker}>Contest control</span><h1>{contest?.title||'Add a People’s Choice contest'}</h1>
     <p>Karaoke continues independently. These contestants and votes do not affect the singer queue or karaoke scores.</p>
    </div>

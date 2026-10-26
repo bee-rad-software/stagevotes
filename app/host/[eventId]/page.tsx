@@ -171,6 +171,17 @@ const [peoplesChoiceResults, setPeoplesChoiceResults] = useState<
   const [showLeaderboard, setShowLeaderboard] = useState(true);
 const [showPeoplesChoice, setShowPeoplesChoice] = useState(true);
 const [savingContestVisibility, setSavingContestVisibility] = useState(false);
+const [contestOpen, setContestOpen] = useState(false);
+const contestFrameRef = useRef<HTMLIFrameElement | null>(null);
+useEffect(() => {
+  if (!contestOpen) return;
+  const receive = (event: MessageEvent) => {
+    if (event.origin === window.location.origin && event.source === contestFrameRef.current?.contentWindow && event.data?.type === 'stagevotes-close-contest') setContestOpen(false);
+  };
+  const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') setContestOpen(false); };
+  window.addEventListener('message', receive); window.addEventListener('keydown', escape);
+  return () => { window.removeEventListener('message', receive); window.removeEventListener('keydown', escape); };
+}, [contestOpen]);
 const [contestVisibilityMessage, setContestVisibilityMessage] = useState('');
   const [copiedLink, setCopiedLink] = useState('');
   const [accountId, setAccountId] = useState('');
@@ -6330,7 +6341,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   </summary>
   <div style={{ padding: 20 }}>
     <p style={{ marginTop: 0 }}>Run a costume contest or another audience vote alongside karaoke, with its own contestants and QR code.</p>
-    <Link href={`/host/${eventId}/contest`} className="btn">Manage contest →</Link>
+    <button type="button" onClick={() => setContestOpen(true)} className="btn">Manage contest →</button>
   </div>
 </details>
 )}
@@ -6338,6 +6349,13 @@ karafunPlayerOnline={karafunPlayerOnline}
 {event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
 {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
 
+{contestOpen && <div role="dialog" aria-modal="true" aria-label="Manage separate contest" style={{position:'fixed',inset:0,zIndex:10000,display:'flex',flexDirection:'column',background:'#07111f'}}>
+  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'10px 18px',background:'#101b2d',borderBottom:'1px solid #334155'}}>
+    <span style={{color:'#e2e8f0',fontWeight:700}}>Separate contest · Karaoke and break music continue</span>
+    <button type="button" className="btn" onClick={() => setContestOpen(false)}>← Back to show</button>
+  </div>
+  <iframe ref={contestFrameRef} title="Separate contest controls" src={`/host/${eventId}/contest?embedded=1`} style={{border:0,width:'100%',flex:1,minHeight:0,background:'#07111f'}} />
+</div>}
 <SVBreakMusic
   ref={breakMusicRef}
   connected={karafunConnected}
@@ -6512,7 +6530,7 @@ karafunPlayerOnline={karafunPlayerOnline}
           }} />
       </label>
       <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 0 }}>Separate contestants and votes. Hiding these controls does not close an existing contest.</p>
-      {(event as any)?.show_side_contest_controls === true && <p><Link href={`/host/${eventId}/contest`} className="btn">Manage separate contest →</Link></p>}
+      {(event as any)?.show_side_contest_controls === true && <p><button type="button" onClick={() => setContestOpen(true)} className="btn">Manage separate contest →</button></p>}
       {contestVisibilityMessage && <p role="status">{contestVisibilityMessage}</p>}
     </div>
   </div></details>
