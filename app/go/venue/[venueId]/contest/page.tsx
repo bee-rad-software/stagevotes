@@ -1,7 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
 import {useParams,useRouter} from 'next/navigation';
-import {supabase} from '@/lib/supabase';
 import styles from '@/components/contest/SideContest.module.css';
 export default function StaticVenueContest() {
  const {venueId}=useParams<{venueId:string}>();
@@ -10,11 +9,14 @@ export default function StaticVenueContest() {
  useEffect(()=>{
   let active=true;
   async function resolve() {
-   const {data,error}=await supabase.rpc('resolve_venue_contest',{p_venue_id:venueId});
+   try {
+   const response=await fetch('/api/contests/resolve?venueId='+encodeURIComponent(venueId),{cache:'no-store'});
+   if(!response.ok)throw new Error('resolve failed');
+   const {contestId}=await response.json();
    if(!active)return;
-   if(error)setMessage('Unable to load the contest right now. Please refresh or ask your host.');
-   else if(data)router.replace('/contest/'+data);
-   else setMessage('No contest is set up yet. Keep this page open—it will update when the host creates the contest.');
+   if(contestId)router.replace('/contest/'+contestId);
+   else setMessage('No active contest is available right now. Keep this page open or ask your host.');
+   } catch { if(active)setMessage('Unable to load the contest right now. Please refresh or ask your host.'); }
   }
   resolve(); const timer=setInterval(resolve,5000);
   return()=>{active=false;clearInterval(timer);};

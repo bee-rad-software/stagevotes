@@ -9,6 +9,8 @@ export default function ContestEntryPage() {
  const {contestId}=useParams<{contestId:string}>();
  const [contest,setContest]=useState<SideContest|null>(null);
  const [entry,setEntry]=useState<Entry|null>(null);
+ const [showEnded,setShowEnded]=useState(false);
+ const [venueId,setVenueId]=useState<string|null>(null);
  const [entryKey,setEntryKey]=useState('');
  const [name,setName]=useState('');
  const [costume,setCostume]=useState('');
@@ -17,11 +19,19 @@ export default function ContestEntryPage() {
  const [loading,setLoading]=useState(true);
  const [message,setMessage]=useState('');
  useEffect(()=>{
+  setEntry(null);setContest(null);setLoading(true);setShowEnded(false);setVenueId(null);setMessage('');
   let key=localStorage.getItem('stagevotes_contest_entrant');
   if(!key){key=crypto.randomUUID();localStorage.setItem('stagevotes_contest_entrant',key);}
   setEntryKey(key);
   let active=true;
   async function refresh() {
+   try {
+   const response=await fetch('/api/contests/resolve?contestId='+encodeURIComponent(contestId),{cache:'no-store'});
+   if(!response.ok)throw new Error('Unable to check show');
+   const context=await response.json();
+   if(!active)return;
+   setShowEnded(context.ended===true);setVenueId(context.venueId||null);
+   if(context.ended){setEntry(null);setLoading(false);return;}
    const [contestResult,entryResult]=await Promise.all([
     supabase.rpc('side_contest_snapshot',{p_contest_id:contestId,p_voter_key:null}),
     supabase.rpc('my_side_contest_entry',{p_contest_id:contestId,p_entry_key:key})
@@ -29,8 +39,10 @@ export default function ContestEntryPage() {
    if(!active)return;
    if(contestResult.error)setMessage('Unable to load this contest. Please ask your host.');
    else setContest(contestResult.data);
-   if(!entryResult.error)setEntry(entryResult.data);
+   if(!entryResult.error)setEntry(entryResult.data || null);
+   else setMessage('Unable to check your entry. Please refresh or ask your host.');
    setLoading(false);
+   } catch {if(active){setMessage('Unable to check this show. Please refresh or ask your host.');setLoading(false);setContest(null);}}
   }
   refresh();const timer=setInterval(refresh,5000);
   return()=>{active=false;clearInterval(timer);};
@@ -55,7 +67,7 @@ export default function ContestEntryPage() {
   <header className={styles.hero}><span className={styles.kicker}>StageVotes · Contest entry</span><h1>{contest?.title||'Enter the contest'}</h1>
    <p>Submit your costume for host approval.</p></header>
   {message&&<div className={styles.message} role="status">{message}</div>}
-  {loading?<p>Loading…</p>:entry?<section className={styles.card}>
+  {loading?<p>Loading…</p>:showEnded?<section className={styles.card}><h2>This show has ended</h2><p>This entry belongs to a previous show.</p>{venueId&&<a className={styles.button} href={'/go/venue/'+venueId+'/contest/enter'}>Find the current contest</a>}</section>:entry?<section className={styles.card}>
    <h2>{entry.approval_status==='approved'?'✓ You’re in!':entry.approval_status==='rejected'?'Please see your host':'Entry received'}</h2>
    <p>{entry.name}{entry.number>0?' · Contestant #'+entry.number:''}</p><p>{entry.costume}</p>
    <p>{entry.approval_status==='approved'?'Your costume is approved and appears on the ballot.':entry.approval_status==='pending'?'Waiting for the host to approve your entry. Keep this page open for updates.':'Your entry was not approved. Ask your host for help.'}</p>
