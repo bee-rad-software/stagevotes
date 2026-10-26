@@ -8,7 +8,6 @@ type Props = {
   onStartShow?: () => void;
   onEndShow?: () => void;
   onAddSinger?: () => void;
-  onNextSinger?: () => void;
   onToggleVoting?: () => void;
   onOpenDisplay?: () => void;
   onAwards?: () => void;
@@ -33,7 +32,6 @@ karafunPlayerOnline?: boolean;
   votingOpen?: boolean;
   hasCurrentSinger?: boolean;
   showStarted?: boolean;
-  advancingSinger?: boolean;
   karafunConnected?: boolean;
 
   currentSingerName?: string;
@@ -53,9 +51,9 @@ export default function SVMissionControl(p: Props) {
     <div className={styles.top}>
       <div className={styles.heading}><h2>Run the show</h2><p>{p.currentSingerName ? `Current: ${p.currentSingerName} · Next: ${p.nextSingerName || 'No one waiting'}` : 'Ready for your first singer'}</p></div>
       <div className={styles.actions}>
-        <button type="button" className={styles.primary} onClick={p.showStarted ? p.onNextSinger : p.onStartShow} disabled={p.showStarted && (!p.hasCurrentSinger || p.advancingSinger)}>
-          {p.showStarted ? <SkipForward size={19}/> : <Play size={19}/>}{p.advancingSinger ? 'Advancing…' : p.showStarted ? 'Next Singer' : 'Start Show'}
-        </button>
+        {!p.showStarted && <button type="button" className={styles.primary} onClick={p.onStartShow}>
+          <Play size={19}/>Start Show
+        </button>}
         <button type="button" onClick={p.onAddSinger}><UserPlus size={18}/>Add Singer</button>
       </div>
     </div>

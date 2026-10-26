@@ -5733,6 +5733,8 @@ if (!isSubscribed) {
 >
       
 <SVHostHero
+  onNextSinger={current ? () => { void nextSinger(); } : undefined}
+  advancingSinger={advancingSinger}
   singerName={
     current?.singer_name || 'No current singer'
   }
@@ -5764,7 +5766,6 @@ if (!isSubscribed) {
   onAddSinger={() =>
     setShowSingerSignup(true)
   }
-  onNextSinger={() => nextSinger()}
   onToggleVoting={() =>
     toggleVoting(!event?.is_voting_open)
   }
@@ -5824,7 +5825,6 @@ karafunPlayerOnline={karafunPlayerOnline}
   showStarted={!!current}
   votingOpen={!!event?.is_voting_open}
   hasCurrentSinger={!!current}
-  advancingSinger={advancingSinger}
   currentSingerName={current?.singer_name}
   nextSingerName={upNext?.singer_name}
 />

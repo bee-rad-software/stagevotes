@@ -4,11 +4,14 @@ import styles from './SVHostHero.module.css';
 import { useEffect, useState } from 'react';
 import {
   Clock3,
+  SkipForward,
   Mic2,
   Radio,
 } from 'lucide-react';
 
 type Props = {
+  onNextSinger?: () => void;
+  advancingSinger?: boolean;
   singerName?: string;
   songTitle?: string;
   artist?: string;
@@ -22,6 +25,8 @@ type Props = {
 };
 
 export default function SVHostHero({
+  onNextSinger,
+  advancingSinger = false,
   singerName = 'No current singer',
   songTitle = 'Waiting to begin',
   artist = '',
@@ -113,6 +118,7 @@ const displaySingerName = singerName
           </div>
         </div>
 
+        <div className={styles.heroActions}>
         {judgingEnabled && (        <div
           className={
             votingOpen
@@ -127,6 +133,15 @@ const displaySingerName = singerName
             : 'Voting closed'}
         </div>
         )}
+        {onNextSinger && (
+          <button type="button" className={styles.nextSinger} onClick={onNextSinger}
+            disabled={advancingSinger}
+            title="Finish this singer and advance the StageVotes queue">
+            <SkipForward size={15} aria-hidden="true" />
+            {advancingSinger ? 'Advancing…' : 'Next Singer'}
+          </button>
+        )}
+        </div>
       </div>
 
       <div className="sv-host-hero-main">
