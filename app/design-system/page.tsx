@@ -233,6 +233,7 @@ const currentHostSinger =
     >
 
 <SVHostHero
+  onNextSinger={currentHostSinger ? advanceQueue : undefined}
   singerName={currentHostSinger?.singerName || 'No current singer'}
   songTitle={currentHostSinger?.songTitle || 'Waiting to begin'}
   artist={currentHostSinger?.artist || ''}
@@ -241,8 +242,9 @@ const currentHostSinger =
 />
 
 <SVMissionControl
+  showStarted={Boolean(currentHostSinger)}
+  hasCurrentSinger={Boolean(currentHostSinger)}
   onAddSinger={() => setAddSingerOpen(true)}
-onNextSinger={advanceQueue} 
   onToggleVoting={() => {
     console.log('Toggle voting');
   }}
