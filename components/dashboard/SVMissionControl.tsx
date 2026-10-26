@@ -60,7 +60,7 @@ export default function SVMissionControl(p: Props) {
     <div className={styles.player}>
       <div className={styles.connection}><Radio size={17}/><strong>KaraFun</strong><span className={connected ? styles.online : styles.offline}>{p.karafunConnecting ? 'Connecting…' : connected ? 'Connected' : p.karafunConnected ? 'Player offline' : 'Not connected'}</span></div>
       <div className={styles.actions}>
-        <button type="button" onClick={pausing ? p.onPauseKaraFun : p.onPlayKaraFun} disabled={busy || (pausing ? !p.karafunPauseReady : !p.karafunPlaybackReady)} title={pausing ? 'Pause the current KaraFun song' : 'Play the matching song for the current singer'}>
+        <button type="button" className={styles.playback} onClick={pausing ? p.onPauseKaraFun : p.onPlayKaraFun} disabled={busy || (pausing ? !p.karafunPauseReady : !p.karafunPlaybackReady)} title={pausing ? 'Pause the current KaraFun song' : 'Play the matching song for the current singer'}>
           {pausing ? <Pause size={18}/> : <Play size={18}/>}{p.karafunPlayPending ? 'Starting…' : p.karafunControlPending === 'pause' ? 'Pausing…' : pausing ? 'Pause' : 'Play'}
         </button>
         <button type="button" onClick={p.onSkipKaraFun} disabled={!p.karafunSkipReady || busy} title="Skip the KaraFun track after checking the next singer and required judge ballots"><SkipForward size={18}/>{p.karafunControlPending === 'skip' ? 'Skipping…' : 'Skip Song'}</button>

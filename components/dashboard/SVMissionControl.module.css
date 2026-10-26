@@ -28,3 +28,8 @@
 .error,.notice { margin:12px 0 0; padding:10px 12px; border-radius:8px; font-size:13px; line-height:1.5; background:#78350f33; color:#fed7aa; }
 .panel :is(button,summary):focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }
 @media(max-width:640px) { .panel { padding:16px; } .top > .actions { width:100%; } .top > .actions button { flex:1; } .player > .actions { width:100%; gap:8px; } .player > .actions button { flex:1; padding:10px; } .utilities { gap:8px; } .menu { min-width:0; } }
+
+.panel button.playback { min-width:116px; min-height:46px; padding:12px 20px; font-size:14px; }
+.panel button.playback:not(:disabled) { background:#f97316; border-color:#fb923c; color:#0b1222; box-shadow:0 0 0 3px #f973161a; }
+.panel button.playback:hover:not(:disabled) { background:#fb923c; border-color:#fdba74; }
+.panel button.playback:disabled { background:#142238; border-color:#34435b; color:#94a3b8; box-shadow:none; }
