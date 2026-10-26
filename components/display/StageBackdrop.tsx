@@ -67,7 +67,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       if (result) setFilled(true);
     } catch { setWindowHint('Unable to fill this display. Try reopening Stage Mode.'); }
   };
-  const [view, setView] = useState<'lyrics' | 'next'>('lyrics');
+  const [view, setView] = useState<'lyrics' | 'next' | 'welcome'>('lyrics');
   const [guides, setGuides] = useState(false);
   const [toolsVisible, setToolsVisible] = useState(true);
   useEffect(() => {
@@ -80,6 +80,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       }
       if (e.key.toLowerCase() === 'l') setView('lyrics');
       if (e.key.toLowerCase() === 'n') setView('next');
+      if (e.key.toLowerCase() === 'w') setView('welcome');
       if (e.key.toLowerCase() === 'g') setGuides(value => !value);
       wake();
     };
@@ -90,6 +91,15 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const upcoming = buildRotationQueue(singers.filter(row => row.status !== 'removed'), event?.current_performance_id).filter(row => row.id !== current?.id).slice(0, 5);
   const next = upcoming[0];
   const ended = Boolean(event?.is_show_ended);
+  // The host's Start Show selects a current performance. Completed songs keep
+  // a later gap from being mistaken for the beginning of a new show.
+  const beforeShow = ready && Boolean(event) && !ended && !current && !singers.some(row => row.status === 'completed');
+  const previousBeforeShow = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (!ready || !event) return;
+    if (previousBeforeShow.current === true && !beforeShow && !ended) setView('lyrics');
+    previousBeforeShow.current = beforeShow;
+  }, [ready, event?.id, beforeShow, ended]);
   const entranceEvent = useRef<string | null>(null);
   const lastPerformance = useRef<string | null | undefined>(undefined);
   const entranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,7 +123,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   }, [ready, event?.id, event?.current_performance_id, ended]);
   useEffect(() => () => { if (entranceTimer.current) clearTimeout(entranceTimer.current); }, []);
   const entrance = !ended && current?.id === entranceId ? current : null;
-  const showNext = !ended && (view === 'next' || !current);
+  const showWelcome = !ended && (view === 'welcome' || (beforeShow && view === 'lyrics'));
+  const showNext = !ended && !showWelcome && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
   const stageName = event?.venue || event?.name || 'StageVotes';
@@ -163,8 +174,13 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       </div>}
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
-    <section className={styles.lyricSpace} aria-label={showNext || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showNext ? <div className={styles.intermission} key={next?.id || 'open'}>
+    <section className={styles.lyricSpace} aria-label={showNext || showWelcome || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
+      {!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showWelcome ? <div className={styles.welcome}>
+        <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
+        <h2>{beforeShow ? 'Karaoke starts soon!' : 'Ready for your next song?'}</h2>
+        <p>{event.signups_open === false ? 'Singer signups are closed. Enjoy the show!' : showQr ? 'Ready to take the stage? Scan the code to join the queue.' : 'Ready to take the stage? Ask your host how to join the queue.'}</p>
+        {event.signups_open !== false && <div className={styles.welcomeSteps}><span><b>01</b> Pick a song</span><span><b>02</b> Join the queue</span><span><b>03</b> Get ready to sing</span></div>}
+      </div> : showNext ? <div className={styles.intermission} key={next?.id || 'open'}>
         <span className={styles.kicker}>{next ? 'UP NEXT' : 'THE STAGE IS YOURS'}</span>
         {next ? <><Avatar singer={next} large /><h2>{nameOf(next)}</h2><p>{next.song_title}</p><span className={styles.artist}>{next.artist}</span></> : <><h2>{current ? 'Enjoy the show.' : 'Your next song starts here.'}</h2><p>{event.signups_open === false ? 'Singer signups are closed.' : 'Choose a song. Make a memory.'}</p></>}
       </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Press G to hide guides.</small></div> : null}
@@ -172,7 +188,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     {event && <StageShoutoutTicker eventId={event.id} active={Boolean(current) && !ended} />}
     {error && <div role="status" className={styles.connection}>{error}</div>}
     <nav aria-label="Stage display controls" className={styles.tools + (toolsVisible ? '' : ' ' + styles.hiddenTools)}>
-      <button type="button" aria-pressed={view === 'lyrics'} onClick={() => setView('lyrics')}>Lyrics · L</button>
+      <button type="button" aria-pressed={view === 'lyrics' && !showWelcome} onClick={() => setView('lyrics')}>Lyrics · L</button>
+      <button type="button" aria-pressed={showWelcome} onClick={() => setView('welcome')}>Welcome · W</button>
       <button type="button" aria-pressed={view === 'next'} onClick={() => setView('next')}>Up Next · N</button>
       <button type="button" aria-pressed={guides} onClick={() => { setView('lyrics'); setGuides(value => !value); }}>Guides · G</button>
       <label className={styles.themePicker}><span>Theme</span><select aria-label="Stage theme" value={theme} onChange={e => chooseTheme(e.target.value)}>{themes.map(option => <option key={option} value={option}>{themeNames[option]}</option>)}</select></label>

@@ -123,3 +123,14 @@
 .badgeCelebration span:not(.badgeIcon) { color:#fde68a; font-size:clamp(11px,.9vw,17px); }
 .badgeCelebration .badgeLabel { font-size:clamp(8px,.65vw,12px)!important; letter-spacing:.1em; font-weight:800; color:#fbbf24!important; margin-bottom:3px; }
 @media(max-height:650px) { .badgeCelebration { padding:4px 7px; } .badgeCelebration .badgeLabel { display:none!important; } }
+
+/* Pre-show welcome stays inside the area reserved for the lyrics window. */
+.welcome { width:min(90%,1050px); text-align:center; animation:reveal .6s ease-out; }
+.welcomeEyebrow { display:block; color:#7dd3fc; font-size:clamp(12px,1.15vw,21px); font-weight:800; letter-spacing:.2em; text-transform:uppercase; overflow-wrap:anywhere; }
+.welcome h2 { margin:2vh 0 1.5vh; font-size:clamp(35px,5.4vw,100px); line-height:1.08; letter-spacing:-.035em; }
+.welcome p { margin:0 auto; max-width:800px; color:#cbd5e1; font-size:clamp(17px,1.65vw,31px); line-height:1.4; }
+.welcomeSteps { display:flex; justify-content:center; flex-wrap:wrap; gap:clamp(10px,1vw,20px); margin-top:4vh; }
+.welcomeSteps span { display:flex; align-items:center; gap:9px; padding:clamp(8px,1vw,18px); border:1px solid #ffffff29; border-radius:14px; background:#111b2bbd; color:#f8fafc; font-weight:700; font-size:clamp(12px,1.1vw,21px); }
+.welcomeSteps b { color:#fb923c; font-size:.85em; }
+.screen[data-theme="halloween"] .welcomeEyebrow { color:#ffbf7a; }
+@media(prefers-reduced-motion:reduce) { .welcome { animation:none; } }
