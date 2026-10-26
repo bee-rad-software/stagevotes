@@ -10,6 +10,7 @@ type Props = {
   onAddSinger?: () => void;
   onToggleVoting?: () => void;
   onOpenDisplay?: () => void;
+  onOpenStageDisplay?: () => void;
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
   onPlayKaraFun?: () => void;
@@ -73,6 +74,7 @@ export default function SVMissionControl(p: Props) {
       {p.judgingEnabled && <button type="button" role="switch" aria-checked={Boolean(p.votingOpen)} onClick={p.onToggleVoting} disabled={!p.hasCurrentSinger} title="Open or close judging for the current singer"><Vote size={17}/>Voting: {p.votingOpen ? 'Open' : 'Closed'}</button>}
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onOpenDisplay)}>Open TV Display</button>
+        {p.onOpenStageDisplay && <button type="button" onClick={e => closeMenu(e,p.onOpenStageDisplay)}>Open Stage Mode · Lyrics backdrop</button>}
         <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} KaraFun Display</button>
       </div></details>
       {p.judgingEnabled && <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>

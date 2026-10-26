@@ -5760,6 +5760,7 @@ if (!isSubscribed) {
 
 <div id="watchdog-mission-controls">
 <SVMissionControl
+  onOpenStageDisplay={() => { window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
   judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
   onEndShow={endShow}
