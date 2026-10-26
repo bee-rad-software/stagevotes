@@ -75,11 +75,12 @@ export default function SVMissionControl(p: Props) {
         <button type="button" onClick={e => closeMenu(e,p.onOpenDisplay)}>Open TV Display</button>
         <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} KaraFun Display</button>
       </div></details>
-      <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>
-        {p.judgingEnabled && <button type="button" onClick={e => closeMenu(e,p.onAwards)}><Trophy size={17}/>Awards</button>}
-        {p.showStarted && <button type="button" className={styles.danger} onClick={e => closeMenu(e,p.onEndShow)}><Square size={16}/>End Show</button>}
-        {!p.showStarted && !p.judgingEnabled && <span>Start the show to see more actions.</span>}
-      </div></details>
+      {p.judgingEnabled && <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>
+        <button type="button" onClick={e => closeMenu(e,p.onAwards)}><Trophy size={17}/>Awards</button>
+      </div></details>}
+      {p.onEndShow && <button type="button" className={styles.endShow} onClick={p.onEndShow}>
+        <Square size={16} aria-hidden="true"/>End Show
+      </button>}
     </div>
   </section>;
 }

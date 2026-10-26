@@ -33,3 +33,7 @@
 .panel button.playback:not(:disabled) { background:#f97316; border-color:#fb923c; color:#0b1222; box-shadow:0 0 0 3px #f973161a; }
 .panel button.playback:hover:not(:disabled) { background:#fb923c; border-color:#fdba74; }
 .panel button.playback:disabled { background:#142238; border-color:#34435b; color:#94a3b8; box-shadow:none; }
+
+.panel button.endShow { margin-left:16px; min-height:40px; padding:10px 16px; background:#7f1d1d26; border-color:#b45353; color:#fecaca; }
+.panel button.endShow:hover:not(:disabled) { background:#7f1d1d55; border-color:#f87171; color:#fff; }
+@media(max-width:640px) { .panel button.endShow { margin-left:0; } }
