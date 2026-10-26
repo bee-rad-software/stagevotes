@@ -89,3 +89,20 @@
 .entrance button:focus-visible { outline: 2px solid #38bdf8; outline-offset: 3px; }
 @keyframes singerEntrance { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .entrance { animation: none; } }
+
+/* Themes keep the center dark so KaraFun's overlaid lyrics remain readable. */
+.themePicker { display:flex; align-items:center; gap:7px; color:#cbd5e1; font-size:12px; font-weight:700; }
+.screen[data-theme="halloween"] .aurora { background:radial-gradient(ellipse at 0% 25%,#f973164d,transparent 37%),radial-gradient(ellipse at 100% 70%,#9333ea45,transparent 35%),linear-gradient(155deg,#160b22,#080511 60%); }
+.screen[data-theme="neon"] .aurora { background:radial-gradient(ellipse at 0% 25%,#06b6d45c,transparent 38%),radial-gradient(ellipse at 100% 70%,#ec48994a,transparent 36%),linear-gradient(155deg,#071326,#070519 60%); }
+.screen[data-theme="country"] .aurora { background:radial-gradient(ellipse at 0% 25%,#c777224a,transparent 38%),radial-gradient(ellipse at 100% 70%,#9353313d,transparent 36%),linear-gradient(155deg,#1b120d,#090706 60%); }
+.screen[data-theme="holiday"] .aurora { background:radial-gradient(ellipse at 0% 25%,#128b624a,transparent 38%),radial-gradient(ellipse at 100% 70%,#b91c1c40,transparent 36%),linear-gradient(155deg,#0a1814,#080b10 60%); }
+.screen[data-theme="halloween"] .kicker { color:#ffbf7a; }
+.screen[data-theme="neon"] .kicker { color:#67e8f9; }
+.screen[data-theme="country"] .kicker { color:#fcd89c; }
+.screen[data-theme="holiday"] .kicker { color:#a7f3d0; }
+.screen[data-theme="halloween"] .header::after, .screen[data-theme="neon"] .header::after, .screen[data-theme="country"] .header::after, .screen[data-theme="holiday"] .header::after { position:absolute; right:0; bottom:-1.7vh; opacity:.55; color:#fff; font-size:clamp(12px,1.2vw,22px); letter-spacing:.3em; pointer-events:none; }
+.screen[data-theme="halloween"] .header::after { content:'✦  🎃  ✦'; }
+.screen[data-theme="neon"] .header::after { content:'✦  ✧  ✦'; color:#f0abfc; }
+.screen[data-theme="country"] .header::after { content:'★  ♪  ★'; color:#fcd89c; }
+.screen[data-theme="holiday"] .header::after { content:'✦  ❄  ✦'; color:#a7f3d0; }
+.themePicker select:focus-visible { outline:2px solid #fbbf24; outline-offset:3px; }

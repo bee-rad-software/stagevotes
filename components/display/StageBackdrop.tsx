@@ -8,6 +8,9 @@ import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
+const themes = ['classic', 'halloween', 'neon', 'country', 'holiday'] as const;
+type StageTheme = typeof themes[number];
+const themeNames: Record<StageTheme, string> = { classic: 'Classic', halloween: 'Halloween', neon: 'Neon Night', country: 'Country Night', holiday: 'Holiday' };
 const nameOf = (singer: StageSinger) => singer.duet_partner_name ? singer.singer_name + ' & ' + singer.duet_partner_name : singer.singer_name;
 
 function Avatar({ singer, large = false }: { singer: StageSinger; large?: boolean }) {
@@ -21,6 +24,20 @@ function Avatar({ singer, large = false }: { singer: StageSinger; large?: boolea
 export default function StageBackdrop({ event, singers, logo, origin, ready, error }: {
   event: StageEvent | null; singers: StageSinger[]; logo: string; origin: string; ready: boolean; error: string;
 }) {
+  const [theme, setTheme] = useState<StageTheme>('classic');
+  useEffect(() => {
+    setTheme('classic');
+    if (!event?.id) return;
+    try {
+      const saved = localStorage.getItem('stage-theme:' + event.id);
+      if (themes.includes(saved as StageTheme)) setTheme(saved as StageTheme);
+    } catch { /* The display still works without saved preferences. */ }
+  }, [event?.id]);
+  const chooseTheme = (value: string) => {
+    if (!themes.includes(value as StageTheme)) return;
+    setTheme(value as StageTheme);
+    try { if (event?.id) localStorage.setItem('stage-theme:' + event.id, value); } catch { /* Keep the choice for this session. */ }
+  };
   const [native, setNative] = useState(false);
   const [filled, setFilled] = useState(false);
   const [displays, setDisplays] = useState<{ id: string; label: string; width: number; height: number; current: boolean }[]>([]);
@@ -100,7 +117,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
   const stageName = event?.venue || event?.name || 'StageVotes';
 
-  return <main className={styles.screen}>
+  return <main className={styles.screen} data-theme={theme}>
     <div className={styles.aurora} aria-hidden="true" /><div className={styles.floor} aria-hidden="true" />
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
@@ -131,6 +148,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <button type="button" aria-pressed={view === 'lyrics'} onClick={() => setView('lyrics')}>Lyrics · L</button>
       <button type="button" aria-pressed={view === 'next'} onClick={() => setView('next')}>Up Next · N</button>
       <button type="button" aria-pressed={guides} onClick={() => { setView('lyrics'); setGuides(value => !value); }}>Guides · G</button>
+      <label className={styles.themePicker}><span>Theme</span><select aria-label="Stage theme" value={theme} onChange={e => chooseTheme(e.target.value)}>{themes.map(option => <option key={option} value={option}>{themeNames[option]}</option>)}</select></label>
       {native && <select aria-label="TV display" value={displayId} onChange={e => setDisplayId(e.target.value)}>{displays.map(display => <option key={display.id} value={display.id}>{display.label} · {display.width}×{display.height}</option>)}</select>}
       <button type="button" onClick={() => { void fillTV(); }}>Fill TV</button>
       {native && filled && <button type="button" onClick={() => { void restore(); }}>Restore · Esc</button>}
