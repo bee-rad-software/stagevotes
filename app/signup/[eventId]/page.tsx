@@ -4247,7 +4247,7 @@ currentArtist={
       )}
 
       <SVInstallSingerApp />
-      <ShowShoutouts key={eventId} eventId={eventId} />
+      <ShowShoutouts key={"shoutouts-" + eventId} eventId={eventId} />
       <SVEventPhotos key={eventId} eventId={eventId} />
 
       <SVTipCard

@@ -6518,7 +6518,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   </div></details>
 
 <SVLeagueShowLink eventId={eventId} />
-<ShowShoutouts key={eventId} eventId={eventId} host />
+<ShowShoutouts key={"shoutouts-" + eventId} eventId={eventId} host />
 <SVEventPhotos key={eventId} eventId={eventId} host />
 
 <details className="sv-host-song-history">
