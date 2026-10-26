@@ -1,17 +1,17 @@
-# Stage Mode v1
+# Stage Mode: five-singer sidebar and Fill TV
 
-In the host dashboard, open **Run the show → Displays → Open Stage Mode · Lyrics backdrop**. This opens `/stage-display/{eventId}` in a separate window. Move it to the TV, size it to the screen, and position KaraFun's transparent lyrics window over the open center. The existing TV display and narrow KaraFun companion remain available. No desktop installer change or SQL migration is required for this version.
+Open **Run the show → Displays → Open Stage Mode · Lyrics backdrop**. The current singer and venue branding remain at the top. The next five active performances follow the host rotation in a left column. The signup QR is beneath that column, away from KaraFun's lower-right watermark. QR visibility still respects signup/QR settings. Reposition KaraFun's transparent window inside the clear area to the right of the column; StageVotes cannot move or hide KaraFun's own window.
 
-The backdrop does not render lyrics or control KaraFun's window. Keep KaraFun running and use the host playback controls as usual. Test window stacking and focus on the actual host computer and TV before using it live. Browser fullscreen is optional: if it changes window stacking, use a normal maximized window instead.
+## Desktop Fill TV
 
-The top band shows the current singer, song, and venue name, with account branding where available. Photos use singer profile IDs; guests get an initial rather than matching another person's photo by name. The bottom shows the next two active rotation entries. The existing static singer signup route is used when an account ID is available. The QR is shown only when the show enables its signup QR and signups are open. Ended shows replace the stage content with a thank-you message and hide signup/queue prompts.
+**Requires a rebuilt/reinstalled StageVotes desktop app** with the updated electron-karafun-display.js and electron-preload.js. A Vercel deployment alone updates the layout but cannot update an installed app's native window behavior. Use the repository's normal signed/notarized release workflow on the appropriate build machine; do not publish an unsigned replacement. The main host and existing narrow KaraFun display are unchanged.
 
-Move the pointer to reveal the display toolbar (it fades after five seconds), or tab to its buttons. With this display focused:
-- **L:** Lyrics view, leaving the center clear while there is a current singer.
-- **N:** Up Next announcement view. Move or hide the transparent lyrics window before using it, since StageVotes cannot hide an external KaraFun window.
-- **G:** Toggle the alignment guides. Use the Guides button to return to Lyrics view first.
-- **Fullscreen:** use the button or double-click the backdrop. Escape leaves browser fullscreen.
+The updated desktop app intercepts only same-origin `/stage-display/{eventId}` window opens and creates a separate frameless Stage Mode window, with no native fullscreen capability. Drag the small handle along the top to move it, choose the TV in the display toolbar, then click **Fill TV**. This sets ordinary window bounds to the selected display's bounds; it does not call fullscreen/maximize or create a macOS fullscreen Space. The backdrop is not always-on-top. Bring KaraFun's transparent lyric window above it after positioning.
 
-With no current singer, the display automatically shows the next queued singer. During a performance the view switch is manual: v1 follows StageVotes queue/current-singer data, not KaraFun's exact playback/paused/end state. No song is started and no singer is advanced by this display. Real-time updates and a ten-second refresh keep queue changes current. Connection interruptions are shown in a small top notice; the last loaded view is retained while reconnecting.
+**Restore** or **Escape** (with Stage Mode focused) returns to the previous window size. **Close** closes just Stage Mode. A repeated Fill TV preserves the original restore bounds, even when switching monitors. The old installed app or a browser still opens a normal window: Fill TV explains that the desktop update is needed. Continue resizing manually there. Browser fullscreen and double-click fullscreen have been removed from Stage Mode because they can isolate it from KaraFun on macOS.
 
-The background animation stays around the edges and honors reduced-motion preferences. Layout scales for TVs, with smaller-window fallbacks. Keep lyrics away from the header/footer bands. The first release does not include audience photos, advertisements, audio-reactive visuals, judge progress, or winner reveals.
+Move the pointer to reveal the toolbar; it fades after five seconds and remains available by keyboard focus. L selects Lyrics, N selects Up Next, G toggles alignment guides. The queue/current-singer data refresh live and every ten seconds. Up Next is manual during a performance; with no current singer it appears automatically. No lyric rendering, playback commands, or queue advancement are performed by this display. Ended shows hide queue and signup content. Animation honors reduced-motion preferences.
+
+## Verification
+
+Run `node tests/stage-window.cjs` from the repository root for the mocked Electron regression checks. These cover window options, display selection, repeated fill/restore, main-frame sender checks and URL-origin restrictions. TypeScript and rendered display states were checked separately. Real macOS/Windows window stacking, signing/notarization and an external TV still require release-machine testing.

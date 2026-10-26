@@ -21,6 +21,8 @@ const DISPLAY_WIDTH = 430;
 
 let hostWindow = null;
 let companionWindow = null;
+let stageWindow = null;
+let stageRestoreBounds = null;
 
 function getWindowStatePath() {
   return path.join(
@@ -148,6 +150,17 @@ y:
     },
   });
 
+  hostWindow.webContents.setWindowOpenHandler(({ url }) => {
+    try {
+      const parsed = new URL(url);
+      const match = parsed.pathname.match(/^\/stage-display\/([0-9a-f-]{36})\/?$/i);
+      if (parsed.origin === new URL(BASE_URL).origin && match) {
+        createStageWindow(match[1]);
+        return { action: "deny" };
+      }
+    } catch {}
+    return { action: "allow" };
+  });
   hostWindow.loadURL(BASE_URL);
 
   const saveHostBounds = () => {
@@ -308,7 +321,98 @@ companionWindow.on(
   return companionWindow;
 }
 
+
+function isStageUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.origin === new URL(BASE_URL).origin &&
+      /^\/stage-display\/[0-9a-f-]{36}\/?$/i.test(parsed.pathname);
+  } catch { return false; }
+}
+
+function isStageSender(event) {
+  return stageWindow && !stageWindow.isDestroyed() &&
+    event.sender === stageWindow.webContents &&
+    event.senderFrame === stageWindow.webContents.mainFrame &&
+    isStageUrl(event.senderFrame.url);
+}
+
+function createStageWindow(eventId) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId)) return;
+  if (stageWindow && !stageWindow.isDestroyed()) {
+    stageWindow.loadURL(BASE_URL + "/stage-display/" + eventId);
+    stageWindow.show(); stageWindow.focus(); return stageWindow;
+  }
+  const saved = loadWindowState()?.stage;
+  const area = screen.getPrimaryDisplay().workArea;
+  const bounds = isBoundsVisible(saved) ? saved : {
+    x: area.x + 40, y: area.y + 40,
+    width: Math.min(1200, area.width - 80), height: Math.min(760, area.height - 80)
+  };
+  stageRestoreBounds = null;
+  stageWindow = new BrowserWindow({
+    ...bounds, minWidth: 640, minHeight: 400,
+    title: "StageVotes Stage Mode", frame: false,
+    resizable: true, movable: true, minimizable: true,
+    maximizable: false, fullscreenable: false, hasShadow: false,
+    backgroundColor: "#03060e",
+    webPreferences: { contextIsolation: true, nodeIntegration: false,
+      preload: path.join(__dirname, "electron-preload.js") }
+  });
+  // Never make the backdrop always-on-top: KaraFun must remain above it.
+  stageWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  stageWindow.webContents.on("will-navigate", (event, url) => {
+    if (!isStageUrl(url)) event.preventDefault();
+  });
+  const save = () => {
+    if (!stageWindow || stageWindow.isDestroyed() || stageRestoreBounds) return;
+    saveWindowState({ ...(loadWindowState() || {}), stage: stageWindow.getBounds() });
+  };
+  stageWindow.on("move", save); stageWindow.on("resize", save);
+  stageWindow.on("closed", () => { stageWindow = null; stageRestoreBounds = null; });
+  stageWindow.loadURL(BASE_URL + "/stage-display/" + eventId);
+  return stageWindow;
+}
+
+function restoreStageWindow() {
+  if (!stageWindow || stageWindow.isDestroyed()) return;
+  if (stageRestoreBounds) {
+    const bounds = stageRestoreBounds;
+    stageRestoreBounds = null;
+    const area = screen.getPrimaryDisplay().workArea;
+    stageWindow.setBounds(isBoundsVisible(bounds) ? bounds : {
+      x: area.x + 40, y: area.y + 40,
+      width: Math.min(1200, area.width - 80), height: Math.min(760, area.height - 80)
+    });
+  }
+}
+
 app.whenReady().then(() => {
+  ipcMain.handle("stage-fill-tv", (event, displayId) => {
+    if (!isStageSender(event)) return null;
+    const displays = screen.getAllDisplays();
+    const target = displays.find(display => String(display.id) === String(displayId)) ||
+      screen.getDisplayMatching(stageWindow.getBounds());
+    if (!stageRestoreBounds) stageRestoreBounds = stageWindow.getBounds();
+    stageWindow.setBounds(target.bounds);
+    return { filled: true };
+  });
+  ipcMain.handle("stage-restore-window", event => {
+    if (!isStageSender(event)) return null;
+    restoreStageWindow(); return { filled: false };
+  });
+  ipcMain.handle("stage-list-displays", event => {
+    if (!isStageSender(event)) return null;
+    const current = screen.getDisplayMatching(stageWindow.getBounds());
+    return { filled: Boolean(stageRestoreBounds), displays: screen.getAllDisplays().map((display, index) => ({
+      id: String(display.id), label: display.label || "Display " + (index + 1),
+      width: display.bounds.width, height: display.bounds.height, current: display.id === current.id
+    })) };
+  });
+  ipcMain.handle("stage-close-window", event => {
+    if (!isStageSender(event)) return false;
+    stageWindow.close(); return true;
+  });
   if (process.platform === "darwin") {
     app.dock.setIcon(
       path.join(

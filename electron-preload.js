@@ -2,6 +2,10 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("stagevotesDesktop", {
   isDesktop: true,
+  fillStageTV: displayId => ipcRenderer.invoke("stage-fill-tv", displayId),
+  restoreStageWindow: () => ipcRenderer.invoke("stage-restore-window"),
+  listStageDisplays: () => ipcRenderer.invoke("stage-list-displays"),
+  closeStageWindow: () => ipcRenderer.invoke("stage-close-window"),
   toggleKarafunDisplay: (eventId) => {
   ipcRenderer.send(
     "toggle-karafun-display",
