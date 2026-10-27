@@ -1,4 +1,5 @@
 'use client'
+import { searchHostCatalog } from '@/lib/hostCatalog';
 
 import noteSharingStyles from './judge-note-sharing.module.css';
 import { awardsPath } from '@/lib/awardsRoute';
