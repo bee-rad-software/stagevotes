@@ -112,17 +112,17 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
             <label className={styles.checkLabel}><input type="checkbox" checked={progress.skipKaraFun} disabled={!ready} onChange={e => update({ skipKaraFun: e.target.checked, karaokeTest: false })} /><span>I am using another player or running playback manually</span></label>
           </div>
         </SetupCard>
-        <SetupCard number={4} icon={<Smartphone size={18} />} title="Test singer signup" done={progress.signupTest} status={progress.signupTest ? 'Tested' : activeEventId ? 'To do' : 'Needs a show'}>
+        <SetupCard number={4} icon={<Smartphone size={18} />} title="Test singer signup" done={progress.signupTest} status={progress.signupTest ? 'Tested' : 'To do'}>
           <p className={styles.description}>Scan the singer QR code on a phone, add a test song, and check the host queue. Remove the entry afterward.</p>
           {activeEventId ? <a href={'/signup/' + activeEventId} target="_blank" rel="noreferrer" className={styles.action}>Open singer signup<ExternalLink size={13} /></a>
-            : <p className={styles.hint}>Create or open an active show to test signup.</p>}
-          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.signupTest} disabled={!ready || (!activeEventId && !progress.signupTest)} onChange={e => update({ signupTest: e.target.checked })} /><span>I tested signup and checked the queue</span></label></div>
+            : <p className={styles.hint}>To test signup, create or open a show. If you already tested it, check the box below.</p>}
+          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.signupTest} disabled={!ready} onChange={e => update({ signupTest: e.target.checked })} /><span>I tested signup and checked the queue</span></label></div>
         </SetupCard>
-        <SetupCard number={5} icon={<Monitor size={18} />} title="Test your show display" done={progress.displayTest} status={progress.displayTest ? 'Tested' : activeEventId ? 'To do' : 'Needs a show'}>
+        <SetupCard number={5} icon={<Monitor size={18} />} title="Test your show display" done={progress.displayTest} status={progress.displayTest ? 'Tested' : 'To do'}>
           <p className={styles.description}>Open the live display on your TV or external screen. Keep the host dashboard on your main screen.</p>
           {activeEventId ? <a href={'/display/' + activeEventId} target="_blank" rel="noreferrer" className={styles.action}>Open show display<ExternalLink size={13} /></a>
-            : <p className={styles.hint}>Create or open an active show to test the display.</p>}
-          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.displayTest} disabled={!ready || (!activeEventId && !progress.displayTest)} onChange={e => update({ displayTest: e.target.checked })} /><span>I checked the display on my screen</span></label></div>
+            : <p className={styles.hint}>To test the display, create or open a show. If you already tested it, check the box below.</p>}
+          <div className={styles.checks}><label className={styles.checkLabel}><input type="checkbox" checked={progress.displayTest} disabled={!ready} onChange={e => update({ displayTest: e.target.checked })} /><span>I checked the display on my screen</span></label></div>
         </SetupCard>
       </div>
       <div className={styles.footer}><Trophy size={18} aria-hidden="true" /><p><strong>Running a competition?</strong> Test judge access and a complete ballot before the first scored performance.<a href="https://www.stagevotes.com/faq#judging" target="_blank" rel="noreferrer" className={styles.textLink}>Judging guide<ExternalLink size={12} /></a></p></div>
