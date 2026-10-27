@@ -72,6 +72,9 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
 
   const checks = [venueCount > 0, hasShow, progress.karaokeTest || progress.skipKaraFun, progress.signupTest, progress.displayTest];
 
+  // Once all setup steps are complete, keep the dashboard focused on the show.
+  if (ready && allDone) return null;
+
   return <section className={styles.root} aria-label="First-show setup">
     <button type="button" className={styles.toggle} aria-expanded={!progress.collapsed} aria-controls={checklistId}
       disabled={!ready} onClick={() => update({ collapsed: !progress.collapsed })}>
