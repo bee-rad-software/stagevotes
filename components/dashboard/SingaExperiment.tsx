@@ -1,23 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase';
 
 type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string };
 type Variant = { resource_id: string; catalog?: { name?: string }; is_duet?: boolean; is_explicit?: boolean; duration?: number };
 type Song = { resource_id: string; name: string; artists?: { name?: string }[]; variants?: Variant[] };
 
-export default function SingaExperiment({ items, eventId }: { items: QueueItem[]; eventId: string }) {
+export default function SingaExperiment({ items }: { items: QueueItem[] }) {
   const socket = useRef<WebSocket | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connectId = useRef('');
   const requestId = useRef('');
   const [code, setCode] = useState('');
-  const [enabled, setEnabled] = useState(false);
-  const [settingBusy, setSettingBusy] = useState(true);
-  const [settingError, setSettingError] = useState('');
-  useEffect(() => { let active = true; setSettingBusy(true); supabase.rpc('get_show_singa_enabled', { p_event_id: eventId }).then(({ data, error }) => { if (!active) return; if (error) setSettingError('Singa catalog setting is unavailable. Install the database update.'); else setEnabled(data === true); setSettingBusy(false); }); return () => { active = false; }; }, [eventId]);
-  async function updateSetting(value: boolean) { setSettingBusy(true); setSettingError(''); const { error } = await supabase.rpc('set_show_singa_enabled', { p_event_id: eventId, p_enabled: value }); if (error) setSettingError('Unable to update the Singa catalog setting.'); else setEnabled(value); setSettingBusy(false); }
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState('Enter the code from the Singa remote.');
   const [itemId, setItemId] = useState('');
@@ -89,8 +83,6 @@ export default function SingaExperiment({ items, eventId }: { items: QueueItem[]
   const button = { padding: '10px 16px', marginTop: 10, borderRadius: 8, background: '#f97316', color: '#fff', border: 0 };
   return <details style={{ padding: 16, margin: '16px 0', border: '1px solid #465571', borderRadius: 12 }}>
     <summary>Send a song to Singa (test)</summary>
-    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={enabled} disabled={settingBusy} onChange={(e) => void updateSetting(e.target.checked)} /> Use Singa song catalog for this show</label>
-    {settingError && <p role="alert">{settingError}</p>}
     <p>Manually send a song to your Singa remote queue. This does not start playback or advance the StageVotes queue.</p>
     <label>Singa remote code<input style={field} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" /></label>
     <button type="button" style={button} onClick={connect} disabled={pending}>Connect</button>

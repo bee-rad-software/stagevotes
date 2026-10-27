@@ -262,6 +262,19 @@ useEffect(() => {
   karafunChannel,
   setKarafunChannel,
 ] = useState('');
+  const [singaEnabled, setSingaEnabled] = useState<boolean | null>(null);
+
+
+  async function searchSingaCatalog(term: string): Promise<SVSongOption[]> {
+    const params = new URLSearchParams({ search: term, page: '1', page_size: '25', type: 'songs', market: 'US' });
+    const response = await fetch(`https://api.singa.com/v1.4/search/?${params}`);
+    if (!response.ok) throw new Error('Singa search failed');
+    const data = await response.json();
+    const queued = new Set(queue.map(performance => performance.song_title?.trim().toLowerCase()));
+    return (Array.isArray(data.songs?.items) ? data.songs.items : [])
+      .filter((song: any) => song.name && Array.isArray(song.variants) && song.variants.length > 0)
+      .map((song: any) => ({ title: song.name, artist: (song.artists || []).map((artist: any) => artist.name).filter(Boolean).join(', '), status: queued.has(song.name.trim().toLowerCase()) ? 'queued' : 'available' }));
+  }
   const [customCatalog, setCustomCatalog] = useState<boolean | null>(null);
   useEffect(() => { let active=true; if (!eventId || karafunChannel) { setCustomCatalog(false); return; } setCustomCatalog(null); searchHostCatalog(eventId, '', 1).then(result => { if(active) setCustomCatalog(result.configured); }).catch(() => { if(active) setCustomCatalog(null); }); return () => { active=false; }; }, [eventId, karafunChannel]);
 
@@ -462,6 +475,7 @@ const [recoveryRequest, setRecoveryRequest] =
   cashapp_url,
   apple_pay_url,
   karafun_channel,
+  singa_enabled,
   max_songs_per_singer
   `
 )
@@ -477,6 +491,7 @@ const [recoveryRequest, setRecoveryRequest] =
       return;
     }
 
+    setSingaEnabled(accountData?.singa_enabled === true);
     setTipsEnabled(
       accountData?.tips_enabled || false
     );
@@ -1441,6 +1456,16 @@ const needsCompetitionSong =
   setPickerLoading(true);
 
   try {
+    if (singaEnabled === null) throw new Error('Catalog setting unavailable');
+    if (singaEnabled) {
+      if (event?.exclude_explicit_songs) {
+        setPickerSongs([]);
+        setPickerError('Singa search is unavailable while explicit songs are excluded. Ask your host for help choosing a song.');
+        return;
+      }
+      setPickerSongs(await searchSingaCatalog(cleanedSearch));
+      return;
+    }
     /*
      * If this venue has KaraFun configured,
      * search KaraFun's catalog directly.
@@ -1571,6 +1596,18 @@ const needsCompetitionSong =
   setPickerLoading(true);
 
   try {
+    if (singaEnabled === null) throw new Error('Catalog setting unavailable');
+    if (singaEnabled) {
+      if (event?.exclude_explicit_songs) {
+        setPickerError('Singa search is unavailable while explicit songs are excluded. Ask your host for help choosing a song.');
+        return;
+      }
+      const terms = ['love', 'rock', 'dance', 'party', 'country', 'classic', 'pop'];
+      const songs = (await searchSingaCatalog(terms[Math.floor(Math.random() * terms.length)])).filter(song => song.status === 'available');
+      if (!songs.length) { setPickerError('No available songs found. Try searching instead.'); return; }
+      setSurpriseSong({ ...songs[Math.floor(Math.random() * songs.length)], note: 'StageVotes picked this one for you' });
+      return;
+    }
     /*
      * If KaraFun is configured, use KaraFun
      * as the source of truth for Surprise Me.
@@ -4290,7 +4327,7 @@ currentArtist={
       >
 
         <SVSongPicker
-          discoveryEventId={karafunChannel || customCatalog === false ? eventId : undefined}
+          discoveryEventId={singaEnabled === false && (karafunChannel || customCatalog === false) ? eventId : undefined}
           afterResultsContent={!editingPerformanceId && (
             <div className="sv-song-sms-options">
               <div className="sv-mobile-kicker">Optional text alerts</div>
@@ -4433,14 +4470,14 @@ currentArtist={
             </>
           }
           songs={pickerSongs}
-          sections={(karafunChannel || customCatalog === false) && !event?.exclude_explicit_songs && favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
+          sections={singaEnabled === false && (karafunChannel || customCatalog === false) && !event?.exclude_explicit_songs && favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
           recommendations={aiRecommendations}
           recommendationsLoading={aiRecommendationsLoading}
           recommendationsMessage={aiRecommendationsMessage}
           onGenerateRecommendations={
-            singerProfile?.id && (karafunChannel || customCatalog === false)
+            singerProfile?.id && singaEnabled === false && (karafunChannel || customCatalog === false)
               ? generateAIRecommendations
               : undefined
           }

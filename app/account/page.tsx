@@ -40,6 +40,7 @@ export default function AccountPage() {
   const [staticJudgeQr, setStaticJudgeQr] = useState(false);
   const [staticPeopleQr, setStaticPeopleQr] = useState(false);
   const [karafunChannel, setKarafunChannel] = useState('');
+  const [singaEnabled, setSingaEnabled] = useState(false);
   const [
   maxQueuedSongsPerSinger,
   setMaxQueuedSongsPerSinger,
@@ -70,7 +71,7 @@ export default function AccountPage() {
 
     const { data: account, error: accountError } = await supabase
       .from('accounts')
-.select('id, name, subscription_status, stripe_subscription_id, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, max_songs_per_singer, karafun_channel')      .eq('id', accountUser.account_id)
+.select('id, name, subscription_status, stripe_subscription_id, tips_enabled, venmo_url, cashapp_url, apple_pay_url, logo_url, static_signup_qr, static_judge_qr, static_people_qr, max_songs_per_singer, karafun_channel, singa_enabled')      .eq('id', accountUser.account_id)
       .single();
 
     if (accountError || !account) {
@@ -104,6 +105,7 @@ if (venue?.id) {
   account.max_songs_per_singer ?? 3
 );
     setKarafunChannel(account.karafun_channel || '');
+    setSingaEnabled(account.singa_enabled === true);
   }
 
   async function saveSettings() {
@@ -123,6 +125,7 @@ if (venue?.id) {
         max_songs_per_singer:
   maxQueuedSongsPerSinger,
         karafun_channel: karafunChannel,
+        singa_enabled: singaEnabled,
       })
       .eq('id', accountId);
 
@@ -289,7 +292,7 @@ return (
           fontSize: 20,
         }}
       >
-        KaraFun Integration
+        Karaoke Software
       </h2>
 
       <p
@@ -299,11 +302,18 @@ return (
           fontSize: 13,
         }}
       >
-        Connect StageVotes to your KaraFun remote session.
+        Choose the karaoke software you use for your shows.
       </p>
     </div>
   </div>
 
+  <label htmlFor="karaoke-software" style={{display:'block', marginBottom: 8, fontSize: 13, fontWeight: 700}}>Song catalog</label>
+  <select id="karaoke-software" value={singaEnabled ? 'singa' : 'other'} onChange={e => setSingaEnabled(e.target.value === 'singa')}>
+    <option value="other">KaraFun or another catalog</option>
+    <option value="singa">Singa</option>
+  </select>
+  {singaEnabled && <p style={{fontSize: 13}}>Singers will search the Singa catalog, and Singa controls will appear on the host page.</p>}
+  {!singaEnabled && <>
   <label
     htmlFor="karafun-channel"
     style={{
@@ -361,6 +371,7 @@ return (
       KaraFun channel: {karafunChannel}
     </div>
   )}
+  </>}
 </section>
        
         <section className="sv-card">
