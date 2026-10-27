@@ -67,7 +67,10 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       if (result) setFilled(true);
     } catch { setWindowHint('Unable to fill this display. Try reopening Stage Mode.'); }
   };
-  const [view, setView] = useState<'lyrics' | 'next' | 'welcome'>('lyrics');
+  const [view, setView] = useState<'lyrics' | 'next' | 'welcome' | 'break' | 'announcement'>('lyrics');
+  const [announcement, setAnnouncement] = useState('');
+  const [draftAnnouncement, setDraftAnnouncement] = useState('');
+  const [editingAnnouncement, setEditingAnnouncement] = useState(false);
   const [guides, setGuides] = useState(false);
   const [toolsVisible, setToolsVisible] = useState(true);
   useEffect(() => {
@@ -81,6 +84,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       if (e.key.toLowerCase() === 'l') setView('lyrics');
       if (e.key.toLowerCase() === 'n') setView('next');
       if (e.key.toLowerCase() === 'w') setView('welcome');
+      if (e.key.toLowerCase() === 'b') setView('break');
       if (e.key.toLowerCase() === 'g') setGuides(value => !value);
       wake();
     };
@@ -117,14 +121,17 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     }
     if (lastPerformance.current === id) return;
     lastPerformance.current = id;
+    if (id) { setView('lyrics'); setEditingAnnouncement(false); }
     if (entranceTimer.current) clearTimeout(entranceTimer.current);
     setEntranceId(id);
     if (id) entranceTimer.current = setTimeout(() => setEntranceId(null), 5000);
   }, [ready, event?.id, event?.current_performance_id, ended]);
   useEffect(() => () => { if (entranceTimer.current) clearTimeout(entranceTimer.current); }, []);
   const entrance = !ended && current?.id === entranceId ? current : null;
+  const showBreak = !ended && view === 'break';
+  const showAnnouncement = !ended && view === 'announcement' && Boolean(announcement);
   const showWelcome = !ended && (view === 'welcome' || (beforeShow && view === 'lyrics'));
-  const showNext = !ended && !showWelcome && (view === 'next' || !current);
+  const showNext = !ended && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
   const stageName = event?.venue || event?.name || 'StageVotes';
@@ -157,7 +164,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
-        {current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>ON STAGE</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
+        {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>ON STAGE</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
           : <div className={styles.songCopy}><span className={styles.kicker}>STAGEVOTES PRESENTS</span><h1>{ended ? 'Thanks for singing!' : event?.name || 'Getting the stage ready'}</h1></div>}
       </div>
       <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : 'KARAOKE NIGHT'}</span></div></div>
@@ -174,8 +181,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       </div>}
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
-    <section className={styles.lyricSpace} aria-label={showNext || showWelcome || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showWelcome ? <div className={styles.welcome}>
+    <section className={styles.lyricSpace} aria-label={showNext || showWelcome || showBreak || showAnnouncement || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
+      {!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
         <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
         <h2>{beforeShow ? 'Karaoke starts soon!' : 'Ready for your next song?'}</h2>
         <p>{event.signups_open === false ? 'Singer signups are closed. Enjoy the show!' : showQr ? 'Ready to take the stage? Scan the code to join the queue.' : 'Ready to take the stage? Ask your host how to join the queue.'}</p>
@@ -187,9 +194,11 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     </section>
     {event && <StageShoutoutTicker eventId={event.id} active={Boolean(current) && !ended} />}
     {error && <div role="status" className={styles.connection}>{error}</div>}
-    <nav aria-label="Stage display controls" className={styles.tools + (toolsVisible ? '' : ' ' + styles.hiddenTools)}>
+    <nav aria-label="Stage display controls" className={styles.tools + (toolsVisible || editingAnnouncement ? '' : ' ' + styles.hiddenTools)}>
       <button type="button" aria-pressed={view === 'lyrics' && !showWelcome} onClick={() => setView('lyrics')}>Lyrics · L</button>
       <button type="button" aria-pressed={showWelcome} onClick={() => setView('welcome')}>Welcome · W</button>
+      <button type="button" aria-pressed={showBreak} onClick={() => { setEditingAnnouncement(false); setView('break'); }}>Break · B</button>
+      <button type="button" aria-expanded={editingAnnouncement} onClick={() => { setDraftAnnouncement(announcement); setEditingAnnouncement(value => !value); }}>Announcement</button>
       <button type="button" aria-pressed={view === 'next'} onClick={() => setView('next')}>Up Next · N</button>
       <button type="button" aria-pressed={guides} onClick={() => { setView('lyrics'); setGuides(value => !value); }}>Guides · G</button>
       <label className={styles.themePicker}><span>Theme</span><select aria-label="Stage theme" value={theme} onChange={e => chooseTheme(e.target.value)}>{themes.map(option => <option key={option} value={option}>{themeNames[option]}</option>)}</select></label>
@@ -197,6 +206,16 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <button type="button" onClick={() => { void fillTV(); }}>Fill TV</button>
       {native && filled && <button type="button" onClick={() => { void restore(); }}>Restore · Esc</button>}
       {native && <button type="button" onClick={() => { void (window as any).stagevotesDesktop.closeStageWindow(); }}>Close</button>}
+      {editingAnnouncement && <form className={styles.announcementEditor} onSubmit={e => {
+        e.preventDefault(); const message = draftAnnouncement.trim(); if (!message) return;
+        setAnnouncement(message); setView('announcement'); setEditingAnnouncement(false);
+      }}>
+        <label htmlFor="stage-announcement">Message for the screen</label>
+        <input id="stage-announcement" maxLength={180} value={draftAnnouncement} onChange={e => setDraftAnnouncement(e.target.value)} placeholder="Last call for singers!" />
+        <button type="submit" disabled={!draftAnnouncement.trim()}>Show message</button>
+        {announcement && <button type="button" onClick={() => { setAnnouncement(''); setDraftAnnouncement(''); setEditingAnnouncement(false); setView('lyrics'); }}>Clear message</button>}
+        <button type="button" onClick={() => setEditingAnnouncement(false)}>Cancel</button>
+      </form>}
       {windowHint && <p className={styles.windowHint} role="status">{windowHint}</p>}
     </nav>
   </main>;

@@ -134,3 +134,10 @@
 .welcomeSteps b { color:#fb923c; font-size:.85em; }
 .screen[data-theme="halloween"] .welcomeEyebrow { color:#ffbf7a; }
 @media(prefers-reduced-motion:reduce) { .welcome { animation:none; } }
+
+.announcementEditor { flex-basis:100%; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; padding:8px 4px 2px; color:#e2e8f0; }
+.announcementEditor label { font-size:13px; font-weight:700; }
+.announcementEditor input { flex:1 1 240px; min-width:0; max-width:500px; color:#fff; background:#020617; border:1px solid #64748b; border-radius:8px; padding:10px; font:inherit; }
+.announcementEditor input:focus-visible { outline:2px solid #38bdf8; outline-offset:2px; }
+.announcementEditor button:disabled { opacity:.5; cursor:not-allowed; }
+.welcome .announcementText { white-space:pre-wrap; overflow-wrap:anywhere; font-size:clamp(30px,4.5vw,82px); }
