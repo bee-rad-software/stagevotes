@@ -1,4 +1,5 @@
 'use client'
+import SingaExperiment from '@/components/dashboard/SingaExperiment';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 
 import noteSharingStyles from './judge-note-sharing.module.css';
@@ -5878,6 +5879,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
+  <SingaExperiment items={hostQueueItems} />
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
