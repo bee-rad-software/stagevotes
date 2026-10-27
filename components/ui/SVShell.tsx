@@ -6,9 +6,10 @@ type SVShellProps = {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  showLive?: boolean;
 };
 
-export default function SVShell({ children, title, subtitle }: SVShellProps) {
+export default function SVShell({ children, title, subtitle, showLive = true }: SVShellProps) {
   return (
     <div className="sv-app">
       <SVSidebar />
@@ -26,14 +27,14 @@ export default function SVShell({ children, title, subtitle }: SVShellProps) {
             {subtitle && <p>{subtitle}</p>}
           </div>
 
-          <span
+          {showLive && <span
   className="sv-live-pill"
   style={{
     WebkitAppRegion: 'no-drag',
   } as React.CSSProperties}
 >
   ● Live Show
-</span>
+</span>}
         </header>
 
         <div className="sv-page"><SVTrialReminder />{children}</div>
