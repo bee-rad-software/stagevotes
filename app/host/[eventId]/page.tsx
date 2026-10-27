@@ -1,4 +1,5 @@
 'use client'
+import SingaExperiment from '@/components/dashboard/SingaExperiment';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 
 import noteSharingStyles from './judge-note-sharing.module.css';
@@ -828,7 +829,7 @@ if (accountData) {
   setWelcomeAccountId(accountData.id);
 
   setKarafunChannel(
-  accountData.karafun_channel || ''
+  accountData.singa_enabled ? '' : (accountData.karafun_channel || '')
 );
 
   if (!accountData.has_seen_host_welcome) {
@@ -5878,6 +5879,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
+  {account?.singa_enabled && <SingaExperiment items={hostQueueItems} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
