@@ -1350,6 +1350,12 @@ const searchPickerSongs = useCallback(
         return;
       }
 
+      const hostCatalog = await searchHostCatalog(eventId, term, 20);
+      if (hostCatalog.configured) {
+        setPickerSongs(hostCatalog.songs.map(song => ({ title: song.title, artist: song.artist, status: performances.some(performance => performance.status !== 'completed' && performance.song_title.trim().toLowerCase() === song.title.trim().toLowerCase()) ? 'queued' : 'available' })));
+        return;
+      }
+
       /*
        * No KaraFun configured:
        * fall back to the existing StageVotes catalog.
@@ -1405,6 +1411,7 @@ const searchPickerSongs = useCallback(
   [
     performances,
     karafunChannel,
+    eventId,
   ]
 );
 
@@ -6867,6 +6874,17 @@ karafunPlayerOnline={karafunPlayerOnline}
   setPickerLoading(true);
 
   try {
+    if (!karafunChannel) {
+      const hostCatalog = await searchHostCatalog(eventId, '', 100);
+      if (hostCatalog.configured) {
+        const queued = new Set(performances.filter(p => p.status !== 'completed').map(p => p.song_title.trim().toLowerCase()));
+        const available = hostCatalog.songs.filter(song => !queued.has(song.title.trim().toLowerCase()));
+        if (!available.length) { alert('No available catalog songs found. Try searching instead.'); return; }
+        const song = available[Math.floor(Math.random() * available.length)];
+        setSongTitle(song.title); setArtist(song.artist); setSelectedKaraFunSongId(null); setSelectedKaraFunTitle(''); setSelectedKaraFunArtist(''); setShowManualSongFields(false);
+        return;
+      }
+    }
     /*
      * If KaraFun is configured, Surprise Me
      * should use KaraFun as the source of truth.

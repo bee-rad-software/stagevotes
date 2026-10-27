@@ -1,4 +1,5 @@
 'use client';
+import { searchHostCatalog } from '@/lib/hostCatalog';
 import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
 import SVShowAvailability from '@/components/singer/SVShowAvailability';
@@ -261,6 +262,8 @@ useEffect(() => {
   karafunChannel,
   setKarafunChannel,
 ] = useState('');
+  const [customCatalog, setCustomCatalog] = useState<boolean | null>(null);
+  useEffect(() => { let active=true; if (!eventId || karafunChannel) { setCustomCatalog(false); return; } setCustomCatalog(null); searchHostCatalog(eventId, '', 1).then(result => { if(active) setCustomCatalog(result.configured); }).catch(() => { if(active) setCustomCatalog(null); }); return () => { active=false; }; }, [eventId, karafunChannel]);
 
   const [surpriseSong, setSurpriseSong] =
     useState<SVSongOption | null>(null);
@@ -1491,6 +1494,14 @@ const needsCompetitionSong =
       return;
     }
 
+    const hostCatalog = await searchHostCatalog(eventId, cleanedSearch);
+    setCustomCatalog(hostCatalog.configured);
+    if (hostCatalog.configured) {
+      const queued = new Set(queue.map(performance => performance.song_title?.trim().toLowerCase()));
+      setPickerSongs(hostCatalog.songs.map(song => ({ title: song.title, artist: song.artist, status: queued.has(song.title.trim().toLowerCase()) ? 'queued' : 'available' })));
+      return;
+    }
+
     /*
      * No KaraFun configured:
      * keep using the StageVotes catalog.
@@ -1644,6 +1655,17 @@ const needsCompetitionSong =
           Number(selectedSong.songId) || null,
       });
 
+      return;
+    }
+
+    const hostCatalog = await searchHostCatalog(eventId, '', 100);
+    setCustomCatalog(hostCatalog.configured);
+    if (hostCatalog.configured) {
+      const queued = new Set(queue.map(performance => performance.song_title?.trim().toLowerCase()));
+      const available = hostCatalog.songs.filter(song => !queued.has(song.title.trim().toLowerCase()));
+      if (!available.length) { setPickerError('No available songs found. Try searching instead.'); return; }
+      const song = available[Math.floor(Math.random() * available.length)];
+      setSurpriseSong({ title: song.title, artist: song.artist, status: 'available', note: 'StageVotes picked this one for you' });
       return;
     }
 
@@ -4268,7 +4290,7 @@ currentArtist={
       >
 
         <SVSongPicker
-          discoveryEventId={eventId}
+          discoveryEventId={karafunChannel || customCatalog === false ? eventId : undefined}
           afterResultsContent={!editingPerformanceId && (
             <div className="sv-song-sms-options">
               <div className="sv-mobile-kicker">Optional text alerts</div>
@@ -4411,14 +4433,14 @@ currentArtist={
             </>
           }
           songs={pickerSongs}
-          sections={!event?.exclude_explicit_songs && favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
+          sections={(karafunChannel || customCatalog === false) && !event?.exclude_explicit_songs && favoriteSongs.length ? [{ title: 'Songs you saved on this device', icon: '★', songs: favoriteSongs }] : []}
           onSearch={searchPickerSongs}
           onSurpriseMe={pickSurpriseSong}
           recommendations={aiRecommendations}
           recommendationsLoading={aiRecommendationsLoading}
           recommendationsMessage={aiRecommendationsMessage}
           onGenerateRecommendations={
-            singerProfile?.id
+            singerProfile?.id && (karafunChannel || customCatalog === false)
               ? generateAIRecommendations
               : undefined
           }

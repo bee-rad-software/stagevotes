@@ -1,4 +1,5 @@
 'use client';
+import HostCatalog from '@/components/catalog/HostCatalog';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -241,6 +242,7 @@ return (
     title="Account"
     subtitle="Manage your organization, branding, billing, and audience settings."
   >
+    <HostCatalog accountId={accountId} />
     <div
       style={{
         display: 'grid',
