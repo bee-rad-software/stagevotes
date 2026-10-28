@@ -77,7 +77,7 @@ export default function SVMissionControl(p: Props) {
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onOpenDisplay)}>Open TV Display</button>
         {p.onOpenStageDisplay && <button type="button" onClick={e => closeMenu(e,p.onOpenStageDisplay)}>Open Stage Mode · Lyrics backdrop</button>}
-        {showKaraFun && <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} KaraFun Display</button>}
+        <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} Sidebar Display</button>
       </div></details>
       {p.judgingEnabled && <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onAwards)}><Trophy size={17}/>Awards</button>
