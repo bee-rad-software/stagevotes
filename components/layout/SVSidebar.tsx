@@ -6,7 +6,7 @@ import { navigation } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 import { usePathname } from 'next/navigation';
 
-export default function SVSidebar() {
+export default function SVSidebar({ onLiveShowChange }: { onLiveShowChange?: (live: boolean) => void } = {}) {
   
   const pathname = usePathname();
 
@@ -30,6 +30,10 @@ const currentEventId = eventMatch?.[1] || null;
 const [liveShow, setLiveShow] = useState<{ id: string; name: string } | null>(null);
 const [liveCount, setLiveCount] = useState(0);
 const [showStatus, setShowStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+
+useEffect(() => {
+  onLiveShowChange?.(showStatus === 'ready' && liveCount > 0);
+}, [showStatus, liveCount, onLiveShowChange]);
 
 useEffect(() => {
   let active = true;
