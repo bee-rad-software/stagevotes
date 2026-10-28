@@ -36,9 +36,9 @@ export default function AccountPage() {
   const router = useRouter();
   const [logoUrl, setLogoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [staticSignupQr, setStaticSignupQr] = useState(false);
-  const [staticJudgeQr, setStaticJudgeQr] = useState(false);
-  const [staticPeopleQr, setStaticPeopleQr] = useState(false);
+  const [staticSignupQr, setStaticSignupQr] = useState(true);
+  const [staticJudgeQr, setStaticJudgeQr] = useState(true);
+  const [staticPeopleQr, setStaticPeopleQr] = useState(true);
   const [karafunChannel, setKarafunChannel] = useState('');
   const [singaEnabled, setSingaEnabled] = useState(false);
   const [
@@ -98,9 +98,9 @@ if (venue?.id) {
     setCashappUrl(account.cashapp_url || '');
     setApplePayUrl(account.apple_pay_url || '');
     setLogoUrl(account.logo_url || '');
-    setStaticSignupQr(account.static_signup_qr || false);
-    setStaticJudgeQr(account.static_judge_qr || false);
-    setStaticPeopleQr(account.static_people_qr || false);
+    setStaticSignupQr(account.static_signup_qr ?? true);
+    setStaticJudgeQr(account.static_judge_qr ?? true);
+    setStaticPeopleQr(account.static_people_qr ?? true);
     setMaxQueuedSongsPerSinger(
   account.max_songs_per_singer ?? 3
 );

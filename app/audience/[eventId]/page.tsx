@@ -40,22 +40,22 @@ export default function AudiencePage() {
 
   const signupUrl =
     typeof window !== 'undefined'
-      ? staticSignupQr && accountId
-        ? `${window.location.origin}/go/${accountId}/signup`
+      ? staticSignupQr && event?.venue_id
+        ? `${window.location.origin}/go/venue/${event?.venue_id}/signup`
         : `${window.location.origin}/signup/${eventId}`
       : '';
 
   const voteUrl =
     typeof window !== 'undefined'
-      ? staticJudgeQr && accountId
-        ? `${window.location.origin}/go/${accountId}/vote`
+      ? staticJudgeQr && event?.venue_id
+        ? `${window.location.origin}/go/venue/${event?.venue_id}/vote`
         : `${window.location.origin}/vote/${eventId}`
       : '';
 
   const peoplesChoiceUrl =
     typeof window !== 'undefined'
-      ? staticPeopleQr && accountId
-        ? `${window.location.origin}/go/${accountId}/people`
+      ? staticPeopleQr && event?.venue_id
+        ? `${window.location.origin}/go/venue/${event?.venue_id}/people`
         : `${window.location.origin}/peopleschoice/${eventId}`
       : '';
 
