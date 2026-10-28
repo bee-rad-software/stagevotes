@@ -1,5 +1,6 @@
 'use client'
 import { searchSingaVersions } from '@/lib/singaCatalog';
+import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
 import SingaExperiment from '@/components/dashboard/SingaExperiment';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 
@@ -5758,6 +5759,7 @@ if (!isSubscribed) {
 }
   
   return (
+<KaraFunVisibility.Provider value={!account?.singa_enabled}>
 <SVShell
   title={event?.name || 'Host Dashboard'}
   subtitle={event?.venue || 'Live show control center'}
@@ -5978,7 +5980,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         >
           Judge ballots received
         </div>
-        {pendingKaraFunAdvanceId === current.id && (
+        {!account?.singa_enabled && pendingKaraFunAdvanceId === current.id && (
           <p role="status" style={{ color: '#fdba74', marginTop: 8 }}>
             KaraFun changed songs. Waiting for all judge ballots before advancing.
           </p>
@@ -6376,17 +6378,17 @@ karafunPlayerOnline={karafunPlayerOnline}
   </div>
   <iframe ref={contestFrameRef} title="Separate contest controls" src={`/host/${eventId}/contest?embedded=1`} style={{border:0,width:'100%',flex:1,minHeight:0,background:'#07111f'}} />
 </div>}
-<SVBreakMusic
+{!account?.singa_enabled && <SVBreakMusic
   ref={breakMusicRef}
   connected={karafunConnected}
   online={karafunPlayerOnline}
   playbackState={karafunPlaybackState}
   commandPending={karafunPlayPending || Boolean(karafunControlPending)}
   ended={Boolean(event?.is_show_ended)}
-/>
+/>}
 <SVHostIQ
   eventId={eventId}
-  watchdogAlerts={watchdogAlerts}
+  watchdogAlerts={account?.singa_enabled ? watchdogAlerts.filter(alert => alert.action !== 'review_karafun') : watchdogAlerts}
   karaFunWatchdogAvailable={karafunConnected && karafunPlayerOnline}
   onReviewWatchdog={reviewWatchdogAlert}
   onFixWatchdog={fixWatchdogAlert}
@@ -6505,6 +6507,7 @@ karafunPlayerOnline={karafunPlayerOnline}
 </div>
 <details className="sv-host-song-history"><summary><span>⚙️ Show settings</span><span className="sv-host-song-history-count">Preferences</span></summary>
 <div style={{ padding:16 }}>
+    {!account?.singa_enabled && <>
     <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
       <input
         type="checkbox"
@@ -6520,6 +6523,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
         : 'Available when a KaraFun catalog is connected.'}
     </p>
+    </>}
     <div style={{ borderTop: '1px solid #334155', marginTop: 20, paddingTop: 18 }}>
       <label className={noteSharingStyles.setting}>
         <span className={noteSharingStyles.copy}>
@@ -7296,6 +7300,7 @@ if (added) {
 )}
 
 </SVShell>
+</KaraFunVisibility.Provider>
   );
     }
 
