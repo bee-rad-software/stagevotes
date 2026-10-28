@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { newSingaPlaybackTracker, observeSingaPlayback } from '@/lib/singaPlayback';
 
 type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string; status?: string; performance?: { singa_song_id?: string | null; singa_variant_id?: string | null } };
 
@@ -12,6 +13,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   const currentItems = useRef(items);
   const completedCallback = useRef(onCompleted);
   const autoAdvanceRef = useRef(false);
+  const playbackTracker = useRef(newSingaPlaybackTracker());
   const sentRequests = useRef(new Map<string, string>());
   const pendingPerformance = useRef<string | null>(null);
   currentItems.current = items;
@@ -51,6 +53,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   function connect() {
     if (!code.trim()) return;
     socket.current?.close();
+    playbackTracker.current = newSingaPlaybackTracker();
     sentRequests.current.clear();
     queuedOrder.current = [];
     bufferActiveRef.current = false;
@@ -67,6 +70,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
       ws.send(JSON.stringify({ type: 'client.connect', kind: 'command', id: connectId.current, occurred_at: new Date().toISOString(), protocol_version: '2.0', payload: { public_code: code.trim().toUpperCase() } }));
     };
     ws.onmessage = (event) => {
+      if (socket.current !== ws) return;
       try {
         const message = JSON.parse(event.data);
         if (message.type === 'client.connected' && message.caused_by === connectId.current) { setConnected(true); setStatus('Connected. Choose a singer and find their song.'); }
@@ -96,14 +100,15 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
             setAutoAdvance(false);
           }
         }
-        if (message.type === 'song_request.status_updated' && message.payload?.status === 'done') {
-          const singaId = message.payload?.song_request_identifier;
-          const performanceId = sentRequests.current.get(singaId);
-          if (performanceId) {
-            sentRequests.current.delete(singaId);
-            queuedOrder.current = queuedOrder.current.filter(id => id !== performanceId);
-            const current = currentItems.current.find(entry => entry.status === 'current');
-            stopBuffer('Singa updated the song request status. This does not confirm playback ended. Use Next Singer in StageVotes after the performance finishes.');
+        if (message.type === 'estimates.state' && autoAdvanceRef.current) {
+          const current = currentItems.current.find(entry => entry.status === 'current');
+          const completed = observeSingaPlayback(playbackTracker.current, message.payload, current?.id || null, sentRequests.current);
+          if (completed) {
+            for (const [request, performance] of sentRequests.current) if (performance === completed) sentRequests.current.delete(request);
+            queuedOrder.current = queuedOrder.current.filter(id => id !== completed);
+            awaitingAdvance.current = completed;
+            setStatus('Singa finished or skipped the current song. Advancing StageVotes…');
+            completedCallback.current(completed);
           }
         }
         if (message.caused_by === requestId.current && message.type === 'command.result' && message.payload?.success === false) {
@@ -207,8 +212,8 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
       bufferActiveRef.current = true; setBufferActive(true);
     }}>{bufferActive ? 'Pause automatic sending' : 'Start automatic sending'}</button>
     <p>Automatic matching pauses if there is more than one possible song or version. Keep both queues in order; changes made directly in Singa may not be detected.</p>
-    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled onChange={() => {}} /> Automatic advance unavailable while Singa playback completion is being verified</label>
-    <p>Use Next Singer in StageVotes after each performance. Singa request status alone does not reliably indicate the end of playback.</p>
+    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled={!connected} onChange={e => { playbackTracker.current = newSingaPlaybackTracker(); autoAdvanceRef.current = e.target.checked; setAutoAdvance(e.target.checked); }} /> Advance when the playing song finishes or is skipped in Singa</label>
+    <p>Stop and Pause keep the current singer. Automatic advance requires a tracked song observed playing before it leaves the queue while Singa is stopped. Reconnects require enabling this option again.</p>
     <label style={{ display: 'block', marginTop: 12 }}>Singer and song<select style={field} value={itemId} onChange={(e) => { setItemId(e.target.value); setResults([]); setSelected(''); }}><option value="">Choose from the queue</option>{items.filter((entry) => entry.songTitle).map((entry) => <option key={entry.id} value={entry.id}>{entry.singerName} — {entry.songTitle}{entry.artist ? ` — ${entry.artist}` : ''}</option>)}</select></label>
     <button type="button" style={button} onClick={search} disabled={!item || searching || pending}>{searching ? 'Searching…' : 'Find in Singa'}</button>
     {results.length > 0 && <label style={{ display: 'block', marginTop: 12 }}>Confirm the song and version<select style={field} value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose a match</option>{results.flatMap((song) => (song.variants || []).map((variant) => <option key={variant.resource_id} value={`${song.resource_id}|${variant.resource_id}`}>{song.name} — {song.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown artist'} — {variant.catalog?.name || 'Version'}{variant.is_duet ? ' · Duet' : ''}{variant.is_explicit ? ' · Explicit' : ''}{variant.duration ? ` · ${Math.floor(variant.duration / 60)}:${String(variant.duration % 60).padStart(2, '0')}` : ''}</option>))}</select></label>}
