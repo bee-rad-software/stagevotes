@@ -38,6 +38,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   const bufferActiveRef = useRef(false);
   const matching = useRef(false);
   const queuedOrder = useRef<string[]>([]);
+  const completedPerformances = useRef(new Set<string>());
   const awaitingAdvance = useRef<string | null>(null);
   const stopBuffer = (reason: string) => {
     bufferActiveRef.current = false;
@@ -105,6 +106,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
           const completed = observeSingaPlayback(playbackTracker.current, message.payload, current?.id || null, sentRequests.current);
           if (completed) {
             for (const [request, performance] of sentRequests.current) if (performance === completed) sentRequests.current.delete(request);
+            completedPerformances.current.add(completed);
             queuedOrder.current = queuedOrder.current.filter(id => id !== completed);
             awaitingAdvance.current = completed;
             setStatus('Singa finished or skipped the current song. Advancing StageVotes…');
@@ -149,19 +151,20 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   useEffect(() => {
     if (!bufferActive || !connected || pending || matching.current) return;
     const current = items.find(entry => entry.status === 'current');
-    if (!current) { stopBuffer('Start the show and choose the current singer before sending songs.'); return; }
     if (awaitingAdvance.current) {
-      if (current?.id === awaitingAdvance.current) return;
+      if (!current || current.id === awaitingAdvance.current) return;
       awaitingAdvance.current = null;
     }
-    const rotation = items.filter(entry => entry.songTitle && entry.songTitle !== 'Song Needed');
+    if (!current) { stopBuffer('Start the show and choose the current singer before sending songs.'); return; }
+    const rotation = items.filter(entry => !completedPerformances.current.has(entry.id) && entry.songTitle && entry.songTitle !== 'Song Needed');
     const prefix = rotation.slice(0, queuedOrder.current.length).map(entry => entry.id);
     if (queuedOrder.current.some((id, index) => id !== prefix[index])) {
       stopBuffer('The StageVotes order changed after songs were sent. Check and correct the Singa queue before continuing.');
       return;
     }
     if (queuedOrder.current.length >= bufferSize) return;
-    const next = rotation[queuedOrder.current.length];
+    const confirmed = new Set(sentRequests.current.values());
+    const next = rotation.find(entry => !confirmed.has(entry.id));
     if (!next) return;
     if (attempted.includes(next.id)) {
       stopBuffer('This song was already sent or attempted. Check the Singa queue before continuing.');
@@ -188,7 +191,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
           !!song.resource_id && Array.isArray(song.variants) && song.variants.length === 1 && !!song.variants[0].resource_id &&
           (!excludeExplicit || song.variants[0].is_explicit === false));
         if (matches.length !== 1) throw new Error(`Choose the Singa version for ${next.singerName} manually; the automatic match is uncertain.`);
-        const currentOrder = currentItems.current.filter(entry => entry.songTitle && entry.songTitle !== 'Song Needed').slice(0, queuedOrder.current.length + 1).map(entry => entry.id).join('|');
+        const currentOrder = currentItems.current.filter(entry => !completedPerformances.current.has(entry.id) && entry.songTitle && entry.songTitle !== 'Song Needed').slice(0, queuedOrder.current.length + 1).map(entry => entry.id).join('|');
         if (!bufferActiveRef.current || currentOrder !== initialOrder || socket.current?.readyState !== WebSocket.OPEN) throw new Error('Queue or connection changed. Check Singa before continuing.');
         sendItem(next, matches[0].resource_id, matches[0].variants![0].resource_id);
       } catch (error) {
