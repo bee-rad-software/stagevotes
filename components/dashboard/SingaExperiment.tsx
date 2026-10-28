@@ -202,28 +202,33 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
 
   const field = { width: '100%', padding: '10px', marginTop: '8px', color: '#fff', background: '#101a30', border: '1px solid #465571', borderRadius: 8 };
   const button = { padding: '10px 16px', marginTop: 10, borderRadius: 8, background: '#f97316', color: '#fff', border: 0 };
-  return <details style={{ padding: 16, margin: '16px 0', border: '1px solid #465571', borderRadius: 12 }}>
-    <summary>Singa connection</summary>
-    <p>StageVotes keeps two songs in Singa, including the current singer. Playback is controlled in Singa.</p>
+  return <section aria-label="Singa connection" style={{ padding: 16, margin: '16px 0', border: '1px solid #465571', borderRadius: 12 }}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}><strong>Singa</strong><span role="status" style={{fontSize:13,color:connected ? '#4ade80' : '#94a3b8'}}>{connected ? (bufferActive ? 'Syncing' : 'Connected') : 'Not connected'}</span></div>
+    {!connected && <>
     <label>Singa remote code<input style={field} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" /></label>
     <button type="button" style={button} onClick={connect} disabled={pending}>Connect</button>
-    <p>Queue size: <strong>2 songs</strong></p>
+    </>}
+    {connected && <div style={{display:'flex',alignItems:'center',gap:18,flexWrap:'wrap'}}>
     <button type="button" style={button} disabled={!connected || pending} onClick={() => {
       if (bufferActive) { stopBuffer('Automatic sending paused. Check the Singa queue before restarting.'); return; }
-      if (!window.confirm('Before starting, make sure Singa’s queue is empty and that this is the only StageVotes host controlling it. Changes made in Singa may not be detected. Continue?')) return;
-      if (queuedOrder.current.length || attempted.length) { setStatus('Reconnect after checking and clearing Singa’s queue before starting again.'); return; }
+      if (!attempted.length && !window.confirm('Start with an empty Singa queue and use only one StageVotes host to control it. Ready to sync?')) return;
+      const tracked = new Set(sentRequests.current.values());
+      if (attempted.some(id => !tracked.has(id) && !completedPerformances.current.has(id))) { setStatus('A song request is unconfirmed. Check Singa before reconnecting.'); return; }
       bufferActiveRef.current = true; setBufferActive(true);
-    }}>{bufferActive ? 'Pause automatic sending' : 'Start automatic sending'}</button>
-    <p>Automatic matching pauses if there is more than one possible song or version. Keep both queues in order; changes made directly in Singa may not be detected.</p>
-    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled={!connected} onChange={e => { playbackTracker.current = newSingaPlaybackTracker(); autoAdvanceRef.current = e.target.checked; setAutoAdvance(e.target.checked); }} /> Advance when the playing song finishes or is skipped in Singa</label>
-    <p>Stop and Pause keep the current singer. Automatic advance requires a tracked song observed playing before it leaves the queue while Singa is stopped. Reconnects require enabling this option again.</p>
-    <details style={{marginTop:16}}><summary>Manual song controls</summary>
+    }}>{bufferActive ? 'Pause Sync' : 'Start Sync'}</button>
+    <label style={{display:'flex',alignItems:'center',gap:8,marginTop:10}}><input style={{width:18,height:18,margin:0}} type="checkbox" checked={autoAdvance} disabled={!connected} onChange={e => { playbackTracker.current = newSingaPlaybackTracker(); autoAdvanceRef.current = e.target.checked; setAutoAdvance(e.target.checked); }} /> Auto-advance</label>
+    </div>}
+    <details style={{marginTop:14,fontSize:13}}><summary style={{cursor:'pointer',color:'#94a3b8'}}>Advanced</summary>
+    <p>Sync keeps two songs ready, including the current singer. Start playback in Singa. Auto-advance follows completed or skipped songs; Stop and Pause keep the current singer. The final song may need Next Singer manually.</p>
+    <p>If you change a song already sent, update it in Singa too. Keep both queues in order. Automatic matching pauses when a version is uncertain.</p>
+    {connected && <><label>Singa remote code<input style={field} value={code} onChange={e => setCode(e.target.value)} autoComplete="off" /></label><button type="button" style={button} onClick={connect} disabled={pending}>Reconnect</button><p>Reconnecting pauses sync and resets auto-advance. Check both queues before restarting.</p></>}
+    <h4>Manual song controls</h4>
     <label style={{ display: 'block', marginTop: 12 }}>Singer and song<select style={field} value={itemId} onChange={(e) => { setItemId(e.target.value); setResults([]); setSelected(''); }}><option value="">Choose from the queue</option>{items.filter((entry) => entry.songTitle).map((entry) => <option key={entry.id} value={entry.id}>{entry.singerName} — {entry.songTitle}{entry.artist ? ` — ${entry.artist}` : ''}</option>)}</select></label>
     <button type="button" style={button} onClick={search} disabled={!item || searching || pending}>{searching ? 'Searching…' : 'Find in Singa'}</button>
     {results.length > 0 && <label style={{ display: 'block', marginTop: 12 }}>Confirm the song and version<select style={field} value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose a match</option>{results.flatMap((song) => (song.variants || []).map((variant) => <option key={variant.resource_id} value={`${song.resource_id}|${variant.resource_id}`}>{song.name} — {song.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown artist'} — {variant.catalog?.name || 'Version'}{variant.is_duet ? ' · Duet' : ''}{variant.is_explicit ? ' · Explicit' : ''}{variant.duration ? ` · ${Math.floor(variant.duration / 60)}:${String(variant.duration % 60).padStart(2, '0')}` : ''}</option>))}</select></label>}
     <div><button type="button" style={button} onClick={() => item && sendItem(item, songId, variantId)} disabled={bufferActive || !connected || !selected || pending || (!!item && attempted.includes(item.id))}>{pending ? 'Sending…' : 'Send to Singa'}</button></div>
     {item && attempted.includes(item.id) && <p>This song was already sent or attempted in this session. Check the Singa queue before sending it again.</p>}
     </details>
-    <p role="status">{status}</p>
-  </details>;
+    <p role="status" style={{fontSize:13,color:'#cbd5e1',marginBottom:0}}>{status === 'Enter the code from the Singa remote.' ? 'Enter your Singa remote code to connect.' : status === 'Connected. Choose a singer and find their song.' ? 'Ready to sync.' : status}</p>
+  </section>;
 }
