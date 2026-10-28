@@ -103,13 +103,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
             sentRequests.current.delete(singaId);
             queuedOrder.current = queuedOrder.current.filter(id => id !== performanceId);
             const current = currentItems.current.find(entry => entry.status === 'current');
-            if (autoAdvanceRef.current && current?.id === performanceId) {
-              setStatus('Singa reported the current song complete. Advancing StageVotes…');
-              awaitingAdvance.current = performanceId;
-              completedCallback.current(performanceId);
-            } else {
-              stopBuffer('Singa reported a song complete. Check the StageVotes queue before continuing.');
-            }
+            stopBuffer('Singa updated the song request status. This does not confirm playback ended. Use Next Singer in StageVotes after the performance finishes.');
           }
         }
         if (message.caused_by === requestId.current && message.type === 'command.result' && message.payload?.success === false) {
@@ -213,8 +207,8 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
       bufferActiveRef.current = true; setBufferActive(true);
     }}>{bufferActive ? 'Pause automatic sending' : 'Start automatic sending'}</button>
     <p>Automatic matching pauses if there is more than one possible song or version. Keep both queues in order; changes made directly in Singa may not be detected.</p>
-    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled={!connected} onChange={(e) => { autoAdvanceRef.current = e.target.checked; setAutoAdvance(e.target.checked); }} /> Advance StageVotes when a matching Singa song finishes</label>
-    <p>Automatic advance applies to songs sent from this connection. If you disconnect, check both queues and turn it on again.</p>
+    <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled onChange={() => {}} /> Automatic advance unavailable while Singa playback completion is being verified</label>
+    <p>Use Next Singer in StageVotes after each performance. Singa request status alone does not reliably indicate the end of playback.</p>
     <label style={{ display: 'block', marginTop: 12 }}>Singer and song<select style={field} value={itemId} onChange={(e) => { setItemId(e.target.value); setResults([]); setSelected(''); }}><option value="">Choose from the queue</option>{items.filter((entry) => entry.songTitle).map((entry) => <option key={entry.id} value={entry.id}>{entry.singerName} — {entry.songTitle}{entry.artist ? ` — ${entry.artist}` : ''}</option>)}</select></label>
     <button type="button" style={button} onClick={search} disabled={!item || searching || pending}>{searching ? 'Searching…' : 'Find in Singa'}</button>
     {results.length > 0 && <label style={{ display: 'block', marginTop: 12 }}>Confirm the song and version<select style={field} value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose a match</option>{results.flatMap((song) => (song.variants || []).map((variant) => <option key={variant.resource_id} value={`${song.resource_id}|${variant.resource_id}`}>{song.name} — {song.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown artist'} — {variant.catalog?.name || 'Version'}{variant.is_duet ? ' · Duet' : ''}{variant.is_explicit ? ' · Explicit' : ''}{variant.duration ? ` · ${Math.floor(variant.duration / 60)}:${String(variant.duration % 60).padStart(2, '0')}` : ''}</option>))}</select></label>}
