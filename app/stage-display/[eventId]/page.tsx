@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import ContestAwards from '@/components/contest/ContestAwards';
 import StageBackdrop, { type StageEvent, type StageSinger, type StageBadge } from '@/components/display/StageBackdrop';
 
 export default function StageDisplayPage() {
@@ -13,6 +14,7 @@ export default function StageDisplayPage() {
   const [logo, setLogo] = useState('');
   const [error, setError] = useState('');
   const [ready, setReady] = useState(false);
+  const [awardsContestId, setAwardsContestId] = useState<string | null>(null);
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
@@ -64,5 +66,30 @@ export default function StageDisplayPage() {
     return () => { active = false; controller.abort(); window.clearInterval(timer); window.removeEventListener('focus', focus); void supabase.removeChannel(channel); };
   }, [eventId]);
 
-  return <StageBackdrop event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} badges={badges} />;
+  useEffect(() => {
+    let active = true;
+    let loading = false;
+    const controller = new AbortController();
+    setAwardsContestId(null);
+    async function refreshAwards() {
+      if (loading) return;
+      loading = true;
+      try {
+        const response = await fetch('/api/stage-display/' + encodeURIComponent(eventId) + '/contest-awards', {cache:'no-store',signal:controller.signal});
+        if (!response.ok) return;
+        const data = await response.json();
+        if (active) setAwardsContestId(typeof data.contestId === 'string' ? data.contestId : null);
+      } catch { /* Preserve the current display during a brief connection interruption. */ }
+      finally { loading = false; }
+    }
+    void refreshAwards();
+    const timer = window.setInterval(() => { void refreshAwards(); }, 1500);
+    window.addEventListener('focus', refreshAwards);
+    return () => { active=false; controller.abort(); clearInterval(timer); window.removeEventListener('focus', refreshAwards); };
+  }, [eventId]);
+
+  return <>
+    <div hidden={Boolean(awardsContestId)}><StageBackdrop event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} badges={badges} /></div>
+    {awardsContestId && <div style={{position:'fixed',inset:0,zIndex:100,overflow:'auto',background:'#070b18'}}><ContestAwards key={awardsContestId} contestId={awardsContestId}/></div>}
+  </>;
 }

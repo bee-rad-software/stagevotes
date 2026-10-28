@@ -211,7 +211,7 @@ export default function HostSideContest() {
      </article>)}</div>
     </section>
     <section className={styles.card}><h2>🏆 Dramatic awards reveal</h2>
-     <p>Open the awards display on your TV or projector. Reveal third place, second place, then first place with photos.</p>
+     <p>Reveal third place, second place, then first place with photos. Winners also appear automatically on the Lyrics backdrop display. Reset the stage to return it to karaoke.</p>
      <label className={styles.field}><span>Award category</span>
       <select className={styles.input} value={awardsCategory||contest.categories[0]?.id||''} onChange={e=>setAwardsCategory(e.target.value)} disabled={busy}>
        {contest.categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
