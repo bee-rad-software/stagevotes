@@ -32,7 +32,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   const [pending, setPending] = useState(false);
   const [attempted, setAttempted] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
-  const [bufferSize, setBufferSize] = useState<1 | 2>(1);
+  const bufferSize = 2;
   const [bufferActive, setBufferActive] = useState(false);
   const [bufferRevision, setBufferRevision] = useState(0);
   const bufferActiveRef = useRef(false);
@@ -204,10 +204,10 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   const button = { padding: '10px 16px', marginTop: 10, borderRadius: 8, background: '#f97316', color: '#fff', border: 0 };
   return <details style={{ padding: 16, margin: '16px 0', border: '1px solid #465571', borderRadius: 12 }}>
     <summary>Singa connection</summary>
-    <p>Choose how many songs to keep in Singa, including the current singer. Playback is controlled in Singa.</p>
+    <p>StageVotes keeps two songs in Singa, including the current singer. Playback is controlled in Singa.</p>
     <label>Singa remote code<input style={field} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" /></label>
     <button type="button" style={button} onClick={connect} disabled={pending}>Connect</button>
-    <label style={{display:'block',marginTop:12}}>Songs to keep in Singa <select value={bufferSize} disabled={bufferActive} onChange={e => setBufferSize(Number(e.target.value) as 1 | 2)}><option value={1}>1 song</option><option value={2}>2 songs</option></select></label>
+    <p>Queue size: <strong>2 songs</strong></p>
     <button type="button" style={button} disabled={!connected || pending} onClick={() => {
       if (bufferActive) { stopBuffer('Automatic sending paused. Check the Singa queue before restarting.'); return; }
       if (!window.confirm('Before starting, make sure Singa’s queue is empty and that this is the only StageVotes host controlling it. Changes made in Singa may not be detected. Continue?')) return;
