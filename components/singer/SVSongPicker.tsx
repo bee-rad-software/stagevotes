@@ -59,6 +59,9 @@ export default function SVSongPicker({
   onGenerateRecommendations,
 }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [versionChoices, setVersionChoices] = useState<SVSongOption[]>([]);
+  const versionHeadingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { if (versionChoices.length) versionHeadingRef.current?.focus(); }, [versionChoices]);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -94,7 +97,13 @@ useEffect(() => {
   const filteredSongs = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
 
-return songs;
+const seen = new Set<string>();
+return songs.filter(song => {
+  if (!song.singaSongId) return true;
+  if (seen.has(song.singaSongId)) return false;
+  seen.add(song.singaSongId);
+  return true;
+});
   }, [searchTerm, songs]);
 
   const searching = searchTerm.trim().length > 0;
@@ -104,14 +113,18 @@ return songs;
     <button
   key={`${song.id ?? ''}-${song.title}-${song.artist}`}
   className="sv-picker-song"
-  onClick={() => onSelect(song)}
+  onClick={() => {
+    if (song.singaSongId) {
+      setVersionChoices(songs.filter(option => option.singaSongId === song.singaSongId));
+    } else onSelect(song);
+  }}
   type="button"
 >
       <div>
         <div className="sv-picker-title">{song.title}</div>
         <div className="sv-picker-artist">{song.artist}</div>
 
-        {song.note && (
+        {song.note && !song.singaSongId && (
           <div className="sv-picker-note">
             {song.note}
           </div>
@@ -134,6 +147,21 @@ return songs;
     </button>
   );
 }
+
+  if (versionChoices.length) {
+    const song = versionChoices[0];
+    return <div className="sv-song-picker" aria-labelledby="singa-version-heading">
+      <button type="button" className="sv-brave-button" onClick={() => { setVersionChoices([]); window.setTimeout(() => searchInputRef.current?.focus(), 0); }}>← Back to songs</button>
+      <h3 id="singa-version-heading" ref={versionHeadingRef} tabIndex={-1}>Choose your version</h3>
+      <p><strong>{song.title}</strong><br />{song.artist}</p>
+      <div className="sv-picker-results">
+        {versionChoices.map(version => <button key={version.singaVariantId} type="button" className="sv-picker-song" onClick={() => { onSelect(version); setVersionChoices([]); }}>
+          <div><div className="sv-picker-title">{version.note || 'Singa version'}</div><div className="sv-picker-artist">Select this version to continue</div></div>
+          <span className="sv-chip sv-chip-blue">Choose</span>
+        </button>)}
+      </div>
+    </div>;
+  }
 
   return (
     <div className="sv-song-picker">
