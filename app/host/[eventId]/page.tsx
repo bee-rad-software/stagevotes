@@ -1,4 +1,5 @@
 'use client'
+import { searchSingaVersions } from '@/lib/singaCatalog';
 import SingaExperiment from '@/components/dashboard/SingaExperiment';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 
@@ -1276,6 +1277,8 @@ function getCurrentActiveRound() {
   return Math.min(...active.map((p: any) => p.round || 1));
 }
   
+const [selectedEditSingaVersion, setSelectedEditSingaVersion] = useState<SVSongOption | null>(null);
+const [selectedSingaVersion, setSelectedSingaVersion] = useState<SVSongOption | null>(null);
 const searchPickerSongs = useCallback(
   async (searchText: string) => {
     const term = searchText.trim();
@@ -1289,6 +1292,7 @@ const searchPickerSongs = useCallback(
     setPickerLoading(true);
 
     try {
+      if (account?.singa_enabled) { setPickerSongs(await searchSingaVersions(term)); return; }
       /*
        * If this venue has KaraFun configured,
        * use KaraFun as the authoritative catalog.
@@ -1412,6 +1416,7 @@ const searchPickerSongs = useCallback(
   },
   [
     performances,
+    account?.singa_enabled,
     karafunChannel,
     eventId,
   ]
@@ -1513,6 +1518,8 @@ const { error } = await supabase.from('performances').insert({
   performance_note:
     performanceNote.trim() || null,
 
+  singa_song_id: selectedSingaVersion?.title === songTitle && selectedSingaVersion?.artist === artist ? selectedSingaVersion.singaSongId : null,
+  singa_variant_id: selectedSingaVersion?.title === songTitle && selectedSingaVersion?.artist === artist ? selectedSingaVersion.singaVariantId : null,
   karafun_song_id:
     selectedKaraFunSongId,
 
@@ -1541,6 +1548,7 @@ if (error) {
     setArtist('');
     setPerformanceNote('');
     setPickerSongs([]);
+    setSelectedSingaVersion(null);
     setSelectedKaraFunSongId(null);
 setSelectedKaraFunTitle('');
 setSelectedKaraFunArtist('');
@@ -3859,6 +3867,8 @@ async function saveEdit(
           editDuetPartnerName.trim() ||
           null,
 
+        singa_song_id: selectedEditSingaVersion?.title === editSongTitle && selectedEditSingaVersion?.artist === editArtist ? selectedEditSingaVersion.singaSongId : null,
+        singa_variant_id: selectedEditSingaVersion?.title === editSongTitle && selectedEditSingaVersion?.artist === editArtist ? selectedEditSingaVersion.singaVariantId : null,
         song_title: editSongTitle.trim(),
         artist: editArtist.trim(),
         performance_note:
@@ -6470,6 +6480,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         loading={pickerLoading}
         onSearch={searchPickerSongs}
         onSelect={(selected) => {
+          setSelectedEditSingaVersion(selected);
           setEditSongTitle(
             selected.title
           );
@@ -6851,6 +6862,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     onSearch={searchPickerSongs}
     loading={pickerLoading}
     onSelect={(selected) => {
+  setSelectedSingaVersion(selected);
   setSongTitle(selected.title);
   setArtist(selected.artist);
 

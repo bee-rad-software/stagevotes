@@ -200,7 +200,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   const field = { width: '100%', padding: '10px', marginTop: '8px', color: '#fff', background: '#101a30', border: '1px solid #465571', borderRadius: 8 };
   const button = { padding: '10px 16px', marginTop: 10, borderRadius: 8, background: '#f97316', color: '#fff', border: 0 };
   return <details style={{ padding: 16, margin: '16px 0', border: '1px solid #465571', borderRadius: 12 }}>
-    <summary>Send a song to Singa (test)</summary>
+    <summary>Singa connection</summary>
     <p>Choose how many songs to keep in Singa, including the current singer. Playback is controlled in Singa.</p>
     <label>Singa remote code<input style={field} value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" /></label>
     <button type="button" style={button} onClick={connect} disabled={pending}>Connect</button>
@@ -214,11 +214,13 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
     <p>Automatic matching pauses if there is more than one possible song or version. Keep both queues in order; changes made directly in Singa may not be detected.</p>
     <label style={{display:'block',marginTop:12}}><input type="checkbox" checked={autoAdvance} disabled={!connected} onChange={e => { playbackTracker.current = newSingaPlaybackTracker(); autoAdvanceRef.current = e.target.checked; setAutoAdvance(e.target.checked); }} /> Advance when the playing song finishes or is skipped in Singa</label>
     <p>Stop and Pause keep the current singer. Automatic advance requires a tracked song observed playing before it leaves the queue while Singa is stopped. Reconnects require enabling this option again.</p>
+    <details style={{marginTop:16}}><summary>Manual song controls</summary>
     <label style={{ display: 'block', marginTop: 12 }}>Singer and song<select style={field} value={itemId} onChange={(e) => { setItemId(e.target.value); setResults([]); setSelected(''); }}><option value="">Choose from the queue</option>{items.filter((entry) => entry.songTitle).map((entry) => <option key={entry.id} value={entry.id}>{entry.singerName} — {entry.songTitle}{entry.artist ? ` — ${entry.artist}` : ''}</option>)}</select></label>
     <button type="button" style={button} onClick={search} disabled={!item || searching || pending}>{searching ? 'Searching…' : 'Find in Singa'}</button>
     {results.length > 0 && <label style={{ display: 'block', marginTop: 12 }}>Confirm the song and version<select style={field} value={selected} onChange={(e) => setSelected(e.target.value)}><option value="">Choose a match</option>{results.flatMap((song) => (song.variants || []).map((variant) => <option key={variant.resource_id} value={`${song.resource_id}|${variant.resource_id}`}>{song.name} — {song.artists?.map((artist) => artist.name).filter(Boolean).join(', ') || 'Unknown artist'} — {variant.catalog?.name || 'Version'}{variant.is_duet ? ' · Duet' : ''}{variant.is_explicit ? ' · Explicit' : ''}{variant.duration ? ` · ${Math.floor(variant.duration / 60)}:${String(variant.duration % 60).padStart(2, '0')}` : ''}</option>))}</select></label>}
     <div><button type="button" style={button} onClick={() => item && sendItem(item, songId, variantId)} disabled={bufferActive || !connected || !selected || pending || (!!item && attempted.includes(item.id))}>{pending ? 'Sending…' : 'Send to Singa'}</button></div>
     {item && attempted.includes(item.id) && <p>This song was already sent or attempted in this session. Check the Singa queue before sending it again.</p>}
+    </details>
     <p role="status">{status}</p>
   </details>;
 }

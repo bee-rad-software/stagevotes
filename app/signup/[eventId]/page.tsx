@@ -1559,6 +1559,7 @@ const needsCompetitionSong =
     const formattedSongs: SVSongOption[] =
       (data || []).map(
         (song): SVSongOption => ({
+          ...song,
           id: song.id,
           title: song.title,
           artist: song.artist || '',
@@ -1819,6 +1820,7 @@ const needsCompetitionSong =
 
       setAIRecommendations(
         payload.recommendations.map((song) => ({
+          ...song,
           id: song.id,
           title: song.title,
           artist: song.artist,
@@ -4331,7 +4333,7 @@ currentArtist={
       >
 
         <SVSongPicker
-          discoveryEventId={singaEnabled === false && (karafunChannel || customCatalog === false) ? eventId : undefined}
+          discoveryEventId={(singaEnabled === true || (singaEnabled === false && (karafunChannel || customCatalog === false))) ? eventId : undefined}
           afterResultsContent={!editingPerformanceId && (
             <div className="sv-song-sms-options">
               <div className="sv-mobile-kicker">Optional text alerts</div>
@@ -4481,7 +4483,7 @@ currentArtist={
           recommendationsLoading={aiRecommendationsLoading}
           recommendationsMessage={aiRecommendationsMessage}
           onGenerateRecommendations={
-            singerProfile?.id && singaEnabled === false && (karafunChannel || customCatalog === false)
+            singerProfile?.id && (singaEnabled === true || (singaEnabled === false && (karafunChannel || customCatalog === false)))
               ? generateAIRecommendations
               : undefined
           }

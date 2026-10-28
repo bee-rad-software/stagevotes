@@ -14,6 +14,7 @@ export type SVSongOption = {
   id?: string | number;
   note?: string;
   karafunSongId?: number | null;
+  singaVersions?: SVSongOption[];
   singaSongId?: string | null;
   singaVariantId?: string | null;
   selectionSource?: 'search' | 'surprise_me' | 'ai_recommendation';
@@ -115,7 +116,7 @@ return songs.filter(song => {
   className="sv-picker-song"
   onClick={() => {
     if (song.singaSongId) {
-      setVersionChoices(songs.filter(option => option.singaSongId === song.singaSongId));
+      setVersionChoices(song.singaVersions || [...songs, ...recommendations].filter(option => option.singaSongId === song.singaSongId));
     } else onSelect(song);
   }}
   type="button"
@@ -246,7 +247,7 @@ return songs.filter(song => {
 
 {afterResultsContent}
 
-{discoveryEventId && <SVSmartSongDiscovery eventId={discoveryEventId} onSelect={onSelect} />}
+{discoveryEventId && <SVSmartSongDiscovery eventId={discoveryEventId} onSelect={song => { if (song.singaVersions?.length) setVersionChoices(song.singaVersions); else onSelect(song); }} />}
 
 {optionsContent && (
   <div className="sv-picker-options">

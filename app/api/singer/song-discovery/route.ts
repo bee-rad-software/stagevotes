@@ -1,3 +1,4 @@
+import { findSingaRecommendation } from '@/lib/singaCatalog';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type {
@@ -189,7 +190,7 @@ export async function POST(request: NextRequest) {
     if (event.is_show_ended) return NextResponse.json({ error: 'This show has ended.' }, { status: 409 });
     const [{ data: queue, error: queueError }, { data: account, error: accountError }] = await Promise.all([
       supabaseAdmin.from('performances').select('song_title, artist, status').eq('event_id', eventId),
-      supabaseAdmin.from('accounts').select('karafun_channel').eq('id', event.account_id).maybeSingle(),
+      supabaseAdmin.from('accounts').select('karafun_channel, singa_enabled').eq('id', event.account_id).maybeSingle(),
     ]);
     if (queueError || accountError) throw new Error('Catalog settings unavailable.');
     const excluded = (queue || []).filter(song => !['skipped', 'removed', 'cancelled'].includes(song.status))
@@ -266,7 +267,9 @@ export async function POST(request: NextRequest) {
 
     const checked = await Promise.all(
       distinctCandidates.map((candidate) =>
-        account?.karafun_channel
+        account?.singa_enabled
+          ? findSingaRecommendation(candidate)
+          : account?.karafun_channel
           ? findKaraFunSong(account.karafun_channel, candidate)
           : findStageVotesSong(candidate)
       )
