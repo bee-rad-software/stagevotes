@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import SVTrialReminder from '@/components/billing/SVTrialReminder';
 import SVSidebar from '@/components/layout/SVSidebar';
 
@@ -10,9 +12,10 @@ type SVShellProps = {
 };
 
 export default function SVShell({ children, title, subtitle, showLive = true }: SVShellProps) {
+  const [hasLiveShow, setHasLiveShow] = useState(false);
   return (
     <div className="sv-app">
-      <SVSidebar />
+      <SVSidebar onLiveShowChange={setHasLiveShow} />
 
       <main className="sv-workspace">
         <header
@@ -27,7 +30,7 @@ export default function SVShell({ children, title, subtitle, showLive = true }: 
             {subtitle && <p>{subtitle}</p>}
           </div>
 
-          {showLive && <span
+          {showLive && hasLiveShow && <span
   className="sv-live-pill"
   style={{
     WebkitAppRegion: 'no-drag',
