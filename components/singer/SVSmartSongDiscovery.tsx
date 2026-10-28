@@ -34,9 +34,9 @@ export default function SVSmartSongDiscovery({ eventId, onSelect }: {
       }
       if (requestRef.current !== controller) return;
       setSongs(payload.recommendations.map((song: {
-        id?: string | number; title: string; artist: string; reason: string; karafunSongId?: number;
+        id?: string | number; title: string; artist: string; reason: string; karafunSongId?: number; singaVersions?: SVSongOption[];
       }) => ({
-        id: song.id, title: song.title, artist: song.artist, note: song.reason,
+        singaVersions: song.singaVersions, id: song.id, title: song.title, artist: song.artist, note: song.reason,
         karafunSongId: song.karafunSongId, status: 'available', selectionSource: 'ai_recommendation',
       })));
       setMessage('Matched to this show’s catalog. Singing difficulty depends on your voice and the arrangement.');

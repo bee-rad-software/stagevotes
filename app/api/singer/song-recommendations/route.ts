@@ -1,3 +1,4 @@
+import { findSingaRecommendation } from '@/lib/singaCatalog';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import type {
@@ -238,7 +239,7 @@ export async function POST(request: NextRequest) {
           .neq('status', 'skipped'),
         supabaseAdmin
           .from('accounts')
-          .select('karafun_channel')
+          .select('karafun_channel, singa_enabled')
           .eq('id', event.account_id)
           .maybeSingle(),
       ]);
@@ -346,7 +347,9 @@ export async function POST(request: NextRequest) {
 
     const checked = await Promise.all(
       distinctCandidates.map((candidate) =>
-        account?.karafun_channel
+        account?.singa_enabled
+          ? findSingaRecommendation(candidate)
+          : account?.karafun_channel
           ? findKaraFunSong(account.karafun_channel, candidate)
           : findStageVotesSong(candidate)
       )

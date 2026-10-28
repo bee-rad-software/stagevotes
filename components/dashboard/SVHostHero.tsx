@@ -16,6 +16,7 @@ type Props = {
   songTitle?: string;
   artist?: string;
   startedAt?: string | null;
+  pausedAt?: string | null;
   votingOpen?: boolean;
   showName?: string;
   photoUrl?: string | null;
@@ -32,6 +33,7 @@ export default function SVHostHero({
   artist = '',
   photoUrl,
   startedAt = null,
+  pausedAt = null,
   votingOpen = false,
   showName = 'Tonight’s Karaoke',
   judgeBallotCount = 0,
@@ -55,7 +57,7 @@ export default function SVHostHero({
       const seconds = Math.max(
         0,
         Math.floor(
-          (Date.now() - startedTime) / 1000
+          ((pausedAt ? new Date(pausedAt).getTime() : Date.now()) - startedTime) / 1000
         )
       );
 
@@ -72,7 +74,7 @@ export default function SVHostHero({
     return () => {
       window.clearInterval(interval);
     };
-  }, [startedAt]);
+  }, [startedAt, pausedAt]);
 
   const elapsed = formatElapsedTime(
     elapsedSeconds

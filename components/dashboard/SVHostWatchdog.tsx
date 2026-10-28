@@ -1,10 +1,12 @@
 'use client';
+import { useKaraFunVisible } from './KaraFunVisibility';
 import {useEffect,useState} from 'react';
 import type {WatchdogAlert} from '@/lib/hostQueueWatchdog';
 export default function SVHostWatchdog({eventId,alerts,karaFunAvailable,onReview,onFix,onExplain,explaining=false}:{
  eventId:string;alerts:WatchdogAlert[];karaFunAvailable:boolean;
  onReview:(alert:WatchdogAlert)=>void;onFix:(alert:WatchdogAlert)=>Promise<string>;onExplain:()=>void;explaining?:boolean;
 }){
+ const showKaraFun = useKaraFunVisible();
  const [dismissed,setDismissed]=useState<Record<string,number>>({});
  const [ready,setReady]=useState(false);
  const [fixing,setFixing]=useState<string|null>(null);
@@ -34,10 +36,10 @@ export default function SVHostWatchdog({eventId,alerts,karaFunAvailable,onReview
  return <section style={{marginTop:18,padding:18,borderRadius:14,border:'1px solid #475569',background:'rgba(2,8,23,.45)'}}>
   <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
    <div><strong style={{color:'#7dd3fc'}}>👀 Live Queue Watchdog</strong>
-    <p style={{fontSize:12,color:'#94a3b8',margin:'6px 0'}}>Watches rotation, KaraFun alignment, and long-running performances while this dashboard is open.</p>
+    <p style={{fontSize:12,color:'#94a3b8',margin:'6px 0'}}>{showKaraFun ? 'Watches rotation, KaraFun alignment, and long-running performances while this dashboard is open.' : 'Watches rotation and long-running performances while this dashboard is open.'}</p>
    </div><span style={{color:visible.length?'#fde68a':'#86efac'}} aria-live="polite">{visible.length?visible.length+' to review':'No issues detected'}</span>
   </div>
-  {!karaFunAvailable&&<p style={{color:'#94a3b8',fontSize:12}}>KaraFun alignment checks are waiting for a connected player.</p>}
+  {showKaraFun&&!karaFunAvailable&&<p style={{color:'#94a3b8',fontSize:12}}>KaraFun alignment checks are waiting for a connected player.</p>}
   {!visible.length&&<p style={{color:'#cbd5e1',fontSize:13}}>{alerts.length?'Current alerts are snoozed.':'No issues found in the checks currently available. Queue changes always remain under your control.'}</p>}
   {fixMessage&&<p role="status" style={{color:'#cbd5e1',fontSize:13}}>{fixMessage}</p>}
   <div style={{display:'grid',gap:12,marginTop:12}}>

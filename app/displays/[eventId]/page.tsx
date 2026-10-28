@@ -36,9 +36,9 @@ export default function DisplaysPage() {
     },
     {
       key: 'karafun',
-      title: 'KaraFun Display',
+      title: 'Sidebar Display',
       description:
-        'Launch the karaoke-focused sidebar layout designed to complement KaraFun.',
+        'Launch the sidebar layout alongside your karaoke player.',
       icon: Music2,
       status: 'Ready',
       path: `/karafun-display/${eventId}`,
@@ -294,7 +294,7 @@ export default function DisplaysPage() {
                 '1px solid rgba(255,255,255,0.08)',
             }}
           >
-            <strong>KaraFun Display</strong>
+            <strong>Sidebar Display</strong>
 
             <div
               style={{

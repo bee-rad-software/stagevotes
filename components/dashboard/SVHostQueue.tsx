@@ -1,4 +1,5 @@
 'use client';
+import { useKaraFunVisible } from './KaraFunVisibility';
 
 import { useMemo } from 'react';
 
@@ -196,6 +197,7 @@ function SortableQueueRow({
   const isCurrent = item.status === 'current';
   const isNext = item.status === 'next';
 
+  const showKaraFun = useKaraFunVisible();
   const sentToKaraFun =
   karafunSentPerformanceIds?.has(item.id) ?? false;
 
@@ -357,7 +359,7 @@ const rowStyle: React.CSSProperties = {
 
         <div className="sv-host-queue-actions">
 
-     <button
+     {showKaraFun && <button
   type="button"
   data-tooltip={
     sentToKaraFun
@@ -388,7 +390,7 @@ const rowStyle: React.CSSProperties = {
   }}
 >
   {sentToKaraFun ? '✓' : <Radio size={18} />}
-</button>
+</button>}
 
       <button
   type="button"

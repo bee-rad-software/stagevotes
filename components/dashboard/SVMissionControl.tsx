@@ -1,4 +1,5 @@
 'use client';
+import { useKaraFunVisible } from './KaraFunVisibility';
 
 import type React from 'react';
 import { Play, Pause, Square, UserPlus, SkipForward, Vote, Monitor, Trophy, Radio, ChevronDown, MoreHorizontal } from 'lucide-react';
@@ -7,6 +8,9 @@ import styles from './SVMissionControl.module.css';
 type Props = {
   onStartShow?: () => void;
   onEndShow?: () => void;
+  onToggleShowPause?: () => void;
+  showPaused?: boolean;
+  pauseBusy?: boolean;
   onAddSinger?: () => void;
   onToggleVoting?: () => void;
   onOpenDisplay?: () => void;
@@ -40,6 +44,7 @@ karafunPlayerOnline?: boolean;
 };
 
 export default function SVMissionControl(p: Props) {
+  const showKaraFun = useKaraFunVisible();
   const busy = p.karafunPlayPending || Boolean(p.karafunControlPending);
   const pausing = Boolean(p.karafunPauseReady || p.karafunControlPending === 'pause');
   const connected = p.karafunConnected && p.karafunPlayerOnline;
@@ -58,7 +63,7 @@ export default function SVMissionControl(p: Props) {
         <button type="button" onClick={p.onAddSinger}><UserPlus size={18}/>Add Singer</button>
       </div>
     </div>
-    <div className={styles.player}>
+    {showKaraFun && <div className={styles.player}>
       <div className={styles.connection}><Radio size={17}/><strong>KaraFun</strong><span className={connected ? styles.online : styles.offline}>{p.karafunConnecting ? 'Connecting…' : connected ? 'Connected' : p.karafunConnected ? 'Player offline' : 'Not connected'}</span></div>
       <div className={styles.actions}>
         <button type="button" className={styles.playback} onClick={pausing ? p.onPauseKaraFun : p.onPlayKaraFun} disabled={busy || (pausing ? !p.karafunPauseReady : !p.karafunPlaybackReady)} title={pausing ? 'Pause the current KaraFun song' : 'Play the matching song for the current singer'}>
@@ -67,19 +72,22 @@ export default function SVMissionControl(p: Props) {
         <button type="button" onClick={p.onSkipKaraFun} disabled={!p.karafunSkipReady || busy} title="Skip the KaraFun track after checking the next singer and required judge ballots"><SkipForward size={18}/>{p.karafunControlPending === 'skip' ? 'Skipping…' : 'Skip Song'}</button>
         <button type="button" className={styles.quiet} onClick={p.onConnectKaraFun} disabled={p.karafunConnecting}>{p.karafunConnected ? 'Disconnect' : 'Connect'}</button>
       </div>
-    </div>
-    {error && <p className={styles.error} role="alert">{error}</p>}
-    {p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Open the KaraFun player to use playback controls.</p>}
+    </div>}
+    {showKaraFun && error && <p className={styles.error} role="alert">{error}</p>}
+    {showKaraFun && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Open the KaraFun player to use playback controls.</p>}
     <div className={styles.utilities}>
       {p.judgingEnabled && <button type="button" role="switch" aria-checked={Boolean(p.votingOpen)} onClick={p.onToggleVoting} disabled={!p.hasCurrentSinger} title="Open or close judging for the current singer"><Vote size={17}/>Voting: {p.votingOpen ? 'Open' : 'Closed'}</button>}
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onOpenDisplay)}>Open TV Display</button>
         {p.onOpenStageDisplay && <button type="button" onClick={e => closeMenu(e,p.onOpenStageDisplay)}>Open Stage Mode · Lyrics backdrop</button>}
-        <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} KaraFun Display</button>
+        <button type="button" onClick={e => closeMenu(e,p.onOpenKaraFunDisplay)}>{p.karafunDisplayOpen ? 'Close' : 'Open'} Sidebar Display</button>
       </div></details>
       {p.judgingEnabled && <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onAwards)}><Trophy size={17}/>Awards</button>
       </div></details>}
+      {p.onToggleShowPause && p.showStarted && <button type="button" onClick={p.onToggleShowPause} disabled={p.pauseBusy}>
+        {p.showPaused ? <Play size={16}/> : <Pause size={16}/>}{p.pauseBusy ? 'Saving…' : p.showPaused ? 'Resume Show' : 'Pause Show'}
+      </button>}
       {p.onEndShow && <button type="button" className={styles.endShow} onClick={p.onEndShow}>
         <Square size={16} aria-hidden="true"/>End Show
       </button>}

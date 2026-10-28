@@ -1,4 +1,6 @@
 'use client'
+import { searchSingaVersions } from '@/lib/singaCatalog';
+import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
 import SingaExperiment from '@/components/dashboard/SingaExperiment';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 
@@ -97,6 +99,8 @@ export default function HostPage() {
   const eventId = params.eventId as string;
   const router = useRouter();
 
+  const [pauseBusy, setPauseBusy] = useState(false);
+  const [pauseError, setPauseError] = useState('');
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
@@ -1276,6 +1280,8 @@ function getCurrentActiveRound() {
   return Math.min(...active.map((p: any) => p.round || 1));
 }
   
+const [selectedEditSingaVersion, setSelectedEditSingaVersion] = useState<SVSongOption | null>(null);
+const [selectedSingaVersion, setSelectedSingaVersion] = useState<SVSongOption | null>(null);
 const searchPickerSongs = useCallback(
   async (searchText: string) => {
     const term = searchText.trim();
@@ -1289,6 +1295,7 @@ const searchPickerSongs = useCallback(
     setPickerLoading(true);
 
     try {
+      if (account?.singa_enabled) { setPickerSongs(await searchSingaVersions(term)); return; }
       /*
        * If this venue has KaraFun configured,
        * use KaraFun as the authoritative catalog.
@@ -1412,6 +1419,7 @@ const searchPickerSongs = useCallback(
   },
   [
     performances,
+    account?.singa_enabled,
     karafunChannel,
     eventId,
   ]
@@ -1513,6 +1521,8 @@ const { error } = await supabase.from('performances').insert({
   performance_note:
     performanceNote.trim() || null,
 
+  singa_song_id: selectedSingaVersion?.title === songTitle && selectedSingaVersion?.artist === artist ? selectedSingaVersion.singaSongId : null,
+  singa_variant_id: selectedSingaVersion?.title === songTitle && selectedSingaVersion?.artist === artist ? selectedSingaVersion.singaVariantId : null,
   karafun_song_id:
     selectedKaraFunSongId,
 
@@ -1541,6 +1551,7 @@ if (error) {
     setArtist('');
     setPerformanceNote('');
     setPickerSongs([]);
+    setSelectedSingaVersion(null);
     setSelectedKaraFunSongId(null);
 setSelectedKaraFunTitle('');
 setSelectedKaraFunArtist('');
@@ -3859,6 +3870,8 @@ async function saveEdit(
           editDuetPartnerName.trim() ||
           null,
 
+        singa_song_id: selectedEditSingaVersion?.title === editSongTitle && selectedEditSingaVersion?.artist === editArtist ? selectedEditSingaVersion.singaSongId : null,
+        singa_variant_id: selectedEditSingaVersion?.title === editSongTitle && selectedEditSingaVersion?.artist === editArtist ? selectedEditSingaVersion.singaVariantId : null,
         song_title: editSongTitle.trim(),
         artist: editArtist.trim(),
         performance_note:
@@ -4607,7 +4620,19 @@ function countCompleteJudgeBallots(
   ).length;
 }
 
+async function toggleShowPause() {
+  if (pauseBusy || !event) return;
+  setPauseBusy(true); setPauseError('');
+  try {
+    const {error} = await supabase.rpc('set_show_paused', {p_event_id:eventId,p_paused:!event.show_paused_at});
+    if (error) throw error;
+    await loadEvent();
+  } catch (error:any) { setPauseError(error.message || 'Unable to pause the show.'); }
+  finally { setPauseBusy(false); }
+}
+
 async function nextSinger(automatic = false) {
+  if (event?.show_paused_at) return;
   if (advanceInFlightRef.current) return;
   advanceInFlightRef.current = true;
   setAdvancingSinger(true);
@@ -5181,7 +5206,7 @@ const currentElapsedMinutes =
   event?.current_performance_started_at
     ? Math.max(
         0,
-        (Date.now() -
+        ((event?.show_paused_at ? new Date(event.show_paused_at).getTime() : Date.now()) -
           new Date(
             event.current_performance_started_at
           ).getTime()) /
@@ -5748,13 +5773,15 @@ if (!isSubscribed) {
 }
   
   return (
+<KaraFunVisibility.Provider value={!account?.singa_enabled}>
 <SVShell
   title={event?.name || 'Host Dashboard'}
   subtitle={event?.venue || 'Live show control center'}
 >
       
 <SVHostHero
-  onNextSinger={current ? () => { void nextSinger(); } : undefined}
+  pausedAt={event?.show_paused_at}
+  onNextSinger={current && !event?.show_paused_at ? () => { void nextSinger(); } : undefined}
   advancingSinger={advancingSinger}
   singerName={
     current?.singer_name || 'No current singer'
@@ -5779,8 +5806,13 @@ if (!isSubscribed) {
   }
 />
 
+{event?.show_paused_at && <div className="sv-card" role="status" style={{padding:16,marginBottom:16,border:'1px solid #f59e0b'}}>Show paused · The singer timer and automatic advancement are paused. Control music playback in your karaoke player, then select Resume Show when ready.</div>}
+{pauseError && <p role="alert">{pauseError}</p>}
 <div id="watchdog-mission-controls">
 <SVMissionControl
+  showPaused={Boolean(event?.show_paused_at)}
+  pauseBusy={pauseBusy}
+  onToggleShowPause={() => { void toggleShowPause(); }}
   onOpenStageDisplay={() => { window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
   judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
@@ -5879,7 +5911,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment items={hostQueueItems} />}
+  {account?.singa_enabled && <SingaExperiment paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
@@ -5968,7 +6000,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         >
           Judge ballots received
         </div>
-        {pendingKaraFunAdvanceId === current.id && (
+        {!account?.singa_enabled && pendingKaraFunAdvanceId === current.id && (
           <p role="status" style={{ color: '#fdba74', marginTop: 8 }}>
             KaraFun changed songs. Waiting for all judge ballots before advancing.
           </p>
@@ -6366,17 +6398,17 @@ karafunPlayerOnline={karafunPlayerOnline}
   </div>
   <iframe ref={contestFrameRef} title="Separate contest controls" src={`/host/${eventId}/contest?embedded=1`} style={{border:0,width:'100%',flex:1,minHeight:0,background:'#07111f'}} />
 </div>}
-<SVBreakMusic
+{!account?.singa_enabled && <SVBreakMusic
   ref={breakMusicRef}
   connected={karafunConnected}
   online={karafunPlayerOnline}
   playbackState={karafunPlaybackState}
   commandPending={karafunPlayPending || Boolean(karafunControlPending)}
   ended={Boolean(event?.is_show_ended)}
-/>
+/>}
 <SVHostIQ
   eventId={eventId}
-  watchdogAlerts={watchdogAlerts}
+  watchdogAlerts={event?.show_paused_at ? [] : account?.singa_enabled ? watchdogAlerts.filter(alert => alert.action !== 'review_karafun') : watchdogAlerts}
   karaFunWatchdogAvailable={karafunConnected && karafunPlayerOnline}
   onReviewWatchdog={reviewWatchdogAlert}
   onFixWatchdog={fixWatchdogAlert}
@@ -6470,6 +6502,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         loading={pickerLoading}
         onSearch={searchPickerSongs}
         onSelect={(selected) => {
+          setSelectedEditSingaVersion(selected);
           setEditSongTitle(
             selected.title
           );
@@ -6494,6 +6527,7 @@ karafunPlayerOnline={karafunPlayerOnline}
 </div>
 <details className="sv-host-song-history"><summary><span>⚙️ Show settings</span><span className="sv-host-song-history-count">Preferences</span></summary>
 <div style={{ padding:16 }}>
+    {!account?.singa_enabled && <>
     <label style={{ display: 'flex', gap: 12, alignItems: 'center', fontWeight: 800, cursor: karafunChannel ? 'pointer' : 'not-allowed' }}>
       <input
         type="checkbox"
@@ -6509,6 +6543,7 @@ karafunPlayerOnline={karafunPlayerOnline}
         ? 'Uses KaraFun’s explicit ratings. Unrated new songs stay hidden until the catalog is updated. Also enable KaraFun Parental Control to prevent playback outside StageVotes.'
         : 'Available when a KaraFun catalog is connected.'}
     </p>
+    </>}
     <div style={{ borderTop: '1px solid #334155', marginTop: 20, paddingTop: 18 }}>
       <label className={noteSharingStyles.setting}>
         <span className={noteSharingStyles.copy}>
@@ -6851,6 +6886,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     onSearch={searchPickerSongs}
     loading={pickerLoading}
     onSelect={(selected) => {
+  setSelectedSingaVersion(selected);
   setSongTitle(selected.title);
   setArtist(selected.artist);
 
@@ -7284,6 +7320,7 @@ if (added) {
 )}
 
 </SVShell>
+</KaraFunVisibility.Provider>
   );
     }
 

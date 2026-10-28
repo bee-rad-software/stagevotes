@@ -6,6 +6,7 @@ const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 export const supabase = createClient(url, anonKey);
 
 export type EventRow = {
+  show_paused_at?: string | null;
   id: string;
   scoring_mode?: 'stars'|'points';
   name: string;
