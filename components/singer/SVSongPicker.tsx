@@ -14,6 +14,8 @@ export type SVSongOption = {
   id?: string | number;
   note?: string;
   karafunSongId?: number | null;
+  singaSongId?: string | null;
+  singaVariantId?: string | null;
   selectionSource?: 'search' | 'surprise_me' | 'ai_recommendation';
 };
 

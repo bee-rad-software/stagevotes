@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string; status?: string };
+type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string; status?: string; performance?: { singa_song_id?: string | null; singa_variant_id?: string | null } };
 
 type Props = { items: QueueItem[]; excludeExplicit?: boolean; onCompleted: (performanceId: string) => void };
 type Variant = { resource_id: string; catalog?: { name?: string }; is_duet?: boolean; is_explicit?: boolean; duration?: number };
@@ -172,6 +172,11 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
     const initialOrder = rotation.slice(0, queuedOrder.current.length + 1).map(entry => entry.id).join('|');
     (async () => {
       try {
+        if (next.performance?.singa_song_id && next.performance?.singa_variant_id) {
+          if (!bufferActiveRef.current || !currentItems.current.some(entry => entry.id === next.id && entry.songTitle === next.songTitle && entry.artist === next.artist)) return;
+          sendItem(next, next.performance.singa_song_id, next.performance.singa_variant_id);
+          return;
+        }
         if (!next.artist?.trim()) throw new Error('Choose this song and its Singa version manually before continuing.');
         const params = new URLSearchParams({ search: `${next.songTitle} ${next.artist}`, page: '1', page_size: '20', type: 'songs', market: 'US' });
         const response = await fetch(`https://api.singa.com/v1.4/search/?${params}`);

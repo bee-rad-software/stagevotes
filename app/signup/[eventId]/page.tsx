@@ -273,7 +273,7 @@ useEffect(() => {
     const queued = new Set(queue.map(performance => performance.song_title?.trim().toLowerCase()));
     return (Array.isArray(data.songs?.items) ? data.songs.items : [])
       .filter((song: any) => song.name && Array.isArray(song.variants) && song.variants.length > 0)
-      .map((song: any) => ({ title: song.name, artist: (song.artists || []).map((artist: any) => artist.name).filter(Boolean).join(', '), status: queued.has(song.name.trim().toLowerCase()) ? 'queued' : 'available' }));
+      .flatMap((song: any) => song.variants.filter((variant: any) => variant.resource_id).map((variant: any) => ({ id: variant.resource_id, singaSongId: song.resource_id, singaVariantId: variant.resource_id, title: song.name, artist: (song.artists || []).map((artist: any) => artist.name).filter(Boolean).join(', '), note: [variant.catalog?.name || 'Singa version', variant.is_duet ? 'Duet' : '', variant.is_explicit ? 'Explicit' : ''].filter(Boolean).join(' · '), status: queued.has(song.name.trim().toLowerCase()) ? 'queued' : 'available' })));
   }
   const [customCatalog, setCustomCatalog] = useState<boolean | null>(null);
   useEffect(() => { let active=true; if (!eventId || karafunChannel) { setCustomCatalog(false); return; } setCustomCatalog(null); searchHostCatalog(eventId, '', 1).then(result => { if(active) setCustomCatalog(result.configured); }).catch(() => { if(active) setCustomCatalog(null); }); return () => { active=false; }; }, [eventId, karafunChannel]);
@@ -2704,6 +2704,8 @@ if (singerOriginalOrder !== null) {
               ? duetPartnerName.trim()
               : null,
 
+          singa_song_id: song.singaSongId ?? null,
+          singa_variant_id: song.singaVariantId ?? null,
           song_title: song.title.trim(),
           artist: song.artist.trim(),
           performance_note:
@@ -2956,7 +2958,9 @@ device_id: deviceId,
     const { error } = await supabase
       .from('performances')
       .update({
-  song_title: song.title.trim(),
+  singa_song_id: song.singaSongId ?? null,
+          singa_variant_id: song.singaVariantId ?? null,
+          song_title: song.title.trim(),
   artist: song.artist.trim(),
   performance_note:
     performanceNote.trim() || null,
