@@ -44,7 +44,7 @@ export default function SVAIRecap({ eventId, kind, audience = 'singer', revision
     </summary>
     <p style={{ color: '#cbd5e1', lineHeight: 1.5 }}>{kind === 'judge'
       ? 'Turn written judge feedback into strengths and practical ideas. The original notes remain the source of truth.'
-      : 'Create a short recap from the recorded songs and participation.'}</p>
+      : audience === 'host' ? 'Create a short recap from recorded songs, participation, and secondary contest results.' : 'Create a short recap from the recorded songs and participation.'}</p>
     <button type="button" className="sv-secondary-button" disabled={busy} onClick={generate}>
       {busy ? 'Writing recap…' : answer ? 'Refresh recap' : 'Generate recap'}
     </button>

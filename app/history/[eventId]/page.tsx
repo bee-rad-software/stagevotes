@@ -1,5 +1,6 @@
 'use client';
 
+import ContestHistory from '@/components/contest/ContestHistory';
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -271,6 +272,7 @@ const recentArchivedEvents = useMemo(() => {
           : 'Review completed performances and previous shows.'
       }
     >
+      <ContestHistory key={'contest-'+eventId} eventId={eventId}/>
       <SVEventPhotos key={eventId} eventId={eventId} host />
       {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
       {event?.judging_enabled && <SVAIRecap eventId={eventId} kind="judge" audience="host" />}
