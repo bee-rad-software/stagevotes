@@ -8,6 +8,9 @@ import styles from './SVMissionControl.module.css';
 type Props = {
   onStartShow?: () => void;
   onEndShow?: () => void;
+  onToggleShowPause?: () => void;
+  showPaused?: boolean;
+  pauseBusy?: boolean;
   onAddSinger?: () => void;
   onToggleVoting?: () => void;
   onOpenDisplay?: () => void;
@@ -82,6 +85,9 @@ export default function SVMissionControl(p: Props) {
       {p.judgingEnabled && <details className={styles.menu} name="show-control-menu"><summary><MoreHorizontal size={18}/>More actions<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onAwards)}><Trophy size={17}/>Awards</button>
       </div></details>}
+      {p.onToggleShowPause && p.showStarted && <button type="button" onClick={p.onToggleShowPause} disabled={p.pauseBusy}>
+        {p.showPaused ? <Play size={16}/> : <Pause size={16}/>}{p.pauseBusy ? 'Saving…' : p.showPaused ? 'Resume Show' : 'Pause Show'}
+      </button>}
       {p.onEndShow && <button type="button" className={styles.endShow} onClick={p.onEndShow}>
         <Square size={16} aria-hidden="true"/>End Show
       </button>}

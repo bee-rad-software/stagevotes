@@ -99,6 +99,8 @@ export default function HostPage() {
   const eventId = params.eventId as string;
   const router = useRouter();
 
+  const [pauseBusy, setPauseBusy] = useState(false);
+  const [pauseError, setPauseError] = useState('');
   const [event, setEvent] = useState<EventRow | null>(null);
   const [performances, setPerformances] = useState<PerformanceRow[]>([]);
   const [votes, setVotes] = useState<VoteRow[]>([]);
@@ -4618,7 +4620,19 @@ function countCompleteJudgeBallots(
   ).length;
 }
 
+async function toggleShowPause() {
+  if (pauseBusy || !event) return;
+  setPauseBusy(true); setPauseError('');
+  try {
+    const {error} = await supabase.rpc('set_show_paused', {p_event_id:eventId,p_paused:!event.show_paused_at});
+    if (error) throw error;
+    await loadEvent();
+  } catch (error:any) { setPauseError(error.message || 'Unable to pause the show.'); }
+  finally { setPauseBusy(false); }
+}
+
 async function nextSinger(automatic = false) {
+  if (event?.show_paused_at) return;
   if (advanceInFlightRef.current) return;
   advanceInFlightRef.current = true;
   setAdvancingSinger(true);
@@ -5192,7 +5206,7 @@ const currentElapsedMinutes =
   event?.current_performance_started_at
     ? Math.max(
         0,
-        (Date.now() -
+        ((event?.show_paused_at ? new Date(event.show_paused_at).getTime() : Date.now()) -
           new Date(
             event.current_performance_started_at
           ).getTime()) /
@@ -5766,7 +5780,8 @@ if (!isSubscribed) {
 >
       
 <SVHostHero
-  onNextSinger={current ? () => { void nextSinger(); } : undefined}
+  pausedAt={event?.show_paused_at}
+  onNextSinger={current && !event?.show_paused_at ? () => { void nextSinger(); } : undefined}
   advancingSinger={advancingSinger}
   singerName={
     current?.singer_name || 'No current singer'
@@ -5791,8 +5806,13 @@ if (!isSubscribed) {
   }
 />
 
+{event?.show_paused_at && <div className="sv-card" role="status" style={{padding:16,marginBottom:16,border:'1px solid #f59e0b'}}>Show paused · The singer timer and automatic advancement are paused. Control music playback in your karaoke player, then select Resume Show when ready.</div>}
+{pauseError && <p role="alert">{pauseError}</p>}
 <div id="watchdog-mission-controls">
 <SVMissionControl
+  showPaused={Boolean(event?.show_paused_at)}
+  pauseBusy={pauseBusy}
+  onToggleShowPause={() => { void toggleShowPause(); }}
   onOpenStageDisplay={() => { window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
   judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
@@ -5891,7 +5911,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
+  {account?.singa_enabled && <SingaExperiment paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
@@ -6388,7 +6408,7 @@ karafunPlayerOnline={karafunPlayerOnline}
 />}
 <SVHostIQ
   eventId={eventId}
-  watchdogAlerts={account?.singa_enabled ? watchdogAlerts.filter(alert => alert.action !== 'review_karafun') : watchdogAlerts}
+  watchdogAlerts={event?.show_paused_at ? [] : account?.singa_enabled ? watchdogAlerts.filter(alert => alert.action !== 'review_karafun') : watchdogAlerts}
   karaFunWatchdogAvailable={karafunConnected && karafunPlayerOnline}
   onReviewWatchdog={reviewWatchdogAlert}
   onFixWatchdog={fixWatchdogAlert}

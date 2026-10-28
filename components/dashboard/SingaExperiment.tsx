@@ -5,11 +5,13 @@ import { newSingaPlaybackTracker, observeSingaPlayback } from '@/lib/singaPlayba
 
 type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string; status?: string; performance?: { singa_song_id?: string | null; singa_variant_id?: string | null } };
 
-type Props = { items: QueueItem[]; excludeExplicit?: boolean; onCompleted: (performanceId: string) => void };
+type Props = { paused?: boolean; items: QueueItem[]; excludeExplicit?: boolean; onCompleted: (performanceId: string) => void };
 type Variant = { resource_id: string; catalog?: { name?: string }; is_duet?: boolean; is_explicit?: boolean; duration?: number };
 type Song = { resource_id: string; name: string; artists?: { name?: string }[]; variants?: Variant[] };
 
-export default function SingaExperiment({ items, excludeExplicit, onCompleted }: Props) {
+export default function SingaExperiment({ items, paused = false, excludeExplicit, onCompleted }: Props) {
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const currentItems = useRef(items);
   const completedCallback = useRef(onCompleted);
   const autoAdvanceRef = useRef(false);
@@ -45,6 +47,8 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
     setBufferActive(false);
     setStatus(reason);
   };
+
+  useEffect(() => { playbackTracker.current = newSingaPlaybackTracker(); }, [paused]);
 
   const item = items.find((entry) => entry.id === itemId);
   const [songId, variantId] = selected.split('|');
@@ -101,7 +105,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
             setAutoAdvance(false);
           }
         }
-        if (message.type === 'estimates.state' && autoAdvanceRef.current) {
+        if (message.type === 'estimates.state' && autoAdvanceRef.current && !pausedRef.current) {
           const current = currentItems.current.find(entry => entry.status === 'current');
           const completed = observeSingaPlayback(playbackTracker.current, message.payload, current?.id || null, sentRequests.current);
           if (completed) {
@@ -138,7 +142,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   }
 
   function sendItem(entry: QueueItem, song: string, variant: string) {
-    if (!connected || !song || !variant || requestId.current || attempted.includes(entry.id) || socket.current?.readyState !== WebSocket.OPEN) return;
+    if (pausedRef.current || !connected || !song || !variant || requestId.current || attempted.includes(entry.id) || socket.current?.readyState !== WebSocket.OPEN) return;
     setAttempted((previous) => [...previous, entry.id]);
     const id = crypto.randomUUID(); requestId.current = id; pendingPerformance.current = entry.id; setPending(true);
     socket.current.send(JSON.stringify({ type: 'song.request', kind: 'command', id, occurred_at: new Date().toISOString(), protocol_version: '2.0', payload: { song_id: song, song_variant_id: variant, singer_name: entry.singerName, pitch: 0, tempo: 0, guide_vocals: false } }));
@@ -149,7 +153,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
   // The live queue is not fully exposed to this client. Only send while the
   // host-confirmed buffer remains a prefix of the StageVotes rotation.
   useEffect(() => {
-    if (!bufferActive || !connected || pending || matching.current) return;
+    if (paused || !bufferActive || !connected || pending || matching.current) return;
     const current = items.find(entry => entry.status === 'current');
     if (awaitingAdvance.current) {
       if (!current || current.id === awaitingAdvance.current) return;
@@ -175,7 +179,7 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
     (async () => {
       try {
         if (next.performance?.singa_song_id && next.performance?.singa_variant_id) {
-          if (!bufferActiveRef.current || !currentItems.current.some(entry => entry.id === next.id && entry.songTitle === next.songTitle && entry.artist === next.artist)) return;
+          if (pausedRef.current || !bufferActiveRef.current || !currentItems.current.some(entry => entry.id === next.id && entry.songTitle === next.songTitle && entry.artist === next.artist)) return;
           sendItem(next, next.performance.singa_song_id, next.performance.singa_variant_id);
           return;
         }
@@ -192,13 +196,13 @@ export default function SingaExperiment({ items, excludeExplicit, onCompleted }:
           (!excludeExplicit || song.variants[0].is_explicit === false));
         if (matches.length !== 1) throw new Error(`Choose the Singa version for ${next.singerName} manually; the automatic match is uncertain.`);
         const currentOrder = currentItems.current.filter(entry => !completedPerformances.current.has(entry.id) && entry.songTitle && entry.songTitle !== 'Song Needed').slice(0, queuedOrder.current.length + 1).map(entry => entry.id).join('|');
-        if (!bufferActiveRef.current || currentOrder !== initialOrder || socket.current?.readyState !== WebSocket.OPEN) throw new Error('Queue or connection changed. Check Singa before continuing.');
+        if (pausedRef.current || !bufferActiveRef.current || currentOrder !== initialOrder || socket.current?.readyState !== WebSocket.OPEN) throw new Error('Queue or connection changed. Check Singa before continuing.');
         sendItem(next, matches[0].resource_id, matches[0].variants![0].resource_id);
       } catch (error) {
         stopBuffer(error instanceof Error ? error.message : 'Unable to find the song in Singa.');
       } finally { matching.current = false; }
     })();
-  }, [items, bufferActive, bufferSize, bufferRevision, connected, pending, attempted, excludeExplicit]);
+  }, [paused, items, bufferActive, bufferSize, bufferRevision, connected, pending, attempted, excludeExplicit]);
 
   const field = { width: '100%', padding: '10px', marginTop: '8px', color: '#fff', background: '#101a30', border: '1px solid #465571', borderRadius: 8 };
   const button = { padding: '10px 16px', marginTop: 10, borderRadius: 8, background: '#f97316', color: '#fff', border: 0 };
