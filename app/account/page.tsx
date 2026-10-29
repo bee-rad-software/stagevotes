@@ -307,11 +307,21 @@ return (
     </div>
   </div>
 
-  <label htmlFor="karaoke-software" style={{display:'block', marginBottom: 8, fontSize: 13, fontWeight: 700}}>Song catalog</label>
-  <select id="karaoke-software" value={singaEnabled ? 'singa' : 'other'} onChange={e => setSingaEnabled(e.target.value === 'singa')}>
-    <option value="other">KaraFun or another catalog</option>
-    <option value="singa">Singa</option>
-  </select>
+  <fieldset style={{border:0, padding:0, margin:'0 0 20px', minWidth:0}}>
+    <legend style={{fontSize:15, fontWeight:700, marginBottom:12}}>Which karaoke software do you use?</legend>
+    <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12}}>
+      {[
+        {id:'karafun', name:'KaraFun', description:'Use the KaraFun catalog and connect your remote channel.', selected:!singaEnabled},
+        {id:'singa', name:'Singa', description:'Use the Singa catalog and connect your Singa queue.', selected:singaEnabled},
+      ].map(option => (
+        <label key={option.id} style={{display:'flex', alignItems:'flex-start', gap:12, padding:18, borderRadius:12, border:option.selected?'2px solid #38bdf8':'2px solid #334155', background:option.selected?'rgba(56,189,248,0.10)':'#0b1423', cursor:'pointer'}}>
+          <input type="radio" name="karaoke-software" value={option.id} checked={option.selected} onChange={() => setSingaEnabled(option.id === 'singa')} style={{marginTop:5, accentColor:'#38bdf8', width:18, height:18, flexShrink:0}} />
+          <span><strong style={{display:'block', fontSize:19, color:'#fff'}}>{option.name}</strong><span style={{display:'block', marginTop:6, fontSize:13, color:'#cbd5e1', lineHeight:1.5}}>{option.description}</span></span>
+        </label>
+      ))}
+    </div>
+    <p style={{fontSize:13, color:'#94a3b8', margin:'12px 0 0'}}>Choose one, then save your account settings below. Using another catalog? Leave KaraFun selected.</p>
+  </fieldset>
   {singaEnabled && <p style={{fontSize: 13}}>Singers will search the Singa catalog, and Singa controls will appear on the host page.</p>}
   {!singaEnabled && <>
   <label
