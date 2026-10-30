@@ -38,6 +38,6 @@ export async function POST(request:Request) {
     if(updateError)warning='Your entry was saved, but the photo could not be attached. Ask your host to help.';
    }
   }
-  return NextResponse.json({success:true,warning},{status:201});
+  return NextResponse.json({success:true,warning,entryId},{status:201});
  }catch{return NextResponse.json({error:'Unable to submit right now. Please try again.'},{status:500});}
 }
