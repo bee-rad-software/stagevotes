@@ -6,6 +6,7 @@ import {QRCodeSVG} from 'qrcode.react';
 import {supabase} from '@/lib/supabase';
 import SVShell from '@/components/ui/SVShell';
 import {contestRanking,type SideContest} from '@/lib/sideContest';
+import CostumeSingerLinks from '@/components/contest/CostumeSingerLinks';
 import styles from '@/components/contest/SideContest.module.css';
 
 export default function HostSideContest() {
@@ -128,6 +129,7 @@ export default function HostSideContest() {
    <div className={styles.hero}><span className={styles.kicker}>Contest control</span><h1>{contest?.title||'Add a People’s Choice contest'}</h1>
     <p>Karaoke continues independently. These contestants and votes do not affect the singer queue or karaoke scores.</p>
    </div>
+   {contest&&<CostumeSingerLinks eventId={eventId}/>}
    {message&&<div className={styles.message} role="status">{message}</div>}
    {venue&&voteUrl&&<section className={styles.card}>
     <h2>Permanent venue contest QR</h2><p>{venue.name} · Print this now and reuse it for future contests.</p>
