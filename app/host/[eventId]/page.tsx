@@ -1,4 +1,5 @@
 'use client'
+import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import { searchSingaVersions } from '@/lib/singaCatalog';
 import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
@@ -268,6 +269,16 @@ function finishKaraFunControl() {
 
 const [karafunPlayPending, setKarafunPlayPending] =
   useState(false);
+const stageBreakState=useRef(initialBreakMusicState);
+useEffect(()=>{
+ const previous=stageBreakState.current;
+ const next=updateBreakMusicState(previous,karafunConnected&&karafunPlayerOnline,karafunPlaybackState);
+ stageBreakState.current=next;
+ if(!next.between||previous.between||karafunPlayPending||event?.is_show_ended)return;
+ const timer=window.setTimeout(()=>requestStageLyrics('between'),1200);
+ return()=>window.clearTimeout(timer);
+},[karafunConnected,karafunPlayerOnline,karafunPlaybackState,karafunPlayPending,event?.is_show_ended,requestStageLyrics]);
+
 const [karafunPlayError, setKarafunPlayError] =
   useState('');
 const karafunPlayTimeoutRef =
@@ -5916,7 +5927,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment onPlaybackStart={requestStageLyrics} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
+  {account?.singa_enabled && <SingaExperiment onPlaybackStart={()=>requestStageLyrics()} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}

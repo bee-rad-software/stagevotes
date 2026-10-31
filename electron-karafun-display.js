@@ -359,7 +359,8 @@ function createStageWindow(eventId) {
     webPreferences: { contextIsolation: true, nodeIntegration: false,
       preload: path.join(__dirname, "electron-preload.js") }
   });
-  // Never make the backdrop always-on-top: KaraFun must remain above it.
+  // Stay behind floating lyrics by default; opt-in intermissions temporarily raise this window.
+  stageWindow.webContents.on("did-start-loading", () => { if(stageWindow && !stageWindow.isDestroyed()) stageWindow.setAlwaysOnTop(false); });
   stageWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   stageWindow.webContents.on("will-navigate", (event, url) => {
     if (!isStageUrl(url)) event.preventDefault();
@@ -376,6 +377,7 @@ function createStageWindow(eventId) {
 
 function restoreStageWindow() {
   if (!stageWindow || stageWindow.isDestroyed()) return;
+  stageWindow.setAlwaysOnTop(false);
   if (stageRestoreBounds) {
     const bounds = stageRestoreBounds;
     stageRestoreBounds = null;
@@ -388,6 +390,18 @@ function restoreStageWindow() {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle("stage-presentation", (event, mode) => {
+    if (!isStageSender(event) || !["front", "lyrics", "manual"].includes(mode)) return false;
+    if (mode === "front") {
+      stageWindow.setAlwaysOnTop(true, "screen-saver");
+      stageWindow.showInactive();
+    } else {
+      // KaraFun's floating lyrics window stays above this normal-level backdrop.
+      stageWindow.setAlwaysOnTop(false);
+      if (stageWindow.isFocused()) stageWindow.blur();
+    }
+    return true;
+  });
   ipcMain.handle("stage-fill-tv", (event, displayId) => {
     if (!isStageSender(event)) return null;
     const displays = screen.getAllDisplays();

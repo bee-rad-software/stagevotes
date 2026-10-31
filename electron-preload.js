@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("stagevotesDesktop", {
   isDesktop: true,
+  setStagePresentation: mode => ipcRenderer.invoke("stage-presentation", mode),
   fillStageTV: displayId => ipcRenderer.invoke("stage-fill-tv", displayId),
   restoreStageWindow: () => ipcRenderer.invoke("stage-restore-window"),
   listStageDisplays: () => ipcRenderer.invoke("stage-list-displays"),
