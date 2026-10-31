@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
+import HalloweenParty from './HalloweenParty';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
@@ -39,6 +40,9 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     setTheme(value as StageTheme);
     try { if (event?.id) localStorage.setItem('stage-theme:' + event.id, value); } catch { /* Keep the choice for this session. */ }
   };
+  const [partyEnabled,setPartyEnabled]=useState(true);
+  const [votingDeadline,setVotingDeadline]=useState('');
+  useEffect(()=>{setVotingDeadline('');setPartyEnabled(true);if(!event?.id)return;try{setVotingDeadline(localStorage.getItem('stage-vote-deadline:'+event.id)||'');setPartyEnabled(localStorage.getItem('stage-halloween-party:'+event.id)!=='off');}catch{}},[event?.id]);
   const [native, setNative] = useState(false);
   const [filled, setFilled] = useState(false);
   const [displays, setDisplays] = useState<{ id: string; label: string; width: number; height: number; current: boolean }[]>([]);
@@ -134,6 +138,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const showNext = !ended && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
+  const partyActive=theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&(!current||showBreak);
   const stageName = event?.venue || event?.name || 'StageVotes';
 
   return <main className={styles.screen} data-theme={theme}>
@@ -164,13 +169,13 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
-        {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>ON STAGE</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
+        {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>{theme==='halloween'?'NOW HAUNTING THE STAGE':'ON STAGE'}</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
           : <div className={styles.songCopy}><span className={styles.kicker}>STAGEVOTES PRESENTS</span><h1>{ended ? 'Thanks for singing!' : event?.name || 'Getting the stage ready'}</h1></div>}
       </div>
       <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : 'KARAOKE NIGHT'}</span></div></div>
     </header>
     <aside className={styles.sidebar} aria-label="Next five singers">
-      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>YOU’RE UP!</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
+      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>{theme==='halloween'?'YOUR TIME TO SHINE… AND SHRIEK!':'YOU’RE UP!'}</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
       <div className={styles.queue}>
         {!ended && upcoming.map((singer, index) => <article key={singer.id} className={styles.queueItem}><span className={styles.queueNumber}>{String(index + 1).padStart(2, '0')}</span><Avatar singer={singer} /><div><span className={styles.kicker}>{index === 0 ? 'UP NEXT' : 'SINGER ' + (index + 1)}</span><h2>{nameOf(singer)}</h2><p>{singer.song_title}</p></div></article>)}
         {(!upcoming.length || ended) && <p className={styles.footerMessage}>{ended ? 'See you next time.' : event?.signups_open === false ? 'Signups closed · Enjoy the show' : 'Good songs. Great company.'}</p>}
@@ -182,7 +187,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || showWelcome || showBreak || showAnnouncement || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
+      {event&&<HalloweenParty eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline}/>}
+      {!partyActive&&(!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
         <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
         <h2>{beforeShow ? 'Karaoke starts soon!' : 'Ready for your next song?'}</h2>
         <p>{event.signups_open === false ? 'Singer signups are closed. Enjoy the show!' : showQr ? 'Ready to take the stage? Scan the code to join the queue.' : 'Ready to take the stage? Ask your host how to join the queue.'}</p>
@@ -190,7 +196,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       </div> : showNext ? <div className={styles.intermission} key={next?.id || 'open'}>
         <span className={styles.kicker}>{next ? 'UP NEXT' : 'THE STAGE IS YOURS'}</span>
         {next ? <><Avatar singer={next} large /><h2>{nameOf(next)}</h2><p>{next.song_title}</p><span className={styles.artist}>{next.artist}</span></> : <><h2>{current ? 'Enjoy the show.' : 'Your next song starts here.'}</h2><p>{event.signups_open === false ? 'Singer signups are closed.' : 'Choose a song. Make a memory.'}</p></>}
-      </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Press G to hide guides.</small></div> : null}
+      </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Press G to hide guides.</small></div> : null)}
     </section>
     {event && <StageShoutoutTicker eventId={event.id} active={Boolean(current) && !ended} />}
     {error && <div role="status" className={styles.connection}>{error}</div>}
@@ -202,6 +208,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <button type="button" aria-pressed={view === 'next'} onClick={() => setView('next')}>Up Next · N</button>
       <button type="button" aria-pressed={guides} onClick={() => { setView('lyrics'); setGuides(value => !value); }}>Guides · G</button>
       <label className={styles.themePicker}><span>Theme</span><select aria-label="Stage theme" value={theme} onChange={e => chooseTheme(e.target.value)}>{themes.map(option => <option key={option} value={option}>{themeNames[option]}</option>)}</select></label>
+      {theme==='halloween'&&<><label className={styles.themePicker}><span>Party extras</span><input type="checkbox" checked={partyEnabled} onChange={e=>{setPartyEnabled(e.target.checked);try{if(event)localStorage.setItem('stage-halloween-party:'+event.id,e.target.checked?'on':'off');}catch{}}}/></label><label className={styles.themePicker}><span>Planned voting close</span><input aria-label="Planned voting close (reminder only; close voting from host controls)" title="Reminder only. Close voting from the host contest controls. Saved on this display." type="datetime-local" value={votingDeadline} onChange={e=>{setVotingDeadline(e.target.value);try{if(event)localStorage.setItem('stage-vote-deadline:'+event.id,e.target.value);}catch{}}}/></label></>}
       {native && <select aria-label="TV display" value={displayId} onChange={e => setDisplayId(e.target.value)}>{displays.map(display => <option key={display.id} value={display.id}>{display.label} · {display.width}×{display.height}</option>)}</select>}
       <button type="button" onClick={() => { void fillTV(); }}>Fill TV</button>
       {native && filled && <button type="button" onClick={() => { void restore(); }}>Restore · Esc</button>}

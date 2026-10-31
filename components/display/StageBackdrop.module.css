@@ -141,3 +141,7 @@
 .announcementEditor input:focus-visible { outline:2px solid #38bdf8; outline-offset:2px; }
 .announcementEditor button:disabled { opacity:.5; cursor:not-allowed; }
 .welcome .announcementText { white-space:pre-wrap; overflow-wrap:anywhere; font-size:clamp(30px,4.5vw,82px); }
+
+/* Keep the seasonal controls usable on smaller display windows. */
+.tools { max-width:96vw; flex-wrap:wrap; justify-content:center; width:max-content; }
+.themePicker input[type=datetime-local] { color:#f8fafc; background:#1e293b; border:1px solid #475569; border-radius:6px; padding:7px; color-scheme:dark; max-width:230px; }

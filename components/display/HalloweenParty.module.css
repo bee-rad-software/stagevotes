@@ -1,0 +1,11 @@
+.panel{width:100%;height:100%;min-height:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2vh 2vw;overflow:hidden;background:radial-gradient(ellipse at center,#43165a44,transparent 70%);border-radius:24px;color:#fff3e6}
+.bats{font-size:clamp(18px,2vw,38px);letter-spacing:.3em;margin-bottom:1vh;animation:float 6s ease-in-out infinite}
+.spotlight{max-width:95%;min-height:0;animation:appear .5s ease-out}
+.kicker{font-size:clamp(11px,1vw,20px);font-weight:800;letter-spacing:.16em;color:#fdba74;display:block}
+.photo{display:block;max-width:65%;height:clamp(80px,24vh,280px);object-fit:contain;border-radius:18px;margin:1vh auto;border:2px solid #f59e0b77}
+.panel h2{font-size:clamp(26px,4vw,76px);line-height:1.08;margin:1.5vh 0;overflow-wrap:anywhere}
+.panel h3{font-size:clamp(22px,3vw,52px);margin:1vh 0;color:#fbbf24;overflow-wrap:anywhere}
+.panel p{font-size:clamp(14px,1.65vw,30px);line-height:1.4;margin:1vh auto;max-width:48ch;overflow-wrap:anywhere}
+.qr{display:inline-block;background:white;border-radius:12px;padding:5px;margin-top:1vh;line-height:0}.qr svg{width:clamp(80px,11vw,160px);height:auto}
+@keyframes float{50%{transform:translateY(-5px)}}@keyframes appear{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.bats,.spotlight{animation:none}}
