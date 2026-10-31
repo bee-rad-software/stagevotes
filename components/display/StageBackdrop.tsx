@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
+import NextSingerSpotlight from './NextSingerSpotlight';
+import {selectSpotlightSinger} from '@/lib/stageSpotlight';
 import {stageEntranceLine} from '@/lib/stageEntranceLines';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
@@ -90,13 +92,16 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const [autoWindowHandoff,setAutoWindowHandoff]=useState(false);
   const autoHandoffRef=useRef(false);autoHandoffRef.current=autoWindowHandoff;
   const betweenSongs=useRef(false);
+  const lastPlayedId=useRef<string|null>(null);
+  const [singerSpotlight,setSingerSpotlight]=useState(true);
+  useEffect(()=>{setSingerSpotlight(true);try{if(event?.id)setSingerSpotlight(localStorage.getItem('stage-singer-spotlight:'+event.id)!=='off');}catch{}},[event?.id]);
   const [view, setView] = useState<'lyrics' | 'next' | 'welcome' | 'break' | 'announcement'>('lyrics');
   const [announcement, setAnnouncement] = useState('');
   const [draftAnnouncement, setDraftAnnouncement] = useState('');
   const [editingAnnouncement, setEditingAnnouncement] = useState(false);
   const [guides, setGuides] = useState(false);
   useStageLyricsSignal(event?.id,()=>{
-    betweenSongs.current=false;setView('lyrics');setEditingAnnouncement(false);setGuides(false);setEntranceId(null);
+    lastPlayedId.current=event?.current_performance_id||null;betweenSongs.current=false;setView('lyrics');setEditingAnnouncement(false);setGuides(false);setEntranceId(null);
     if(autoHandoffRef.current)void (window as any).stagevotesDesktop?.setStagePresentation?.('lyrics');
   },()=>{
     if(!autoHandoffRef.current)return;
@@ -147,6 +152,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     // Seed the initial view without announcing a performance already underway.
     if (lastPerformance.current === undefined || entranceEvent.current !== event.id) {
       entranceEvent.current = event.id;
+      lastPlayedId.current=event.current_performance_id;
       setEntranceTurn(0);
       if (entranceTimer.current) clearTimeout(entranceTimer.current);
       setEntranceId(null);
@@ -169,6 +175,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
   const partyActive=theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&(!current||showBreak);
+  const spotlight=selectSpotlightSinger(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current);
+  const spotlightIntro=stageEntranceLine(theme,betweenSongs.current&&spotlight?.id===current?.id?entranceTurn:entranceTurn+1);
   const stageName = event?.venue || event?.name || 'StageVotes';
 
   return <main className={styles.screen} data-theme={theme}>
@@ -215,13 +223,13 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || showWelcome || showBreak || showAnnouncement || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {event&&<HalloweenParty eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline}/>}
-      {!partyActive&&(!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
+      {event&&<HalloweenParty nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline}/>}
+      {!partyActive&&(!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak&&singerSpotlight&&spotlight ? <NextSingerSpotlight singer={spotlight} intro={spotlightIntro}/> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
         <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
         <h2>{beforeShow ? 'Karaoke starts soon!' : 'Ready for your next song?'}</h2>
         <p>{event.signups_open === false ? 'Singer signups are closed. Enjoy the show!' : showQr ? 'Ready to take the stage? Scan the code to join the queue.' : 'Ready to take the stage? Ask your host how to join the queue.'}</p>
         {event.signups_open !== false && <div className={styles.welcomeSteps}><span><b>01</b> Pick a song</span><span><b>02</b> Join the queue</span><span><b>03</b> Get ready to sing</span></div>}
-      </div> : showNext ? <div className={styles.intermission} key={next?.id || 'open'}>
+      </div> : showNext&&singerSpotlight&&spotlight ? <NextSingerSpotlight singer={spotlight} intro={spotlightIntro}/> : showNext ? <div className={styles.intermission} key={next?.id || 'open'}>
         <span className={styles.kicker}>{next ? 'UP NEXT' : 'THE STAGE IS YOURS'}</span>
         {next ? <><Avatar singer={next} large /><h2>{nameOf(next)}</h2><p>{next.song_title}</p><span className={styles.artist}>{next.artist}</span></> : <><h2>{current ? 'Enjoy the show.' : 'Your next song starts here.'}</h2><p>{event.signups_open === false ? 'Singer signups are closed.' : 'Choose a song. Make a memory.'}</p></>}
       </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Press G to hide guides.</small></div> : null)}
@@ -237,6 +245,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <button type="button" aria-pressed={guides} onClick={() => { setView('lyrics'); setGuides(value => !value); }}>Guides · G</button>
       <label className={styles.themePicker}><span>Theme</span><select aria-label="Stage theme" value={theme} onChange={e => chooseTheme(e.target.value)}>{themes.map(option => <option key={option} value={option}>{themeNames[option]}</option>)}</select></label>
       {theme==='halloween'&&<><label className={styles.themePicker}><span>Party extras</span><input type="checkbox" checked={partyEnabled} onChange={e=>{setPartyEnabled(e.target.checked);try{if(event)localStorage.setItem('stage-halloween-party:'+event.id,e.target.checked?'on':'off');}catch{}}}/></label><label className={styles.themePicker}><span>Planned voting close</span><input aria-label="Planned voting close (reminder only; close voting from host controls)" title="Reminder only. Close voting from the host contest controls. Saved on this display." type="datetime-local" value={votingDeadline} onChange={e=>{setVotingDeadline(e.target.value);try{if(event)localStorage.setItem('stage-vote-deadline:'+event.id,e.target.value);}catch{}}}/></label></>}
+      <label className={styles.themePicker}><span>Singer spotlight</span><input type="checkbox" checked={singerSpotlight} onChange={e=>{setSingerSpotlight(e.target.checked);try{if(event)localStorage.setItem('stage-singer-spotlight:'+event.id,e.target.checked?'on':'off');}catch{}}}/></label>
       {native&&typeof (window as any).stagevotesDesktop?.setStagePresentation==='function'&&<label className={styles.themePicker}><span>Auto window handoff</span><input type="checkbox" checked={autoWindowHandoff} onChange={e=>{setAutoWindowHandoff(e.target.checked);betweenSongs.current=false;void (window as any).stagevotesDesktop.setStagePresentation(e.target.checked&&view==='break'?'front':'manual');}}/></label>}
       {native && <select aria-label="TV display" value={displayId} onChange={e => setDisplayId(e.target.value)}>{displays.map(display => <option key={display.id} value={display.id}>{display.label} · {display.width}×{display.height}</option>)}</select>}
       <button type="button" onClick={() => { void fillTV(); }}>Fill TV</button>
