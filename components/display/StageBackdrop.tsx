@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
+import {stageEntranceLine} from '@/lib/stageEntranceLines';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
@@ -128,12 +129,14 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const lastPerformance = useRef<string | null | undefined>(undefined);
   const entranceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [entranceId, setEntranceId] = useState<string | null>(null);
+  const [entranceTurn,setEntranceTurn]=useState(0);
   useEffect(() => {
     if (!ready || !event) return;
     const id = !ended ? event.current_performance_id : null;
     // Seed the initial view without announcing a performance already underway.
     if (lastPerformance.current === undefined || entranceEvent.current !== event.id) {
       entranceEvent.current = event.id;
+      setEntranceTurn(0);
       if (entranceTimer.current) clearTimeout(entranceTimer.current);
       setEntranceId(null);
       lastPerformance.current = id;
@@ -141,7 +144,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     }
     if (lastPerformance.current === id) return;
     lastPerformance.current = id;
-    if (id) { setView('lyrics'); setEditingAnnouncement(false); }
+    if (id) { setView('lyrics'); setEditingAnnouncement(false); setEntranceTurn(turn=>turn+1); }
     if (entranceTimer.current) clearTimeout(entranceTimer.current);
     setEntranceId(id);
     if (id) entranceTimer.current = setTimeout(() => setEntranceId(null), 5000);
@@ -185,13 +188,13 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
-        {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>{theme==='halloween'?'NOW HAUNTING THE STAGE':'ON STAGE'}</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
+        {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>{stageEntranceLine(theme,entranceTurn)}</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
           : <div className={styles.songCopy}><span className={styles.kicker}>STAGEVOTES PRESENTS</span><h1>{ended ? 'Thanks for singing!' : event?.name || 'Getting the stage ready'}</h1></div>}
       </div>
       <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : 'KARAOKE NIGHT'}</span></div></div>
     </header>
     <aside className={styles.sidebar} aria-label="Next five singers">
-      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>{theme==='halloween'?'YOUR TIME TO SHINE… AND SHRIEK!':'YOU’RE UP!'}</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
+      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>{stageEntranceLine(theme,entranceTurn)}</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
       <div className={styles.queue}>
         {!ended && upcoming.map((singer, index) => <article key={singer.id} className={styles.queueItem}><span className={styles.queueNumber}>{String(index + 1).padStart(2, '0')}</span><Avatar singer={singer} /><div><span className={styles.kicker}>{index === 0 ? 'UP NEXT' : 'SINGER ' + (index + 1)}</span><h2>{nameOf(singer)}</h2><p>{singer.song_title}</p></div></article>)}
         {(!upcoming.length || ended) && <p className={styles.footerMessage}>{ended ? 'See you next time.' : event?.signups_open === false ? 'Signups closed · Enjoy the show' : 'Good songs. Great company.'}</p>}
