@@ -2,6 +2,8 @@
 import {useEffect,useState} from 'react';
 import {useParams} from 'next/navigation';
 import {supabase} from '@/lib/supabase';
+import {prepareContestPhoto} from '@/lib/prepareContestPhoto';
+import {contestPhotoError,readContestEntryResponse,contestSubmissionError} from '@/lib/contestEntrySubmission';
 import type {SideContest} from '@/lib/sideContest';
 import styles from '@/components/contest/SideContest.module.css';
 type Entry={number:number;name:string;costume:string;approval_status:'pending'|'approved'|'rejected'};
@@ -61,18 +63,21 @@ export default function ContestEntryPage() {
   e.preventDefault();if(busy||!entryKey)return;
   setBusy(true);setMessage('');
   try{
+   if(photo)setMessage('Preparing your photo…');
+   const uploadPhoto=photo?await prepareContestPhoto(photo):null;
+   const photoError=contestPhotoError(uploadPhoto);if(photoError)throw new Error(photoError);
+   setMessage('');
    const form=new FormData();
    form.set('contestId',contestId);form.set('entryKey',entryKey);form.set('name',name.trim());form.set('costume',costume.trim());
-   if(photo)form.set('photo',photo);
+   if(uploadPhoto)form.set('photo',uploadPhoto);
    const response=await fetch('/api/contests/entry',{method:'POST',body:form});
-   const result=await response.json();
-   if(!response.ok)throw new Error(result.error||'Unable to submit entry.');
+   const result=await readContestEntryResponse(response);
    let linkWarning='';
    if(isMe&&profileId&&result.entryId){const linked=await supabase.rpc('link_costume_singer',{p_entry_id:result.entryId,p_profile_id:profileId,p_entry_key:entryKey});if(linked.error)linkWarning='Your entry was saved, but the singer profile could not be linked. Ask the host to link it.';}
    setMessage(linkWarning||result.warning||'Your entry was received. Check its status below.');
    const {data}=await supabase.rpc('my_side_contest_entry',{p_contest_id:contestId,p_entry_key:entryKey});
    setEntry(data||{number:0,name:name.trim(),costume:costume.trim(),approval_status:'pending'});
-  }catch(error:any){setMessage(error.message||'Unable to submit entry.');}
+  }catch(error:unknown){setMessage(contestSubmissionError(error));}
   finally{setBusy(false);}
  }
  return <main className={styles.page}><div className={styles.wrap}>
@@ -89,7 +94,8 @@ export default function ContestEntryPage() {
    <label className={styles.field}><span>Contestant name</span><input className={styles.input} required maxLength={100} value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label>
    {profileId?<label className={styles.field}><span><input type="checkbox" checked={isMe} onChange={e=>setIsMe(e.target.checked)} disabled={busy}/> This is me · Link my singer profile</span><small>Leave unchecked for family members or other contestants. The host can link their profiles separately.</small></label>:<p className={styles.muted}>Already have a singer profile? The host can link it to this entry for badges. No account is needed to enter.</p>}
    <label className={styles.field}><span>Costume description</span><input className={styles.input} maxLength={200} value={costume} onChange={e=>setCostume(e.target.value)} disabled={busy}/></label>
-   <label className={styles.field}><span>Photo (optional) · JPG, PNG, WebP, under 3 MB</span><input className={styles.input} type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPhoto(e.target.files?.[0]||null)} disabled={busy}/></label>
+   <label className={styles.field}><span>Photo (optional) · Phone photos welcome</span><input className={styles.input} id="contest-photo" type="file" accept="image/*" onChange={e=>{const file=e.target.files?.[0]||null;setPhoto(file);setMessage(file?'Your photo will be resized automatically when you submit.':'');}} disabled={busy}/></label>
+   {photo&&<div className={styles.row}><p className={styles.muted}>{photo.name} · {(photo.size/1024/1024).toFixed(1)} MB</p><button className={styles.secondary} type="button" disabled={busy} onClick={()=>{setPhoto(null);const input=document.getElementById('contest-photo') as HTMLInputElement|null;if(input)input.value='';setMessage('Photo removed. You can submit without a photo.');}}>Remove photo</button></div>}
    <p className={styles.muted}>The contestant’s name, costume, and photo will appear on the public ballot when approved. The host may enable automatic approval. You can submit another contestant after this entry. Voting limits are unchanged. Ask the host to change an existing entry.</p>
    <button className={styles.button} disabled={busy}>{busy?'Submitting…':'Submit contestant'}</button>
   </form>:<section className={styles.card}><h2>Entries are closed</h2><p>Please see your host if you need help.</p></section>}
