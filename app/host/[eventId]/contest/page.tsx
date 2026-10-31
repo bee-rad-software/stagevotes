@@ -6,6 +6,7 @@ import {QRCodeSVG} from 'qrcode.react';
 import {supabase} from '@/lib/supabase';
 import SVShell from '@/components/ui/SVShell';
 import {contestRanking,type SideContest} from '@/lib/sideContest';
+import ContestEntryApproval from '@/components/contest/ContestEntryApproval';
 import CostumeSingerLinks from '@/components/contest/CostumeSingerLinks';
 import styles from '@/components/contest/SideContest.module.css';
 
@@ -169,7 +170,8 @@ export default function HostSideContest() {
     <button className={styles.button} disabled={busy||!ready}>{busy?'Creating…':'Create contest'}</button>
    </form>:<>
     <section className={styles.card}><h2>Contestant entry</h2>
-     <p>{contest.status==='draft'&&contest.registrations_open?'Phone entries are open':'Phone entries are closed'}. Every phone submission needs host approval.</p>
+     <p>{contest.status==='draft'&&contest.registrations_open?'Phone entries are open':'Phone entries are closed'}.</p>
+     <ContestEntryApproval eventId={eventId} editable={contest.status==='draft'}/>
      {contest.status==='draft'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('registrations',{open:!contest.registrations_open})}>{contest.registrations_open?'Close entries':'Open entries'}</button>}
      {!venue&&<p><a className={styles.secondary} href={origin+'/contest/'+contest.id+'/enter'} target="_blank" rel="noreferrer">Open entry page for this contest</a></p>}
      <h3>Pending approval · {contest.pending_entries?.length||0}</h3>
