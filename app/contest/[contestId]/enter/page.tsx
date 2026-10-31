@@ -69,7 +69,7 @@ export default function ContestEntryPage() {
    if(!response.ok)throw new Error(result.error||'Unable to submit entry.');
    let linkWarning='';
    if(isMe&&profileId&&result.entryId){const linked=await supabase.rpc('link_costume_singer',{p_entry_id:result.entryId,p_profile_id:profileId,p_entry_key:entryKey});if(linked.error)linkWarning='Your entry was saved, but the singer profile could not be linked. Ask the host to link it.';}
-   setMessage(linkWarning||result.warning||'Your entry was received. The host will review it.');
+   setMessage(linkWarning||result.warning||'Your entry was received. Check its status below.');
    const {data}=await supabase.rpc('my_side_contest_entry',{p_contest_id:contestId,p_entry_key:entryKey});
    setEntry(data||{number:0,name:name.trim(),costume:costume.trim(),approval_status:'pending'});
   }catch(error:any){setMessage(error.message||'Unable to submit entry.');}
@@ -77,7 +77,7 @@ export default function ContestEntryPage() {
  }
  return <main className={styles.page}><div className={styles.wrap}>
   <header className={styles.hero}><span className={styles.kicker}>StageVotes · Contest entry</span><h1>{contest?.title||'Enter the contest'}</h1>
-   <p>Enter yourself, a family member, or another contestant for host approval.</p></header>
+   <p>Enter yourself, a family member, or another contestant.</p></header>
   {message&&<div className={styles.message} role="status">{message}</div>}
   {loading?<p>Loading…</p>:showEnded?<section className={styles.card}><h2>This show has ended</h2><p>This entry belongs to a previous show.</p>{venueId&&<a className={styles.button} href={'/go/venue/'+venueId+'/contest/enter'}>Find the current contest</a>}</section>:entry?<section className={styles.card}>
    <h2>{entry.approval_status==='approved'?'✓ You’re in!':entry.approval_status==='rejected'?'Please see your host':'Entry received'}</h2>
@@ -90,7 +90,7 @@ export default function ContestEntryPage() {
    {profileId?<label className={styles.field}><span><input type="checkbox" checked={isMe} onChange={e=>setIsMe(e.target.checked)} disabled={busy}/> This is me · Link my singer profile</span><small>Leave unchecked for family members or other contestants. The host can link their profiles separately.</small></label>:<p className={styles.muted}>Already have a singer profile? The host can link it to this entry for badges. No account is needed to enter.</p>}
    <label className={styles.field}><span>Costume description</span><input className={styles.input} maxLength={200} value={costume} onChange={e=>setCostume(e.target.value)} disabled={busy}/></label>
    <label className={styles.field}><span>Photo (optional) · JPG, PNG, WebP, under 3 MB</span><input className={styles.input} type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPhoto(e.target.files?.[0]||null)} disabled={busy}/></label>
-   <p className={styles.muted}>The contestant’s name, costume, and photo will appear on the public ballot if approved. You can submit another contestant after this entry. Voting limits are unchanged. Ask the host to change an existing entry.</p>
+   <p className={styles.muted}>The contestant’s name, costume, and photo will appear on the public ballot when approved. The host may enable automatic approval. You can submit another contestant after this entry. Voting limits are unchanged. Ask the host to change an existing entry.</p>
    <button className={styles.button} disabled={busy}>{busy?'Submitting…':'Submit contestant'}</button>
   </form>:<section className={styles.card}><h2>Entries are closed</h2><p>Please see your host if you need help.</p></section>}
  </div></main>;
