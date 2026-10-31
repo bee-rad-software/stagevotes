@@ -20,7 +20,7 @@ export async function POST(request:Request) {
   const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
   const {data:contest,error:contestError}=await admin.from('side_contests').select('event_id,status,registrations_open').eq('id',contestId).maybeSingle();
   if(contestError)return NextResponse.json({error:'Contest setup is not ready. Please ask your host.'},{status:503});
-  if(!contest||contest.status!=='draft'||!contest.registrations_open)return NextResponse.json({error:'Contest entries are closed.'},{status:400});
+  if(!contest||!['draft','open'].includes(contest.status)||!contest.registrations_open)return NextResponse.json({error:'Contest entries are closed.'},{status:400});
   const {data:show,error:showError}=await admin.from('events').select('is_show_ended,is_archived').eq('id',contest.event_id).maybeSingle();
   if(showError||!show)return NextResponse.json({error:'Unable to check the show. Please try again.'},{status:503});
   if(show.is_show_ended===true||show.is_archived===true)return NextResponse.json({error:'This show has ended. Open the current contest to enter.'},{status:400});
