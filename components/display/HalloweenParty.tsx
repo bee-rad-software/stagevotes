@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useState} from 'react';
+import {halloweenCostumeIndex} from '@/lib/halloweenRotation';
 import {QRCodeSVG} from 'qrcode.react';
 import type {StageBadge} from './StageBackdrop';
 import styles from './HalloweenParty.module.css';
@@ -18,7 +19,7 @@ export default function HalloweenParty({eventId,active,enabled,origin,songs,badg
  if(!active||!enabled)return null;
  const entries=contest?.entries||[];
  const badge=badges.find(b=>b.title==='Boo & Belt It!');
- const entry=entries.length?entries[Math.floor(tick/4)%entries.length]:null;
+ const entry=entries[halloweenCostumeIndex(tick,entries.length,contest?.status==='open',Boolean(badge))]||null;
  const slides=[...(entry?[{kind:'costume' as const,entry}]:[]),...(contest?.status==='open'?[{kind:'vote' as const}]:[]),...(badge?[{kind:'badge' as const}]:[]),{kind:'stats' as const}];
  const slide=slides[tick%slides.length];
  const seconds=deadline?Math.ceil((new Date(deadline).getTime()-now)/1000):0;
