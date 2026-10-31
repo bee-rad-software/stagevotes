@@ -5,11 +5,13 @@ import { newSingaPlaybackTracker, observeSingaPlayback } from '@/lib/singaPlayba
 
 type QueueItem = { id: string; singerName: string; songTitle: string; artist?: string; status?: string; performance?: { singa_song_id?: string | null; singa_variant_id?: string | null } };
 
-type Props = { paused?: boolean; items: QueueItem[]; excludeExplicit?: boolean; onCompleted: (performanceId: string) => void };
+type Props = { onPlaybackStart?:()=>void; paused?: boolean; items: QueueItem[]; excludeExplicit?: boolean; onCompleted: (performanceId: string) => void };
 type Variant = { resource_id: string; catalog?: { name?: string }; is_duet?: boolean; is_explicit?: boolean; duration?: number };
 type Song = { resource_id: string; name: string; artists?: { name?: string }[]; variants?: Variant[] };
 
-export default function SingaExperiment({ items, paused = false, excludeExplicit, onCompleted }: Props) {
+export default function SingaExperiment({ onPlaybackStart, items, paused = false, excludeExplicit, onCompleted }: Props) {
+  const playbackStart=useRef(onPlaybackStart);playbackStart.current=onPlaybackStart;
+  const playerState=useRef('');
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
   const currentItems = useRef(items);
@@ -58,6 +60,7 @@ export default function SingaExperiment({ items, paused = false, excludeExplicit
   function connect() {
     if (!code.trim()) return;
     socket.current?.close();
+    playerState.current='';
     playbackTracker.current = newSingaPlaybackTracker();
     sentRequests.current.clear();
     queuedOrder.current = [];
@@ -78,6 +81,7 @@ export default function SingaExperiment({ items, paused = false, excludeExplicit
       if (socket.current !== ws) return;
       try {
         const message = JSON.parse(event.data);
+        if(message.type==='estimates.state'&&typeof message.payload?.player_status==='string'){const state=message.payload.player_status;if(state==='playing'&&playerState.current!=='playing')playbackStart.current?.();playerState.current=state;}
         if (message.type === 'client.connected' && message.caused_by === connectId.current) { setConnected(true); setStatus('Connected. Choose a singer and find their song.'); }
         if (message.caused_by === requestId.current && message.type === 'song.requested') {
           if (timer.current) clearTimeout(timer.current);
