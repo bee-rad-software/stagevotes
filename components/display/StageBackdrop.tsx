@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
+import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
@@ -90,6 +91,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const [draftAnnouncement, setDraftAnnouncement] = useState('');
   const [editingAnnouncement, setEditingAnnouncement] = useState(false);
   const [guides, setGuides] = useState(false);
+  useStageLyricsSignal(event?.id,()=>{setView('lyrics');setEditingAnnouncement(false);setGuides(false);setEntranceId(null);});
   const [toolsVisible, setToolsVisible] = useState(true);
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;

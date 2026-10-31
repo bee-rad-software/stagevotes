@@ -1,4 +1,5 @@
 'use client'
+import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import { searchSingaVersions } from '@/lib/singaCatalog';
 import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
 import SingaExperiment from '@/components/dashboard/SingaExperiment';
@@ -241,6 +242,9 @@ const breakMusicRef = useRef<BreakMusicHandle | null>(null);
 const breakMusicPlayRequestRef = useRef(false);
 const [karafunPlaybackState, setKarafunPlaybackState] =
   useState<number | null>(null);
+const requestStageLyrics=useStageLyricsSignal(String(params.eventId||''));
+useEffect(()=>{if(karafunPlaybackState===4)requestStageLyrics();},[karafunPlaybackState,requestStageLyrics]);
+
 const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
   useState('');
 const [karafunControlPending, setKarafunControlPending] = useState<'pause' | 'skip' | null>(null);
@@ -2622,6 +2626,7 @@ async function playKaraFunSong() {
     if (karafunSocketRef.current !== ws || ws.readyState !== WebSocket.OPEN || currentPerformanceRef.current?.id !== expectedPerformanceId) {
       throw new Error('KaraFun or the current singer changed while preparing playback.');
     }
+    requestStageLyrics();
     ws.send(JSON.stringify({
       id: Date.now(),
       type: 'remote.PlayRequest',
@@ -5911,7 +5916,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
+  {account?.singa_enabled && <SingaExperiment onPlaybackStart={requestStageLyrics} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
