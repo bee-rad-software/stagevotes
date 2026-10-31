@@ -166,12 +166,12 @@ export default function HostSideContest() {
      <option value="overall">One overall winner</option><option value="categories">Category winners</option>
     </select></label>
     {mode==='categories'&&<label className={styles.field}><span>Categories · one per line</span><textarea className={styles.input} rows={5} value={categoryText} onChange={e=>setCategoryText(e.target.value)} /></label>}
-    <p className={styles.muted}>One vote per device{mode==='categories'?' in each category':''}. All contestants are eligible in every category. Configure categories and contestants before opening voting.</p>
+    <p className={styles.muted}>One vote per device{mode==='categories'?' in each category':''}. All contestants are eligible in every category. Configure categories before opening voting. You can keep contestant entry open during voting.</p>
     <button className={styles.button} disabled={busy||!ready}>{busy?'Creating…':'Create contest'}</button>
    </form>:<>
     <section className={styles.card}>
-     <div className={styles.entryHeader}><div><span className={styles.settingEyebrow}>CONTEST SETUP</span><h2>Contestant entry</h2><span className={styles.entryStatus} data-open={contest.status==='draft'&&contest.registrations_open}><span aria-hidden="true">●</span> {contest.status==='draft'&&contest.registrations_open?'Entries open':'Entries closed'}</span></div>
-     {contest.status==='draft'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('registrations',{open:!contest.registrations_open})}>{contest.registrations_open?'Close entries':'Open entries'}</button>}</div>
+     <div className={styles.entryHeader}><div><span className={styles.settingEyebrow}>CONTEST SETUP</span><h2>Contestant entry</h2><span className={styles.entryStatus} data-open={contest.status!=='closed'&&contest.registrations_open}><span aria-hidden="true">●</span> {contest.status!=='closed'&&contest.registrations_open?'Entries open':'Entries closed'}</span></div>
+     {contest.status!=='closed'&&<button className={styles.secondary} disabled={busy} onClick={()=>run('registrations',{open:!contest.registrations_open})}>{contest.registrations_open?'Close entries':'Open entries'}</button>}</div>
      <ContestEntryApproval eventId={eventId} editable={contest.status==='draft'}/>
      {!venue&&<p><a className={styles.secondary} href={origin+'/contest/'+contest.id+'/enter'} target="_blank" rel="noreferrer">Open entry page for this contest</a></p>}
      <div className={styles.reviewHeading}><h3>Waiting for review <span className={styles.reviewCount}>{contest.pending_entries?.length||0}</span></h3></div>
@@ -180,11 +180,11 @@ export default function HostSideContest() {
       {entry.photo_url&&<img className={styles.photo} src={entry.photo_url} alt={entry.name+' costume'}/>}
       <h3>#{entry.number} · {entry.name}</h3><p>{entry.costume}</p>
       <div className={styles.row}>
-       <button className={styles.button} disabled={busy||contest.status!=='draft'} onClick={()=>run('approve_entry',{entry_id:entry.id})}>Approve</button>
-       <button className={styles.secondary} disabled={busy||contest.status!=='draft'} onClick={()=>run('reject_entry',{entry_id:entry.id})}>Decline</button>
+       <button className={styles.button} disabled={busy||contest.status==='closed'} onClick={()=>run('approve_entry',{entry_id:entry.id})}>Approve</button>
+       <button className={styles.secondary} disabled={busy||contest.status==='closed'} onClick={()=>run('reject_entry',{entry_id:entry.id})}>Decline</button>
       </div>
      </article>)}</div>
-     <p className={styles.entryFootnote}>Opening voting closes contestant entry. Review any waiting entries first.</p>
+     <p className={styles.entryFootnote}>Entries can stay open during voting. Late contestants join the ballot when approved; votes already cast stay locked. Close entries separately when you’re ready.</p>
     </section>
     <section className={styles.card}><h2>Voting controls</h2><p>Status: <strong>{contest.status==='draft'?'Setup':contest.status==='open'?'Voting open':'Voting closed'}</strong></p>
      <div className={styles.row}>
@@ -200,7 +200,7 @@ export default function HostSideContest() {
      {voteUrl&&<div className={styles.qr}><QRCodeSVG value={voteUrl} size={190}/></div>}
      <a className={styles.secondary} href={voteUrl} target="_blank" rel="noreferrer">Open voting page</a>
     </section>}
-    {contest.status==='draft'&&<form className={styles.card} onSubmit={addEntry}><h2>Add contestant</h2>
+    {contest.status!=='closed'&&<form className={styles.card} onSubmit={addEntry}><h2>Add contestant</h2>
      <label className={styles.field}><span>Name</span><input className={styles.input} required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label>
      <label className={styles.field}><span>Costume description (optional)</span><input className={styles.input} maxLength={200} value={costume} onChange={e=>setCostume(e.target.value)}/></label>
      <label className={styles.field}><span>Photo (optional) · JPG, PNG, WebP, under 5 MB</span><input key={fileKey} className={styles.input} type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPhoto(e.target.files?.[0]||null)}/></label>
@@ -208,7 +208,7 @@ export default function HostSideContest() {
      <button className={styles.button} disabled={busy}>{busy?'Saving…':'Add contestant'}</button>
     </form>}
     <section className={styles.card}><h2>Contestants · {contest.entries.length}</h2>
-     {contest.status!=='draft'&&<p>Contestants are locked because voting has started.</p>}
+     {contest.status!=='draft'&&<p>Existing contestants cannot be removed after voting starts. New contestants may join while entries are open.</p>}
      <div className={styles.grid}>{contest.entries.map(entry=><article className={styles.entry} key={entry.id}>
       {entry.photo_url&&<img className={styles.photo} src={entry.photo_url} alt={entry.name+' costume'}/>}
       <h3>#{entry.number} · {entry.name}</h3><p>{entry.costume}</p>

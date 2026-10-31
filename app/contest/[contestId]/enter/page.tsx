@@ -89,8 +89,8 @@ export default function ContestEntryPage() {
    <p>{entry.name}{entry.number>0?' · Contestant #'+entry.number:''}</p><p>{entry.costume}</p>
    <p>{entry.approval_status==='approved'?'Your costume is approved and appears on the ballot.':entry.approval_status==='pending'?'Waiting for the host to approve your entry. Keep this page open for updates.':'Your entry was not approved. Ask your host for help.'}</p>
    <a className={styles.secondary} href={'/contest/'+contestId}>Open voting page</a>
-   {contest?.status==='draft'&&contest.registrations_open&&<p><button type="button" className={styles.button} onClick={addAnother}>Add another contestant</button></p>}
-  </section>:contest?.status==='draft'&&contest.registrations_open?<form className={styles.card} onSubmit={submit}>
+   {contest&&['draft','open'].includes(contest.status)&&contest.registrations_open&&<p><button type="button" className={styles.button} onClick={addAnother}>Add another contestant</button></p>}
+  </section>:contest&&['draft','open'].includes(contest.status)&&contest.registrations_open?<form className={styles.card} onSubmit={submit}>
    <label className={styles.field}><span>Contestant name</span><input className={styles.input} required maxLength={100} value={name} onChange={e=>setName(e.target.value)} disabled={busy}/></label>
    {profileId?<label className={styles.field}><span><input type="checkbox" checked={isMe} onChange={e=>setIsMe(e.target.checked)} disabled={busy}/> This is me · Link my singer profile</span><small>Leave unchecked for family members or other contestants. The host can link their profiles separately.</small></label>:<p className={styles.muted}>Already have a singer profile? The host can link it to this entry for badges. No account is needed to enter.</p>}
    <label className={styles.field}><span>Costume description</span><input className={styles.input} maxLength={200} value={costume} onChange={e=>setCostume(e.target.value)} disabled={busy}/></label>
