@@ -1,5 +1,6 @@
 'use client'
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
+import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import { searchSingaVersions } from '@/lib/singaCatalog';
 import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
@@ -100,6 +101,7 @@ export default function HostPage() {
   const params = useParams();
   const eventId = params.eventId as string;
   const router = useRouter();
+  const [stageControlRequested,setStageControlRequested]=useState(false);
 
   const [pauseBusy, setPauseBusy] = useState(false);
   const [pauseError, setPauseError] = useState('');
@@ -5829,7 +5831,7 @@ if (!isSubscribed) {
   showPaused={Boolean(event?.show_paused_at)}
   pauseBusy={pauseBusy}
   onToggleShowPause={() => { void toggleShowPause(); }}
-  onOpenStageDisplay={() => { window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
+  onOpenStageDisplay={() => { setStageControlRequested(true);window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
   judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
   onEndShow={endShow}
@@ -5900,6 +5902,7 @@ karafunPlayerOnline={karafunPlayerOnline}
 />
 
 </div>
+<HostLyricsControls eventId={eventId} requested={stageControlRequested}/>
 {isBrandNewEmptyShow ? (
   <SVEmptyQueueState
     onAudienceAccess={() =>
