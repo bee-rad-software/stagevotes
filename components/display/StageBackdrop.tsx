@@ -7,6 +7,7 @@ import styles from './StageBackdrop.module.css';
 import NextSingerSpotlight from './NextSingerSpotlight';
 import {selectSpotlightSinger} from '@/lib/stageSpotlight';
 import {stageEntranceLine} from '@/lib/stageEntranceLines';
+import {allowsPartyRotation} from '@/lib/stageViewPolicy';
 import {useStageDisplayBridge} from '@/hooks/useStageDisplayBridge';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
@@ -156,11 +157,11 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const entrance = !ended && current?.id === entranceId ? current : null;
   const showBreak = !ended && view === 'break';
   const showAnnouncement = !ended && view === 'announcement' && Boolean(announcement);
-  const showWelcome = !ended && (view === 'welcome' || (beforeShow && view === 'lyrics'));
-  const showNext = !ended && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
+  const showWelcome = !ended && (view === 'welcome' || (beforeShow && view === 'lyrics' && !guides));
+  const showNext = !ended && !guides && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
-  const partyActive=theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&(!current||showBreak);
+  const partyActive=theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&allowsPartyRotation(view,Boolean(current),guides);
   const spotlight=selectSpotlightSinger(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current);
   const spotlightIntro=stageEntranceLine(theme,betweenSongs.current&&spotlight?.id===current?.id?entranceTurn:entranceTurn+1);
   const stageName = event?.venue || event?.name || 'StageVotes';
@@ -176,8 +177,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     };
     switch(command.type){
       case 'theme':chooseTheme(command.value);break;
-      case 'view':showMode(command.value);if(command.value==='lyrics')setGuides(false);break;
-      case 'announcement':setAnnouncement(command.value.trim());showMode(command.value.trim()?'announcement':'lyrics');break;
+      case 'view':showMode(command.value);setGuides(false);break;
+      case 'announcement':setGuides(false);setAnnouncement(command.value.trim());showMode(command.value.trim()?'announcement':'lyrics');break;
       case 'deadline':setVotingDeadline(command.value);save('stage-vote-deadline:',command.value);break;
       case 'flag':
         if(command.key==='partyEnabled'){setPartyEnabled(command.value);save('stage-halloween-party:',command.value?'on':'off');}
