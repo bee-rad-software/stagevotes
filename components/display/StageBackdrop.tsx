@@ -16,9 +16,9 @@ import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
 export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
-const themes = ['classic', 'halloween', 'neon', 'country', 'holiday'] as const;
+const themes = ['classic', 'halloween', 'neon', 'country', 'autumn', 'holiday'] as const;
 type StageTheme = typeof themes[number];
-const themeNames: Record<StageTheme, string> = { classic: 'Classic', halloween: 'Halloween', neon: 'Neon Night', country: 'Country Night', holiday: 'Holiday' };
+const themeNames: Record<StageTheme, string> = { classic: 'Classic', halloween: 'Halloween', neon: 'Neon Night', country: 'Country Night', autumn: 'Fall & Thanksgiving', holiday: 'Holiday' };
 const nameOf = (singer: StageSinger) => singer.duet_partner_name ? singer.singer_name + ' & ' + singer.duet_partner_name : singer.singer_name;
 
 function StageBadgeToast({badge,eventId}:{badge:StageBadge|undefined;eventId:string|undefined}) {
@@ -223,6 +223,25 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       <g transform="translate(38 790)" fill="#fa923c" fillOpacity=".36">
         <ellipse cx="58" cy="63" rx="43" ry="35"/><ellipse cx="58" cy="63" rx="19" ry="35" fill="#ffc078" fillOpacity=".15"/><path d="M55 29 q2-20 13-21 q-4 13-3 23z" fill="#8db886"/>
         <path d="M37 56 l10-7 3 11z M67 60 l3-11 10 7z M39 72 q19 20 39 0 q-3 19-19 19 q-16 0-20-19" fill="#100c19" />
+      </g>
+    </svg>}
+    {theme === 'autumn' && <svg className={styles.autumnArt} viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <path id="autumn-leaf" d="M0 40 C-38 16-35-20-16-37 L-9-17 0-55 10-23 30-35 23-9 44-5 23 15 26 32 7 29Z" />
+        <linearGradient id="harvest-leaf" x2="1" y2="1"><stop stopColor="#efb94f"/><stop offset="1" stopColor="#a84622"/></linearGradient>
+      </defs>
+      <g fill="url(#harvest-leaf)" opacity=".32">
+        <use href="#autumn-leaf" transform="translate(28 35) rotate(-35) scale(1.5)"/>
+        <use href="#autumn-leaf" transform="translate(125 10) rotate(50) scale(.8)"/>
+        <use href="#autumn-leaf" transform="translate(1565 55) rotate(35) scale(1.7)"/>
+        <use href="#autumn-leaf" transform="translate(1460 15) rotate(-50) scale(.9)"/>
+        <use href="#autumn-leaf" transform="translate(1570 790) rotate(120) scale(1.2)"/>
+        <use href="#autumn-leaf" transform="translate(1490 865) rotate(55) scale(.9)"/>
+      </g>
+      <path d="M0 875 Q400 830 790 880 T1600 865" fill="none" stroke="#d8973c" strokeOpacity=".16" strokeWidth="2"/>
+      <g transform="translate(25 840)" opacity=".25">
+        <ellipse cx="32" cy="30" rx="28" ry="23" fill="#c97628"/><ellipse cx="32" cy="30" rx="14" ry="23" fill="#e3a24c"/>
+        <path d="M30 8 Q28-7 40-10" fill="none" stroke="#a6a06a" strokeWidth="6"/>
       </g>
     </svg>}
     <header className={styles.header}>

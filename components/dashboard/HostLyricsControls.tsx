@@ -4,7 +4,7 @@ import {stageControlChannel,type StageDisplayCommand,type StageDisplayState} fro
 import styles from './HostLyricsControls.module.css';
 type Connected={id:string;seen:number;state:StageDisplayState};
 const views=[['lyrics','Lyrics'],['welcome','Welcome'],['next','Next singer'],['break','Break']] as const;
-const themes=[['classic','Classic'],['halloween','Halloween'],['neon','Neon Night'],['country','Country Night'],['holiday','Holiday']] as const;
+const themes=[['classic','Classic'],['halloween','Halloween'],['neon','Neon Night'],['country','Country Night'],['autumn','Fall & Thanksgiving'],['holiday','Holiday']] as const;
 export default function HostLyricsControls({eventId,requested}:{eventId:string;requested:boolean}) {
  const [screens,setScreens]=useState<Connected[]>([]),[selected,setSelected]=useState(''),[expanded,setExpanded]=useState(true),[message,setMessage]=useState(''),[draft,setDraft]=useState('');
  const channel=useRef<BroadcastChannel|null>(null),pending=useRef<{id:string;timer:ReturnType<typeof setTimeout>}|null>(null);

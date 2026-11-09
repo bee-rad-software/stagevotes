@@ -1,5 +1,5 @@
 export const stageViews=['lyrics','next','welcome','break','announcement'] as const;
-export const stageThemes=['classic','halloween','neon','country','holiday'] as const;
+export const stageThemes=['classic','halloween','neon','country','autumn','holiday'] as const;
 export type StageDisplayView=typeof stageViews[number];
 export type StageDisplayTheme=typeof stageThemes[number];
 export type StageDisplayState={view:StageDisplayView;theme:StageDisplayTheme;partyEnabled:boolean;singerSpotlight:boolean;votingDeadline:string;announcement:string;guides:boolean;autoWindowHandoff:boolean;native:boolean;handoffSupported:boolean;filled:boolean;displayId:string;displays:{id:string;label:string;width:number;height:number;current:boolean}[]};
