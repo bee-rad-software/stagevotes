@@ -11,6 +11,7 @@ import {allowsPartyRotation} from '@/lib/stageViewPolicy';
 import {useStageDisplayBridge} from '@/hooks/useStageDisplayBridge';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
+import AutumnDecor from './AutumnDecor';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
@@ -225,35 +226,17 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
         <path d="M37 56 l10-7 3 11z M67 60 l3-11 10 7z M39 72 q19 20 39 0 q-3 19-19 19 q-16 0-20-19" fill="#100c19" />
       </g>
     </svg>}
-    {theme === 'autumn' && <svg className={styles.autumnArt} viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs>
-        <path id="autumn-leaf" d="M0 40 C-38 16-35-20-16-37 L-9-17 0-55 10-23 30-35 23-9 44-5 23 15 26 32 7 29Z" />
-        <linearGradient id="harvest-leaf" x2="1" y2="1"><stop stopColor="#efb94f"/><stop offset="1" stopColor="#a84622"/></linearGradient>
-      </defs>
-      <g fill="url(#harvest-leaf)" opacity=".32">
-        <use href="#autumn-leaf" transform="translate(28 35) rotate(-35) scale(1.5)"/>
-        <use href="#autumn-leaf" transform="translate(125 10) rotate(50) scale(.8)"/>
-        <use href="#autumn-leaf" transform="translate(1565 55) rotate(35) scale(1.7)"/>
-        <use href="#autumn-leaf" transform="translate(1460 15) rotate(-50) scale(.9)"/>
-        <use href="#autumn-leaf" transform="translate(1570 790) rotate(120) scale(1.2)"/>
-        <use href="#autumn-leaf" transform="translate(1490 865) rotate(55) scale(.9)"/>
-      </g>
-      <path d="M0 875 Q400 830 790 880 T1600 865" fill="none" stroke="#d8973c" strokeOpacity=".16" strokeWidth="2"/>
-      <g transform="translate(25 840)" opacity=".25">
-        <ellipse cx="32" cy="30" rx="28" ry="23" fill="#c97628"/><ellipse cx="32" cy="30" rx="14" ry="23" fill="#e3a24c"/>
-        <path d="M30 8 Q28-7 40-10" fill="none" stroke="#a6a06a" strokeWidth="6"/>
-      </g>
-    </svg>}
+    {theme === 'autumn' && <AutumnDecor />}
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
         {showBreak ? <div className={styles.songCopy}><span className={styles.kicker}>INTERMISSION</span><h1>Taking a short break</h1></div> : current && !ended ? <><Avatar singer={current} /><div className={styles.songCopy}><span className={styles.kicker}>{stageEntranceLine(theme,entranceTurn)}</span><h1>{nameOf(current)}</h1><p>{current.song_title}{current.artist ? ' · ' + current.artist : ''}</p></div></>
           : <div className={styles.songCopy}><span className={styles.kicker}>STAGEVOTES PRESENTS</span><h1>{ended ? 'Thanks for singing!' : event?.name || 'Getting the stage ready'}</h1></div>}
       </div>
-      <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : 'KARAOKE NIGHT'}</span></div></div>
+      <div className={styles.brand}><img src={logo || '/icon-512.png'} alt={logo ? stageName + ' logo' : 'StageVotes'} /><div><strong>{stageName}</strong><span>{ended ? 'SHOW COMPLETE' : theme === 'autumn' ? 'GATHER • GIVE THANKS • SING' : 'KARAOKE NIGHT'}</span></div></div>
     </header>
     <aside className={styles.sidebar} aria-label="Next five singers">
-      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>{stageEntranceLine(theme,entranceTurn)}</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>Next on stage</strong></div>
+      {entrance ? <div className={styles.entrance} key={entrance.id} role="status"><span className={styles.kicker}>{stageEntranceLine(theme,entranceTurn)}</span><Avatar singer={entrance} large /><h2>{nameOf(entrance)}</h2><p>{entrance.song_title}</p>{entrance.artist && <span className={styles.artist}>{entrance.artist}</span>}<button type="button" onClick={() => setEntranceId(null)}>Show queue</button></div> : <><div className={styles.queueTitle}><span className={styles.kicker}>COMING UP</span><strong>{theme === 'autumn' ? 'Fresh from the song patch' : 'Next on stage'}</strong></div>
       <div className={styles.queue}>
         {!ended && upcoming.map((singer, index) => <article key={singer.id} className={styles.queueItem}><span className={styles.queueNumber}>{String(index + 1).padStart(2, '0')}</span><Avatar singer={singer} /><div><span className={styles.kicker}>{index === 0 ? 'UP NEXT' : 'SINGER ' + (index + 1)}</span><h2>{nameOf(singer)}</h2><p>{singer.song_title}</p></div></article>)}
         {(!upcoming.length || ended) && <p className={styles.footerMessage}>{ended ? 'See you next time.' : event?.signups_open === false ? 'Signups closed · Enjoy the show' : 'Good songs. Great company.'}</p>}
@@ -274,6 +257,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
         {next ? <><Avatar singer={next} large /><h2>{nameOf(next)}</h2><p>{next.song_title}</p><span className={styles.artist}>{next.artist}</span></> : <><h2>{current ? 'Enjoy the show.' : 'Your next song starts here.'}</h2><p>{event.signups_open === false ? 'Singer signups are closed.' : 'Choose a song. Make a memory.'}</p></>}
       </div> : guides ? <div className={styles.guides}><span>KaraFun lyrics go here</span><small>Move the transparent lyrics window inside this area. Hide guides from the host’s Lyrics display controls.</small></div> : null)}
     </section>
+    {theme === 'autumn' && !ended && !guides && !showAnnouncement && (showWelcome || showBreak || showNext) && <div className={styles.harvestGreeting}>Happy Thanksgiving<span>Good friends. Full hearts. Great songs.</span></div>}
     {event && <StageShoutoutTicker eventId={event.id} active={Boolean(current) && !ended} />}
     {error && <div role="status" className={styles.connection}>{error}</div>}
 
