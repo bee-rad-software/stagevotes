@@ -8,3 +8,9 @@ export function selectSpotlightSinger<T extends RotationPerformance>(rows:T[],cu
  if(betweenSongs&&current&&current.id!==lastPlayedId)return current;
  return queue.find(row=>row.id!==currentId);
 }
+
+/** The selected singer belongs in Up Next until their playback has started. */
+export function stageSidebarQueue<T extends RotationPerformance>(rows:T[],currentId:string|null|undefined,lastPlayedId:string|null,betweenSongs:boolean):T[] {
+ const queue=buildRotationQueue(rows.filter(row=>row.status!=='removed'),currentId);
+ return queue.filter(row=>row.id!==currentId||(betweenSongs&&row.id!==lastPlayedId)).slice(0,5);
+}
