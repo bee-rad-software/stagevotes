@@ -168,3 +168,14 @@
 .harvestGreeting { position:absolute; bottom:2vh; left:32%; right:15%; text-align:center; color:#edc784; font-family:Georgia,serif; font-size:clamp(16px,1.9vw,34px); letter-spacing:.03em; pointer-events:none; }
 .harvestGreeting span { display:block; margin-top:.5vh; font-family:Arial,Helvetica,sans-serif; color:#cdb79a; font-size:clamp(10px,.8vw,16px); letter-spacing:.08em; }
 @media(max-height:650px){.harvestGreeting{bottom:.6vh;font-size:16px}.harvestGreeting span{display:none}}
+
+.screen[data-theme="vegas"] .aurora{background:radial-gradient(ellipse at 0 0,#70501c55,transparent 42%),radial-gradient(ellipse at 100% 100%,#632c2635,transparent 35%),linear-gradient(145deg,#15120e,#070708 65%)}
+.screen[data-theme="vegas"]{--theme-accent:#efd395;--theme-portrait:linear-gradient(145deg,#7d602c,#35271a)}
+.screen[data-theme="mixtape"] .aurora{background:radial-gradient(ellipse at 0 0,#ad568060,transparent 40%),radial-gradient(ellipse at 100% 100%,#de89523d,transparent 36%),linear-gradient(150deg,#25182e,#0c0914 65%)}
+.screen[data-theme="mixtape"]{--theme-accent:#ffc391;--theme-portrait:linear-gradient(145deg,#a65483,#d88755)}
+.screen[data-theme="venue"] .aurora{background:radial-gradient(ellipse at 0 0,color-mix(in srgb,var(--venue-primary) 30%,transparent),transparent 42%),radial-gradient(ellipse at 100% 100%,color-mix(in srgb,var(--venue-secondary) 24%,transparent),transparent 36%),linear-gradient(145deg,#10121a,#04060b 65%)}
+.screen[data-theme="venue"]{--theme-accent:color-mix(in srgb,var(--venue-primary) 55%,white);--theme-portrait:linear-gradient(145deg,var(--venue-primary),var(--venue-secondary))}
+.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .kicker,.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .welcomeEyebrow,.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .join strong{color:var(--theme-accent)}
+.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .avatar,.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .largeAvatar{background:var(--theme-portrait)}
+.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .lyricSpace{--spotlight-accent:var(--theme-accent);--spotlight-portrait:var(--theme-portrait)}
+.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .header,.screen:is([data-theme="vegas"],[data-theme="mixtape"],[data-theme="venue"]) .sidebar{border-color:color-mix(in srgb,var(--theme-accent) 22%,transparent)}
