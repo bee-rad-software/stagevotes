@@ -13,7 +13,7 @@ import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
 import AutumnDecor from './AutumnDecor';
 import BetweenSingers from './BetweenSingers';
-import {validPromotions} from '@/lib/stageIntermission';
+import {tonightStats,validPromotions} from '@/lib/stageIntermission';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
@@ -256,7 +256,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || showWelcome || showBreak || showAnnouncement || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {event&&<HalloweenParty nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline}/>}
+      {event&&<HalloweenParty nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline} singerCount={tonightStats(singers).singers} promotions={intermission.enabled?intermission.promotions:[]}/>}
       {event&&<BetweenSingers active={intermissionActive} eventId={event.id} nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} singers={singers} promotions={intermission.promotions}/>}
       {!partyActive&&!intermissionActive&&(!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak&&singerSpotlight&&spotlight ? <NextSingerSpotlight singer={spotlight} intro={spotlightIntro}/> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
         <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
