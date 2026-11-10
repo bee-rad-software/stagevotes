@@ -1,0 +1,5 @@
+.harvest{position:absolute;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.canopy{position:absolute;top:0;left:0;width:100%;height:clamp(75px,15vh,160px)}
+.pumpkins{position:absolute;bottom:0;left:1vw;width:clamp(155px,22vw,340px);height:clamp(50px,9vh,110px);opacity:.65}
+.turkey{position:absolute;bottom:0;right:1vw;width:clamp(90px,11vw,190px);height:clamp(85px,16vh,180px);opacity:.85}
+@media(max-height:650px){.turkey{width:90px;height:85px}.pumpkins{height:45px}.canopy{height:70px}}

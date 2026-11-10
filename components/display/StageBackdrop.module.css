@@ -159,3 +159,12 @@
 .screen[data-theme="autumn"] .welcomeSteps span { background:#332417b8; border-color:#d6a14b36; }
 .screen[data-theme="autumn"] .welcomeSteps b { color:#edc784; }
 .screen[data-theme="autumn"] .lyricSpace { --spotlight-accent:#edc784; --spotlight-portrait:linear-gradient(145deg,#756542,#a94d2d); }
+
+/* A cozy harvest frame with a deep, quiet center for live lyrics. */
+.screen[data-theme="autumn"] .aurora { background:radial-gradient(ellipse at 0% 0%,#ac4d2685,transparent 45%),radial-gradient(ellipse at 100% 0%,#863b3160,transparent 34%),radial-gradient(ellipse at 100% 100%,#aa762b45,transparent 34%),linear-gradient(145deg,#2b1911,#100c09 60%); }
+.screen[data-theme="autumn"] .header { background:linear-gradient(90deg,#74351e22,transparent); }
+.screen[data-theme="autumn"] .sidebar { background:linear-gradient(180deg,#8b4d1f12,#3b241922); }
+.screen[data-theme="autumn"] .queueTitle strong { color:#fff0d5; font-size:clamp(16px,1.4vw,28px); }
+.harvestGreeting { position:absolute; bottom:2vh; left:32%; right:15%; text-align:center; color:#edc784; font-family:Georgia,serif; font-size:clamp(16px,1.9vw,34px); letter-spacing:.03em; pointer-events:none; }
+.harvestGreeting span { display:block; margin-top:.5vh; font-family:Arial,Helvetica,sans-serif; color:#cdb79a; font-size:clamp(10px,.8vw,16px); letter-spacing:.08em; }
+@media(max-height:650px){.harvestGreeting{bottom:.6vh;font-size:16px}.harvestGreeting span{display:none}}
