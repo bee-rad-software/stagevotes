@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
@@ -13,15 +13,17 @@ import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import HalloweenParty from './HalloweenParty';
 import AutumnDecor from './AutumnDecor';
 import BetweenSingers from './BetweenSingers';
+import StageThemeDecor from './StageThemeDecor';
+import {validStageColor} from '@/lib/stageDisplayControl';
 import {tonightStats,validPromotions} from '@/lib/stageIntermission';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
 export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
-const themes = ['classic', 'halloween', 'neon', 'country', 'autumn', 'holiday'] as const;
+const themes = ['classic', 'halloween', 'neon', 'country', 'autumn', 'holiday', 'vegas', 'mixtape', 'venue'] as const;
 type StageTheme = typeof themes[number];
-const themeNames: Record<StageTheme, string> = { classic: 'Classic', halloween: 'Halloween', neon: 'Neon Night', country: 'Country Night', autumn: 'Fall & Thanksgiving', holiday: 'Holiday' };
+const themeNames: Record<StageTheme, string> = { classic: 'Classic', halloween: 'Halloween', neon: 'Neon Night', country: 'Country Night', autumn: 'Fall & Thanksgiving', holiday: 'Holiday', vegas: 'Vegas Lounge', mixtape: 'Retro Mixtape', venue: 'Your Venue' };
 const nameOf = (singer: StageSinger) => singer.duet_partner_name ? singer.singer_name + ' & ' + singer.duet_partner_name : singer.singer_name;
 
 function StageBadgeToast({badge,eventId}:{badge:StageBadge|undefined;eventId:string|undefined}) {
@@ -63,6 +65,12 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     setTheme(value as StageTheme);
     try { if (event?.id) localStorage.setItem('stage-theme:' + event.id, value); } catch { /* Keep the choice for this session. */ }
   };
+  const [venueColors,setVenueColors]=useState({primary:'#f97316',secondary:'#1699bb'});
+  useEffect(()=>{
+    setVenueColors({primary:'#f97316',secondary:'#1699bb'});
+    if(!event?.id)return;
+    try{const saved=JSON.parse(localStorage.getItem('stage-venue-colors:'+event.id)||'null');if(saved&&validStageColor(saved.primary)&&validStageColor(saved.secondary))setVenueColors(saved);}catch{}
+  },[event?.id]);
   const [intermission,setIntermission]=useState({enabled:true,promotions:[] as string[]});
   useEffect(()=>{
     setIntermission({enabled:true,promotions:[]});
@@ -177,7 +185,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const stageName = event?.venue || event?.name || 'StageVotes';
 
   useStageDisplayBridge(event?.id,{
-    intermission,view,theme,partyEnabled,singerSpotlight,votingDeadline,announcement,guides,autoWindowHandoff,native,filled,displayId,displays,
+    venueColors,intermission,view,theme,partyEnabled,singerSpotlight,votingDeadline,announcement,guides,autoWindowHandoff,native,filled,displayId,displays,
     handoffSupported:native&&typeof (window as any).stagevotesDesktop?.setStagePresentation==='function',
   },async command=>{
     const save=(key:string,value:string)=>{try{if(event)localStorage.setItem(key+event.id,value);}catch{}};
@@ -187,6 +195,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     };
     switch(command.type){
       case 'intermission':{const settings={enabled:command.enabled,promotions:command.promotions.map(p=>p.trim()).filter(Boolean)};setIntermission(settings);save('stage-intermission:',JSON.stringify(settings));break;}
+      case 'venueColors':{const colors={primary:command.primary,secondary:command.secondary};setVenueColors(colors);save('stage-venue-colors:',JSON.stringify(colors));break;}
       case 'theme':chooseTheme(command.value);break;
       case 'view':showMode(command.value);setGuides(false);break;
       case 'announcement':setGuides(false);setAnnouncement(command.value.trim());showMode(command.value.trim()?'announcement':'lyrics');break;
@@ -211,7 +220,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     }
   });
 
-  return <main className={styles.screen} data-theme={theme}>
+  return <main className={styles.screen} data-theme={theme} style={{'--venue-primary':venueColors.primary,'--venue-secondary':venueColors.secondary} as CSSProperties}>
     <div className={styles.aurora} aria-hidden="true" /><div className={styles.floor} aria-hidden="true" />
     {theme === 'halloween' && <svg className={styles.halloweenArt} viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true">
       <defs>
@@ -237,6 +246,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       </g>
     </svg>}
     {theme === 'autumn' && <AutumnDecor />}
+    <StageThemeDecor theme={theme}/>
     <header className={styles.header}>
       {native && !filled && <div className={styles.dragHandle} title="Drag Stage Mode to your TV" aria-hidden="true" />}
       <div className={styles.identity}>
