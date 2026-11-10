@@ -89,7 +89,7 @@ export default function StageDisplayPage() {
   }, [eventId]);
 
   return <>
-    <div hidden={Boolean(awardsContestId)}><StageBackdrop event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} badges={badges} /></div>
+    <div hidden={Boolean(awardsContestId)}><StageBackdrop suspended={Boolean(awardsContestId)} event={event} singers={singers} logo={logo} origin={origin} ready={ready} error={error} badges={badges} /></div>
     {awardsContestId && <div style={{position:'fixed',inset:0,zIndex:100,overflow:'auto',background:'#070b18'}}><ContestAwards key={awardsContestId} contestId={awardsContestId}/></div>}
   </>;
 }

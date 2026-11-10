@@ -4,13 +4,13 @@ export const stageThemes=['classic','halloween','neon','country','autumn','holid
 export type StageDisplayView=typeof stageViews[number];
 export type StageDisplayTheme=typeof stageThemes[number];
 export const validStageColor=(value:unknown):value is string=>typeof value==='string'&&/^#[0-9a-f]{6}$/i.test(value);
-export type StageDisplayState={venueColors?:{primary:string;secondary:string};intermission?:{enabled:boolean;promotions:string[]};view:StageDisplayView;theme:StageDisplayTheme;partyEnabled:boolean;singerSpotlight:boolean;votingDeadline:string;announcement:string;guides:boolean;autoWindowHandoff:boolean;native:boolean;handoffSupported:boolean;filled:boolean;displayId:string;displays:{id:string;label:string;width:number;height:number;current:boolean}[]};
+export type StageDisplayState={venueColors?:{primary:string;secondary:string};intermission?:{enabled:boolean;promotions:string[];shoutouts?:string[]};view:StageDisplayView;theme:StageDisplayTheme;partyEnabled:boolean;singerSpotlight:boolean;votingDeadline:string;announcement:string;guides:boolean;autoWindowHandoff:boolean;native:boolean;handoffSupported:boolean;filled:boolean;displayId:string;displays:{id:string;label:string;width:number;height:number;current:boolean}[]};
 export type StageDisplayCommand=
  | {type:'view';value:StageDisplayView}
  | {type:'theme';value:StageDisplayTheme}
  | {type:'venueColors';primary:string;secondary:string}
  | {type:'flag';key:'partyEnabled'|'singerSpotlight'|'guides'|'autoWindowHandoff';value:boolean}
- | {type:'intermission';enabled:boolean;promotions:string[]}
+ | {type:'intermission';enabled:boolean;promotions:string[];shoutouts?:string[]}
  | {type:'deadline';value:string}
  | {type:'announcement';value:string}
  | {type:'fill';displayId:string}
@@ -23,7 +23,7 @@ export function validStageCommand(value:unknown):value is StageDisplayCommand {
   case 'venueColors':return validStageColor(c.primary)&&validStageColor(c.secondary);
   case 'theme':return stageThemes.includes(c.value as StageDisplayTheme);
   case 'flag':return ['partyEnabled','singerSpotlight','guides','autoWindowHandoff'].includes(String(c.key))&&typeof c.value==='boolean';
-  case 'intermission':return typeof c.enabled==='boolean'&&validPromotions(c.promotions);
+  case 'intermission':return typeof c.enabled==='boolean'&&validPromotions(c.promotions)&&(c.shoutouts===undefined||validPromotions(c.shoutouts));
   case 'deadline':return typeof c.value==='string'&&(c.value===''||(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(c.value)&&Number.isFinite(new Date(c.value).getTime())));
   case 'announcement':return typeof c.value==='string'&&c.value.length<=180;
   case 'fill':return typeof c.displayId==='string'&&c.displayId.length<=100;

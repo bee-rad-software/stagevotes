@@ -14,6 +14,7 @@ import HalloweenParty from './HalloweenParty';
 import AutumnDecor from './AutumnDecor';
 import BetweenSingers from './BetweenSingers';
 import StageThemeDecor from './StageThemeDecor';
+import StageHighlights from './StageHighlights';
 import {validStageColor} from '@/lib/stageDisplayControl';
 import {tonightStats,validPromotions} from '@/lib/stageIntermission';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
@@ -48,8 +49,8 @@ function Avatar({ singer, large = false }: { singer: StageSinger; large?: boolea
   </span>;
 }
 
-export default function StageBackdrop({ event, singers, logo, origin, ready, error, badges = [] }: {
-  event: StageEvent | null; singers: StageSinger[]; logo: string; origin: string; ready: boolean; error: string; badges?: StageBadge[];
+export default function StageBackdrop({ event, singers, logo, origin, ready, error, badges = [], suspended = false }: {
+  event: StageEvent | null; singers: StageSinger[]; logo: string; origin: string; ready: boolean; error: string; badges?: StageBadge[]; suspended?:boolean;
 }) {
   const [theme, setTheme] = useState<StageTheme>('classic');
   useEffect(() => {
@@ -71,11 +72,11 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     if(!event?.id)return;
     try{const saved=JSON.parse(localStorage.getItem('stage-venue-colors:'+event.id)||'null');if(saved&&validStageColor(saved.primary)&&validStageColor(saved.secondary))setVenueColors(saved);}catch{}
   },[event?.id]);
-  const [intermission,setIntermission]=useState({enabled:true,promotions:[] as string[]});
+  const [intermission,setIntermission]=useState({enabled:true,promotions:[] as string[],shoutouts:[] as string[]});
   useEffect(()=>{
-    setIntermission({enabled:true,promotions:[]});
+    setIntermission({enabled:true,promotions:[],shoutouts:[]});
     if(!event?.id)return;
-    try{const saved=JSON.parse(localStorage.getItem('stage-intermission:'+event.id)||'null');if(saved&&typeof saved.enabled==='boolean'&&validPromotions(saved.promotions))setIntermission(saved);}catch{}
+    try{const saved=JSON.parse(localStorage.getItem('stage-intermission:'+event.id)||'null');if(saved&&typeof saved.enabled==='boolean'&&validPromotions(saved.promotions))setIntermission({...saved,shoutouts:validPromotions(saved.shoutouts)?saved.shoutouts:[]});}catch{}
   },[event?.id]);
   const [partyEnabled,setPartyEnabled]=useState(true);
   const [votingDeadline,setVotingDeadline]=useState('');
@@ -178,8 +179,9 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const showNext = !ended && !guides && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
   const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
-  const partyActive=theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&allowsPartyRotation(view,Boolean(current),guides);
-  const intermissionActive=intermission.enabled&&!partyActive&&ready&&Boolean(event)&&!ended&&!beforeShow&&allowsPartyRotation(view,Boolean(current),guides);
+  const highlight=event&&intermission.enabled&&(badges.length>0||showQr||intermission.shoutouts.length>0)?<StageHighlights eventId={event.id} badges={badges} shoutouts={intermission.shoutouts} showQr={showQr} signupUrl={signupUrl}/>:undefined;
+  const partyActive=!suspended&&theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&allowsPartyRotation(view,Boolean(current),guides);
+  const intermissionActive=!suspended&&intermission.enabled&&!partyActive&&ready&&Boolean(event)&&!ended&&!beforeShow&&allowsPartyRotation(view,Boolean(current),guides);
   const spotlight=selectSpotlightSinger(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current);
   const spotlightIntro=stageEntranceLine(theme,betweenSongs.current&&spotlight?.id===current?.id?entranceTurn:entranceTurn+1);
   const stageName = event?.venue || event?.name || 'StageVotes';
@@ -194,7 +196,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       if(autoHandoffRef.current)void (window as any).stagevotesDesktop?.setStagePresentation?.(mode==='lyrics'?'lyrics':'front');
     };
     switch(command.type){
-      case 'intermission':{const settings={enabled:command.enabled,promotions:command.promotions.map(p=>p.trim()).filter(Boolean)};setIntermission(settings);save('stage-intermission:',JSON.stringify(settings));break;}
+      case 'intermission':{const settings={enabled:command.enabled,promotions:command.promotions.map(p=>p.trim()).filter(Boolean),shoutouts:(command.shoutouts||[]).map(p=>p.trim()).filter(Boolean)};setIntermission(settings);save('stage-intermission:',JSON.stringify(settings));break;}
       case 'venueColors':{const colors={primary:command.primary,secondary:command.secondary};setVenueColors(colors);save('stage-venue-colors:',JSON.stringify(colors));break;}
       case 'theme':chooseTheme(command.value);break;
       case 'view':showMode(command.value);setGuides(false);break;
@@ -266,8 +268,8 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
       {showQr ? <div className={styles.join}><div className={styles.qr}><QRCodeSVG value={signupUrl} size={150} marginSize={4} /></div><div><strong>YOUR TURN?</strong><span>Scan to sing</span></div></div> : <span className={styles.powered}>POWERED BY STAGEVOTES</span>}
     </aside>
     <section className={styles.lyricSpace} aria-label={showNext || showWelcome || showBreak || showAnnouncement || ended ? 'Stage announcements' : 'Clear area for the separate KaraFun lyrics window'}>
-      {event&&<HalloweenParty nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={badges} deadline={votingDeadline} singerCount={tonightStats(singers).singers} promotions={intermission.enabled?intermission.promotions:[]}/>}
-      {event&&<BetweenSingers active={intermissionActive} eventId={event.id} nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} singers={singers} promotions={intermission.promotions}/>}
+      {event&&<HalloweenParty nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} eventId={event.id} enabled={theme==='halloween'&&partyEnabled&&!ended} active={partyActive} origin={origin} songs={singers.filter(s=>s.status==='completed').length} badges={intermission.enabled?[]:badges} deadline={votingDeadline} highlight={highlight} singerCount={tonightStats(singers).singers} promotions={intermission.enabled?intermission.promotions:[]}/>}
+      {event&&<BetweenSingers active={intermissionActive} eventId={event.id} nextSinger={singerSpotlight?spotlight:undefined} intro={spotlightIntro} singers={singers} promotions={intermission.promotions} highlight={highlight}/>}
       {!partyActive&&!intermissionActive&&(!ready ? <p className={styles.message}>Setting the stage…</p> : !event ? <div className={styles.message}><h2>Show unavailable</h2><p>Check the show link or reconnect to StageVotes.</p></div> : ended ? <div className={styles.intermission}><span className={styles.kicker}>THAT’S A WRAP</span><h2>What a night.</h2><p>Thanks for sharing the stage.</p></div> : showAnnouncement ? <div className={styles.welcome} role="status"><span className={styles.welcomeEyebrow}>A MESSAGE FROM YOUR HOST</span><h2 className={styles.announcementText}>{announcement}</h2></div> : showBreak&&singerSpotlight&&spotlight ? <NextSingerSpotlight singer={spotlight} intro={spotlightIntro}/> : showBreak ? <div className={styles.welcome}><span className={styles.welcomeEyebrow}>INTERMISSION</span><h2>Taking a short break</h2><p>Karaoke will be back soon. {event.signups_open === false ? 'Enjoy the show!' : showQr ? 'Scan the code to join the queue.' : 'Ask your host how to join the queue.'}</p></div> : showWelcome ? <div className={styles.welcome}>
         <span className={styles.welcomeEyebrow}>{stageName} PRESENTS</span>
         <h2>{beforeShow ? 'Karaoke starts soon!' : 'Ready for your next song?'}</h2>

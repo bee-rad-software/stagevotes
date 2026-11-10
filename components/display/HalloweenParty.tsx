@@ -1,12 +1,12 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {halloweenCostumeIndex} from '@/lib/halloweenRotation';
 import {QRCodeSVG} from 'qrcode.react';
 import NextSingerSpotlight from './NextSingerSpotlight';
 import type {StageBadge,StageSinger} from './StageBackdrop';
 import styles from './HalloweenParty.module.css';
 type Contest={id:string;title:string;status:string;entryCount:number;entries:{id:string;name:string;costume:string;photo_url:string|null}[]};
-export default function HalloweenParty({nextSinger,intro,eventId,active,enabled,origin,songs,badges,deadline,promotions=[],singerCount=0}:{nextSinger?:StageSinger;intro:string;eventId:string;active:boolean;enabled:boolean;origin:string;songs:number;badges:StageBadge[];deadline:string;promotions?:string[];singerCount?:number}) {
+export default function HalloweenParty({nextSinger,intro,eventId,active,enabled,origin,songs,badges,deadline,promotions=[],singerCount=0,highlight}:{nextSinger?:StageSinger;intro:string;eventId:string;active:boolean;enabled:boolean;origin:string;songs:number;badges:StageBadge[];deadline:string;promotions?:string[];singerCount?:number;highlight?:ReactNode}) {
  const [contest,setContest]=useState<Contest|null>(null),[tick,setTick]=useState(0),[now,setNow]=useState(0);
  useEffect(()=>{
   setContest(null);setTick(0);
@@ -20,14 +20,14 @@ export default function HalloweenParty({nextSinger,intro,eventId,active,enabled,
  if(!active||!enabled)return null;
  const entries=contest?.entries||[];
  const badge=badges.find(b=>b.title==='Boo & Belt It!');
- const entry=entries[halloweenCostumeIndex(tick,entries.length,contest?.status==='open',Boolean(badge),Boolean(nextSinger),promotions.length)]||null;
- const slides=[...(nextSinger?[{kind:'next' as const}]:[]),...(entry?[{kind:'costume' as const,entry}]:[]),...(contest?.status==='open'?[{kind:'vote' as const}]:[]),...(badge?[{kind:'badge' as const}]:[]),{kind:'stats' as const},...promotions.map(text=>({kind:'promotion' as const,text}))];
+ const entry=entries[halloweenCostumeIndex(tick,entries.length,contest?.status==='open',Boolean(badge),Boolean(nextSinger),promotions.length+Number(Boolean(highlight)))]||null;
+ const slides=[...(nextSinger?[{kind:'next' as const}]:[]),...(entry?[{kind:'costume' as const,entry}]:[]),...(contest?.status==='open'?[{kind:'vote' as const}]:[]),...(badge?[{kind:'badge' as const}]:[]),{kind:'stats' as const},...(highlight?[{kind:'highlight' as const}]:[]),...promotions.map(text=>({kind:'promotion' as const,text}))];
  const slide=slides[tick%slides.length];
  const seconds=deadline?Math.ceil((new Date(deadline).getTime()-now)/1000):0;
  const votingUrl=origin&&contest?origin+'/contest/'+contest.id:'';
  return <div className={styles.panel} role="region" aria-label="Halloween party spotlight">
   <span className={styles.bats} aria-hidden="true">🦇　✦　🎃　✦　🦇</span>
-  {slide.kind==='promotion'?<div className={styles.spotlight}><span className={styles.kicker}>FROM YOUR VENUE</span><h2>{slide.text}</h2><p>Make a night of it.</p></div>:slide.kind==='next'&&nextSinger?<NextSingerSpotlight singer={nextSinger} intro={intro}/>:slide.kind==='costume'?<div key={slide.entry.id} className={styles.spotlight}>
+  {slide.kind==='highlight'?<div key={tick} style={{width:'100%',height:'100%',display:'grid',placeItems:'center'}}>{highlight}</div>:slide.kind==='promotion'?<div className={styles.spotlight}><span className={styles.kicker}>FROM YOUR VENUE</span><h2>{slide.text}</h2><p>Make a night of it.</p></div>:slide.kind==='next'&&nextSinger?<NextSingerSpotlight singer={nextSinger} intro={intro}/>:slide.kind==='costume'?<div key={slide.entry.id} className={styles.spotlight}>
    <span className={styles.kicker}>COSTUME SPOTLIGHT · {contest?.title}</span>
    {slide.entry.photo_url&&<img key={slide.entry.photo_url} className={styles.photo} src={slide.entry.photo_url} alt={'Costume worn by '+slide.entry.name} onError={e=>{e.currentTarget.style.display='none';}}/>}
    <h2>{slide.entry.name}</h2><p>{slide.entry.costume||'Dressed to impress. Ready to haunt the stage.'}</p>

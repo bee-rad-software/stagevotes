@@ -1,16 +1,17 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import NextSingerSpotlight from './NextSingerSpotlight';
 import {tonightStats} from '@/lib/stageIntermission';
 import type {StageSinger} from './StageBackdrop';
 import styles from './BetweenSingers.module.css';
-export default function BetweenSingers({active,eventId,nextSinger,intro,singers,promotions}:{active:boolean;eventId:string;nextSinger?:StageSinger;intro:string;singers:StageSinger[];promotions:string[]}){
+export default function BetweenSingers({active,eventId,nextSinger,intro,singers,promotions,highlight}:{active:boolean;eventId:string;nextSinger?:StageSinger;intro:string;singers:StageSinger[];promotions:string[];highlight?:ReactNode}){
  const [tick,setTick]=useState(0);
  const signature=promotions.join('\n');
  useEffect(()=>{setTick(0);if(!active)return;const timer=setInterval(()=>setTick(t=>t+1),9000);return()=>clearInterval(timer);},[active,eventId,nextSinger?.id,signature]);
  if(!active)return null;
- const slots=[...(nextSinger?['next']:[]),'stats',...promotions.filter(p=>p.trim()).map((_,i)=>'promo:'+i)];
+ const slots=[...(nextSinger?['next']:[]),'stats',...(highlight?['highlight']:[]),...promotions.filter(p=>p.trim()).map((_,i)=>'promo:'+i)];
  const slot=slots[tick%slots.length];const stats=tonightStats(singers);
+ if(slot==='highlight')return <div key={tick} className={styles.highlightSlot}>{highlight}</div>;
  if(slot==='next'&&nextSinger)return <NextSingerSpotlight singer={nextSinger} intro={intro}/>;
  return <div className={styles.card} key={slot} role="region" aria-label={slot==='stats'?'Tonight so far':'From your venue'}>
   <span className={styles.kicker}>{slot==='stats'?'TONIGHT SO FAR':'FROM YOUR VENUE'}</span>
