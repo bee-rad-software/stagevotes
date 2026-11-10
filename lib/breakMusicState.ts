@@ -18,3 +18,10 @@ export function nextBreakTrack(index: number, count: number, shuffle: boolean, r
   if (!shuffle) return (index + 1) % count;
   return (index + 1 + Math.floor(random() * (count - 1))) % count;
 }
+
+/** Plan one break handoff; explicit track choices always start from the beginning. */
+export function breakTrackPlayback(index:number,count:number,shuffle:boolean,pendingSinger:boolean,hasPlayed:boolean,explicit?:number,random=Math.random):{index:number;restart:boolean} {
+ if(explicit!==undefined)return {index:explicit,restart:true};
+ if(pendingSinger&&hasPlayed)return {index:nextBreakTrack(index,count,shuffle,random),restart:true};
+ return {index,restart:false};
+}
