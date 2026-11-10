@@ -1,4 +1,5 @@
 'use client'
+import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
 import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
@@ -245,8 +246,20 @@ const breakMusicRef = useRef<BreakMusicHandle | null>(null);
 const breakMusicPlayRequestRef = useRef(false);
 const [karafunPlaybackState, setKarafunPlaybackState] =
   useState<number | null>(null);
+const [performanceTimerError,setPerformanceTimerError]=useState('');
+const timerStartsInFlight=useRef(new Set<string>());
+async function markPlaybackStarted(expectedId?:string){
+ const id=expectedId||currentPerformanceRef.current?.id;
+ if(!event||!id||event.current_performance_id!==id||event.current_performance_started_at||event.is_show_ended||event.show_paused_at)return;
+ const key=event.id+':'+id;
+ if(timerStartsInFlight.current.has(key))return;
+ timerStartsInFlight.current.add(key);setPerformanceTimerError('');
+ try{const at=await startPerformanceTimer(supabase,event.id,id);if(at)setEvent(previous=>previous&&previous.id===event.id&&previous.current_performance_id===id?{...previous,current_performance_started_at:at}:previous);}
+ catch{setPerformanceTimerError('Could not start the singer timer. Use Start timer to try again.');}
+ finally{timerStartsInFlight.current.delete(key);}
+}
 const requestStageLyrics=useStageLyricsSignal(String(params.eventId||''));
-useEffect(()=>{if(karafunPlaybackState===4)requestStageLyrics();},[karafunPlaybackState,requestStageLyrics]);
+useEffect(()=>{if(karafunPlaybackState===4){requestStageLyrics();void markPlaybackStarted();}},[karafunPlaybackState,requestStageLyrics]);
 
 const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
   useState('');
@@ -1584,7 +1597,7 @@ setShowManualSongFields(false);
     .update({
   current_performance_id: performanceId,
   current_performance_started_at:
-    new Date().toISOString(),
+    null,
   is_voting_open: false,
 })
       .eq('id', eventId);
@@ -2645,6 +2658,7 @@ async function playKaraFunSong() {
       type: 'remote.PlayRequest',
       payload: {},
     }));
+    void markPlaybackStarted(expectedPerformanceId);
     karafunPlayTimeoutRef.current = setTimeout(() => {
       karafunPlayTimeoutRef.current = null;
       setKarafunPlayPending(false);
@@ -3601,7 +3615,7 @@ if (
 .update({
   current_performance_id: firstSinger.id,
   current_performance_started_at:
-    new Date().toISOString(),
+    null,
   is_voting_open: true,
 })
     .eq('id', eventId);
@@ -4298,7 +4312,7 @@ async function skipSinger(
           current_performance_id:
             targetSinger.id,
           current_performance_started_at:
-            new Date().toISOString(),
+            null,
           is_voting_open: false,
         })
         .eq('id', eventId)
@@ -4745,7 +4759,7 @@ async function nextSinger(automatic = false) {
       .update({
         current_performance_id: next.id,
         current_performance_started_at:
-          new Date().toISOString(),
+          null,
         is_voting_open: true,
       })
       .eq('id', eventId);
@@ -5798,6 +5812,8 @@ if (!isSubscribed) {
 >
       
 <SVHostHero
+  hasSelectedSinger={Boolean(current)}
+  onStartTimer={current&&!event?.show_paused_at?()=>{void markPlaybackStarted();}:undefined}
   pausedAt={event?.show_paused_at}
   onNextSinger={current && !event?.show_paused_at ? () => { void nextSinger(); } : undefined}
   advancingSinger={advancingSinger}
@@ -5826,6 +5842,7 @@ if (!isSubscribed) {
 
 {event?.show_paused_at && <div className="sv-card" role="status" style={{padding:16,marginBottom:16,border:'1px solid #f59e0b'}}>Show paused · The singer timer and automatic advancement are paused. Control music playback in your karaoke player, then select Resume Show when ready.</div>}
 {pauseError && <p role="alert">{pauseError}</p>}
+{performanceTimerError && <p role="alert">{performanceTimerError}</p>}
 <div id="watchdog-mission-controls">
 <SVMissionControl
   showPaused={Boolean(event?.show_paused_at)}
@@ -5930,7 +5947,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment onPlaybackStart={()=>requestStageLyrics()} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
+  {account?.singa_enabled && <SingaExperiment onPlaybackStart={()=>{requestStageLyrics();void markPlaybackStarted();}} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}

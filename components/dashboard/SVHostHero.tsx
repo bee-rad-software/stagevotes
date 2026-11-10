@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 
 type Props = {
+  hasSelectedSinger?:boolean;
+  onStartTimer?:()=>void;
   onNextSinger?: () => void;
   advancingSinger?: boolean;
   singerName?: string;
@@ -26,6 +28,8 @@ type Props = {
 };
 
 export default function SVHostHero({
+  hasSelectedSinger,
+  onStartTimer,
   onNextSinger,
   advancingSinger = false,
   singerName = 'No current singer',
@@ -81,7 +85,7 @@ export default function SVHostHero({
   );
 
   const hasCurrentSinger =
-    Boolean(startedAt);
+    hasSelectedSinger ?? Boolean(startedAt);
 
   const initials =
     singerName
@@ -170,7 +174,7 @@ const displaySingerName = singerName
         <div className="sv-host-performer">
           <div className="sv-mobile-kicker">
             {hasCurrentSinger
-              ? 'Now performing'
+              ? startedAt ? 'Now performing' : 'Up next'
               : 'Show status'}
           </div>
 
@@ -202,19 +206,18 @@ const displaySingerName = singerName
 
           <div>
             <span>
-              {hasCurrentSinger
-                ? 'Live for'
-                : 'Performance timer'}
+              {startedAt ? 'Live for' : hasCurrentSinger ? 'Waiting for Play' : 'Performance timer'}
             </span>
 
             <strong>
-              {hasCurrentSinger
+              {startedAt
                 ? elapsed
                 : '0:00'}
             </strong>
           </div>
         </div>
 
+        {hasCurrentSinger&&!startedAt&&onStartTimer&&<button type="button" onClick={onStartTimer} title="Start the timer manually if you are playing music outside the connected player">Start timer</button>}
         {judgingEnabled && hasCurrentSinger && (
           <div className="sv-host-timer" role="status" aria-live="polite">
             <div>
