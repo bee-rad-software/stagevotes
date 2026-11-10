@@ -145,3 +145,17 @@
 /* Keep the seasonal controls usable on smaller display windows. */
 .tools { max-width:96vw; flex-wrap:wrap; justify-content:center; width:max-content; }
 .themePicker input[type=datetime-local] { color:#f8fafc; background:#1e293b; border:1px solid #475569; border-radius:6px; padding:7px; color-scheme:dark; max-width:230px; }
+
+/* Harvest colors frame the stage while the lyrics stay on a dark background. */
+.screen[data-theme="autumn"] { color:#fff8ec; }
+.screen[data-theme="autumn"] .aurora { background:radial-gradient(ellipse at 0% 20%,#9f472d60,transparent 38%),radial-gradient(ellipse at 100% 90%,#b67b2533,transparent 32%),linear-gradient(145deg,#201410,#0c0908 60%); }
+.screen[data-theme="autumn"] .floor { background:radial-gradient(ellipse at bottom,#d6a14b18,transparent 65%); }
+.autumnArt { position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+.screen[data-theme="autumn"] .kicker,.screen[data-theme="autumn"] .welcomeEyebrow { color:#edc784; }
+.screen[data-theme="autumn"] .header,.screen[data-theme="autumn"] .sidebar { border-color:#d6a14b36; }
+.screen[data-theme="autumn"] .queueItem:first-child { border-bottom-color:#d6a14b70; }
+.screen[data-theme="autumn"] .avatar,.screen[data-theme="autumn"] .largeAvatar { background:linear-gradient(140deg,#756542,#a94d2d); border-color:#edc78466; }
+.screen[data-theme="autumn"] .join strong { color:#edc784; }
+.screen[data-theme="autumn"] .welcomeSteps span { background:#332417b8; border-color:#d6a14b36; }
+.screen[data-theme="autumn"] .welcomeSteps b { color:#edc784; }
+.screen[data-theme="autumn"] .lyricSpace { --spotlight-accent:#edc784; --spotlight-portrait:linear-gradient(145deg,#756542,#a94d2d); }
