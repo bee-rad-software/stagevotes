@@ -32,3 +32,16 @@ test('transient states preserve the performance until KaraFun is ready',()=>{
  assert.equal(step(state,true,3).between,true);
  assert.equal(step(step(initial,true,2),true,3).between,false);
 });
+
+const {breakTrackPlayback:plan}=moduleObject.exports;
+test('a new singer handoff picks the next track once, then ordinary resume stays on that track',()=>{
+ const fresh=plan(0,3,false,true,true);assert.equal(fresh.index,1);assert.equal(fresh.restart,true);
+ const resume=plan(fresh.index,3,false,false,true);assert.equal(resume.index,1);assert.equal(resume.restart,false);
+ const nextSinger=plan(resume.index,3,false,true,true);assert.equal(nextSinger.index,2);
+});
+test('first break keeps first track, shuffle changes tracks, and one track restarts',()=>{
+ assert.equal(plan(0,3,false,true,false).index,0);
+ assert.notEqual(plan(1,4,true,true,true,undefined,()=>.5).index,1);
+ assert.equal(plan(0,1,true,true,true).index,0);assert.equal(plan(0,1,true,true,true).restart,true);
+ const explicit=plan(1,3,false,true,true,2);assert.equal(explicit.index,2);assert.equal(explicit.restart,true);
+});
