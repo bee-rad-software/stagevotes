@@ -2,10 +2,9 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { buildRotationQueue } from '@/lib/rotationQueue';
 import styles from './StageBackdrop.module.css';
 import NextSingerSpotlight from './NextSingerSpotlight';
-import {selectSpotlightSinger} from '@/lib/stageSpotlight';
+import {selectSpotlightSinger,stageSidebarQueue} from '@/lib/stageSpotlight';
 import {stageEntranceLine} from '@/lib/stageEntranceLines';
 import {allowsPartyRotation} from '@/lib/stageViewPolicy';
 import {useStageDisplayBridge} from '@/hooks/useStageDisplayBridge';
@@ -134,7 +133,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);
   },[]);
   const current = singers.find(row => row.id === event?.current_performance_id && !['completed', 'skipped', 'removed'].includes(row.status));
-  const upcoming = buildRotationQueue(singers.filter(row => row.status !== 'removed'), event?.current_performance_id).filter(row => row.id !== current?.id).slice(0, 5);
+  const upcoming = stageSidebarQueue(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current||view==='break');
   const next = upcoming[0];
   const ended = Boolean(event?.is_show_ended);
   // The host's Start Show selects a current performance. Completed songs keep
@@ -182,7 +181,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const highlight=event&&intermission.enabled&&(badges.length>0||showQr||intermission.shoutouts.length>0)?<StageHighlights eventId={event.id} badges={badges} shoutouts={intermission.shoutouts} showQr={showQr} signupUrl={signupUrl}/>:undefined;
   const partyActive=!suspended&&theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&allowsPartyRotation(view,Boolean(current),guides);
   const intermissionActive=!suspended&&intermission.enabled&&!partyActive&&ready&&Boolean(event)&&!ended&&!beforeShow&&allowsPartyRotation(view,Boolean(current),guides);
-  const spotlight=selectSpotlightSinger(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current);
+  const spotlight=selectSpotlightSinger(singers,event?.current_performance_id,lastPlayedId.current,betweenSongs.current||view==='break');
   const spotlightIntro=stageEntranceLine(theme,betweenSongs.current&&spotlight?.id===current?.id?entranceTurn:entranceTurn+1);
   const stageName = event?.venue || event?.name || 'StageVotes';
 
