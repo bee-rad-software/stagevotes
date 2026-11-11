@@ -8,3 +8,6 @@
 .invitation{margin-top:2vh;color:#d0dbe9;font-size:clamp(12px,1vw,21px)}
 @keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.spotlight{animation:none}}
+
+.spotlight{border-radius:var(--stage-card-radius,22px);border:var(--stage-card-border,1px solid transparent);background:var(--stage-card-fill,transparent);box-shadow:var(--stage-card-shadow,none)}
+.spotlight h2{font-family:var(--stage-title-font,Arial,sans-serif)}
