@@ -1,4 +1,5 @@
 'use client';
+import VenueBadgeMark from '@/components/VenueBadgeMark';
 import {venueAudienceLink} from '@/lib/venueAudienceLink';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
@@ -19,7 +20,7 @@ import {validStageColor} from '@/lib/stageDisplayControl';
 import {tonightStats,validPromotions} from '@/lib/stageIntermission';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
-export type StageBadge = { id: string; singer: string; title: string; icon: string };
+export type StageBadge = { color?:string;artworkUrl?:string|null; id: string; singer: string; title: string; icon: string };
 export type StageEvent = { static_signup_qr?:boolean; id: string; name: string; venue: string | null; account_id?: string | null; venue_id?:string|null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
 const themes = ['classic', 'halloween', 'neon', 'country', 'autumn', 'holiday', 'vegas', 'mixtape', 'venue'] as const;
@@ -37,7 +38,7 @@ function StageBadgeToast({badge,eventId}:{badge:StageBadge|undefined;eventId:str
   },[badge?.id,eventId]);
   if(!visible||!badge)return null;
   return <div className={styles.badgeCelebration} role="status" aria-label="Latest badge earned tonight">
-    <span className={styles.badgeIcon} aria-hidden="true">{badge.icon}</span><div><span className={styles.badgeLabel}>BADGE EARNED TONIGHT</span><strong>{badge.singer}</strong><span>{badge.title}</span></div>
+    <span className={styles.badgeIcon} aria-hidden="true">{badge.color||badge.artworkUrl?<VenueBadgeMark {...badge} size={54}/>:badge.icon}</span><div><span className={styles.badgeLabel}>BADGE EARNED TONIGHT</span><strong>{badge.singer}</strong><span>{badge.title}</span></div>
   </div>;
 }
 

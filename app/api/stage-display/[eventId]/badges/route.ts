@@ -1,3 +1,4 @@
+import {showVenueBadges} from '@/lib/server/venueBadges';
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
@@ -31,7 +32,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ eve
     const performance = Array.isArray(row.performances) ? row.performances[0] : row.performances;
     const definition = Array.isArray(row.achievement_definitions) ? row.achievement_definitions[0] : row.achievement_definitions;
     if (!performance || performance.singer_profile_id !== row.singer_profile_id || !definition?.title) return [];
-    return [{ id: row.id, singer: performance.singer_name, title: definition.title, icon: definition.icon || '🏅' }];
+    return [{ id: row.id, singer: performance.singer_name, title: definition.title, icon: definition.icon || '🏅',earnedAt:row.earned_at }];
   });
-  return NextResponse.json({ badges }, { headers: { 'Cache-Control': 'no-store' } });
+  let venueBadges;
+  try{venueBadges=await showVenueBadges(eventId,true);}catch{return NextResponse.json({error:'Could not load venue badges'},{status:503});}
+  const combined=[...badges,...venueBadges.map(b=>({id:'venue:'+b.id,singer:b.singer_name,title:b.title+' · '+b.venue_name,icon:b.icon,color:b.color,artworkUrl:b.artworkUrl,earnedAt:b.earned_at}))].sort((a,b)=>b.earnedAt.localeCompare(a.earnedAt));
+  return NextResponse.json({ badges:combined }, { headers: { 'Cache-Control': 'no-store' } });
 }

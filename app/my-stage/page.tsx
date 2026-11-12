@@ -1,4 +1,5 @@
 'use client';
+import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import styles from '@/components/my-stage/MyStage.module.css';
 import { Suspense } from 'react';
@@ -1252,6 +1253,7 @@ const active =
 
         <ExploreGrid />
 
+               <VenueBadgeCollection />
                <AchievementGrid
           achievements={achievements}
           performances={stats.performances}
