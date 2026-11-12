@@ -1,4 +1,5 @@
 'use client'
+import {venueAudienceLink} from '@/lib/venueAudienceLink';
 import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
 import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
@@ -440,26 +441,9 @@ const [judgeCountMessage, setJudgeCountMessage] = useState('');
   setExpectedTournamentJudges,
 ] = useState<number | null>(null);
   
- const voteUrl =
-  typeof window !== 'undefined'
-    ? staticJudgeQr
-      ? `${window.location.origin}/go/${accountId}/vote`
-      : `${window.location.origin}/vote/${eventId}`
-    : '';
-
-const signupUrl =
-  typeof window !== 'undefined'
-    ? staticSignupQr
-      ? `${window.location.origin}/go/${accountId}/signup`
-      : `${window.location.origin}/signup/${eventId}`
-    : '';
-
-const peoplesChoiceUrl =
-  typeof window !== 'undefined'
-    ? staticPeopleQr
-      ? `${window.location.origin}/go/${accountId}/people`
-      : `${window.location.origin}/peopleschoice/${eventId}`
-    : '';
+ const voteUrl = typeof window!=='undefined'?venueAudienceLink(window.location.origin,eventId,event?.venue_id,'vote',staticJudgeQr):'';
+ const signupUrl = typeof window!=='undefined'?venueAudienceLink(window.location.origin,eventId,event?.venue_id,'signup',staticSignupQr):'';
+ const peoplesChoiceUrl = typeof window!=='undefined'?venueAudienceLink(window.location.origin,eventId,event?.venue_id,'people',staticPeopleQr):'';
 
 const checkinUrl =
   typeof window !== 'undefined'
