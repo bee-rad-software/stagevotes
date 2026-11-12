@@ -37,7 +37,7 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
     async function load() {
       try {
         const [account, latest, current] = await Promise.all([
-          supabase.from('venues').select('settings').eq('account_id', accountId),
+          supabase.from('venues').select('settings').eq('account_id', accountId).is('deleted_at',null).eq('is_active',true),
           supabase.from('events').select('id').eq('account_id', accountId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('events').select('id').eq('account_id', accountId).eq('is_show_ended', false)
             .order('created_at', { ascending: false }).limit(1).maybeSingle(),

@@ -8,7 +8,7 @@ export default function VenueAudienceQRCodes({accountId,initialVenueId}:{account
  const [venues,setVenues]=useState<Venue[]>([]),[selected,setSelected]=useState(''),[origin,setOrigin]=useState('');
  const [flags,setFlags]=useState({signup:false,vote:false,people:false}),[flagsVenue,setFlagsVenue]=useState(''),[accountDefaults,setAccountDefaults]=useState<Record<string,any>|null>(null),[error,setError]=useState('');
  useEffect(()=>{let active=true;setOrigin(window.location.origin);async function load(){
- const [v,a]=await Promise.all([supabase.from('venues').select('id,name').eq('account_id',accountId).order('name'),supabase.from('accounts').select('static_signup_qr,static_judge_qr,static_people_qr').eq('id',accountId).single()]);
+ const [v,a]=await Promise.all([supabase.from('venues').select('id,name').eq('account_id',accountId).is('deleted_at',null).eq('is_active',true).order('name'),supabase.from('accounts').select('static_signup_qr,static_judge_qr,static_people_qr').eq('id',accountId).single()]);
  if(!active)return;if(v.error||a.error){setError('Unable to load venue QR codes. Please refresh.');return;}
  setVenues(v.data||[]);if(initialVenueId&&v.data?.some(venue=>venue.id===initialVenueId))setSelected(initialVenueId);else if(v.data?.length===1)setSelected(v.data[0].id);
  setAccountDefaults(a.data);

@@ -128,6 +128,7 @@ export default function VenueEditorPage() {
         .from('venues')
         .select(venueFields)
         .eq('id', venueId)
+        .is('deleted_at',null)
         .maybeSingle();
 
       if (error) {
@@ -260,6 +261,7 @@ export default function VenueEditorPage() {
         [databaseField]: imageUrl,
       })
       .eq('id', venue.id)
+      .is('deleted_at',null)
       .select(venueFields)
       .maybeSingle();
 
@@ -347,6 +349,7 @@ export default function VenueEditorPage() {
         personality_tags: parsedTags,
       })
       .eq('id', venue.id)
+      .is('deleted_at',null)
       .select(venueFields)
       .maybeSingle();
 

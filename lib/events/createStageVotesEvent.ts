@@ -59,7 +59,7 @@ export async function createStageVotesEvent({
     );
   }
 
-  if(venueId){const {data:location,error}=await supabase.from('venues').select('id,name').eq('id',venueId).eq('account_id',accountId).maybeSingle();if(error||!location)throw new Error('Choose a venue belonging to your account.');cleanVenueName=location.name;}
+  if(venueId){const {data:location,error}=await supabase.from('venues').select('id,name').eq('id',venueId).eq('account_id',accountId).is('deleted_at',null).eq('is_active',true).maybeSingle();if(error||!location)throw new Error('Choose a venue belonging to your account.');cleanVenueName=location.name;}
 
   const {
     data: event,
