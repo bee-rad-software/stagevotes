@@ -20,7 +20,7 @@ export default function SVActiveShows({ accountId,venueId='' }: { accountId: str
    setShows((data || []) as OpenShow[]); setError(false);
   }
   void refresh();
-  const channel = supabase.channel('host-home-open-shows-' + accountId)
+  const channel = supabase.channel('host-home-open-shows-' + accountId + '-' + crypto.randomUUID())
    .on('postgres_changes', { event: '*', schema: 'public', table: 'events', filter: 'account_id=eq.' + accountId }, () => { void refresh(); }).subscribe();
   const timer = window.setInterval(() => { if (document.visibilityState === 'visible') void refresh(); }, 30000);
   const focus = () => { void refresh(); }; window.addEventListener('focus', focus);
