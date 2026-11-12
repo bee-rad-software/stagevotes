@@ -35,7 +35,7 @@ export async function createStageVotesEvent({
   const pointRubric=scoringCategories?validatePointCategories(scoringCategories):null;
   if(pointRubric&&!judgingEnabled)throw Error('This tournament requires judging for its 100-point scorecard.');
   const cleanName = name.trim();
-  const cleanVenueName = venueName.trim();
+  let cleanVenueName = venueName.trim();
 
   const validCategories = (pointRubric ? pointRubric.map(c=>c.name) : categories)
     .map((category) => category.trim())
@@ -58,6 +58,8 @@ export async function createStageVotesEvent({
       'Please add at least one voting category.'
     );
   }
+
+  if(venueId){const {data:location,error}=await supabase.from('venues').select('id,name').eq('id',venueId).eq('account_id',accountId).maybeSingle();if(error||!location)throw new Error('Choose a venue belonging to your account.');cleanVenueName=location.name;}
 
   const {
     data: event,

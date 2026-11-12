@@ -1,4 +1,5 @@
 'use client';
+import {venueAudienceLink} from '@/lib/venueAudienceLink';
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -19,7 +20,7 @@ import {tonightStats,validPromotions} from '@/lib/stageIntermission';
 import StageShoutoutTicker from '@/components/shoutouts/StageShoutoutTicker';
 
 export type StageBadge = { id: string; singer: string; title: string; icon: string };
-export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
+export type StageEvent = { id: string; name: string; venue: string | null; account_id?: string | null; venue_id?:string|null; current_performance_id: string | null; is_show_ended: boolean; signups_open?: boolean | null; show_signup_qr?: boolean };
 export type StageSinger = { id: string; singer_name: string; duet_partner_name?: string | null; song_title: string; artist: string | null; status: string; round?: number | null; queue_order?: number | null; manual_queue_order?: number | null; created_at?: string | null; singer_profile_id?: string | null; photo_url?: string | null };
 const themes = ['classic', 'halloween', 'neon', 'country', 'autumn', 'holiday', 'vegas', 'mixtape', 'venue'] as const;
 type StageTheme = typeof themes[number];
@@ -177,7 +178,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
   const showWelcome = !ended && (view === 'welcome' || (beforeShow && view === 'lyrics' && !guides));
   const showNext = !ended && !guides && !showWelcome && !showBreak && !showAnnouncement && (view === 'next' || !current);
   const showQr = !ended && event?.show_signup_qr === true && event?.signups_open !== false && Boolean(origin);
-  const signupUrl = event?.account_id ? origin + '/go/' + event.account_id + '/signup' : origin + '/signup/' + event?.id;
+  const signupUrl = venueAudienceLink(origin,event?.id||'',event?.venue_id,'signup');
   const highlight=event&&intermission.enabled&&(badges.length>0||showQr||intermission.shoutouts.length>0)?<StageHighlights eventId={event.id} badges={badges} shoutouts={intermission.shoutouts} showQr={showQr} signupUrl={signupUrl}/>:undefined;
   const partyActive=!suspended&&theme==='halloween'&&partyEnabled&&ready&&Boolean(event)&&!ended&&!showAnnouncement&&allowsPartyRotation(view,Boolean(current),guides);
   const intermissionActive=!suspended&&intermission.enabled&&!partyActive&&ready&&Boolean(event)&&!ended&&!beforeShow&&allowsPartyRotation(view,Boolean(current),guides);

@@ -23,7 +23,6 @@ import {
 
 export default function AccountPage() {
   const [accountId, setAccountId] = useState('');
-  const [venueId, setVenueId] = useState('');
   const [name, setName] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -80,16 +79,6 @@ export default function AccountPage() {
     }
 
     setAccountId(account.id);
-    const { data: venue } = await supabase
-  .from('venues')
-  .select('id')
-  .eq('account_id', account.id)
-  .limit(1)
-  .maybeSingle();
-
-if (venue?.id) {
-  setVenueId(venue.id);
-}
     setName(account.name || '');
     setSubscriptionStatus(account.subscription_status || '');
     setHasSubscription(Boolean(account.stripe_subscription_id));
@@ -239,7 +228,7 @@ async function removeLogo() {
   setLogoUrl('');
   setMessage('Logo removed.');
 }
-  
+
 return (
   <SVShell
     title="Account"
@@ -261,7 +250,7 @@ return (
           gap: 20,
         }}
       >
-       
+
        <section className="sv-card">
   <div
     style={{
@@ -383,7 +372,7 @@ return (
   )}
   </>}
 </section>
-       
+
         <section className="sv-card">
           <div
             style={{
@@ -918,7 +907,7 @@ return (
           fontSize: 20,
         }}
       >
-        Venue Profile
+        Venues
       </h2>
 
       <p
@@ -928,7 +917,7 @@ return (
           fontSize: 13,
         }}
       >
-        Manage your public venue page.
+        Add locations and manage their profiles, schedules and QR codes.
       </p>
     </div>
   </div>
@@ -936,11 +925,9 @@ return (
   <button
     type="button"
     className="secondary"
-    disabled={!venueId}
+
     onClick={() => {
-      if (venueId) {
-        router.push(`/account/venues/${venueId}`);
-      }
+      router.push('/account/venues');
     }}
     style={{
       width: '100%',
@@ -948,19 +935,19 @@ return (
       justifyContent: 'center',
       alignItems: 'center',
       gap: 8,
-      cursor: venueId ? 'pointer' : 'not-allowed',
-      opacity: venueId ? 1 : 0.55,
+      cursor: 'pointer',
+      opacity: 1,
     }}
   >
     <Building2 size={16} />
-    Manage Venue
+    Manage Venues
   </button>
 
 <button
   type="button"
   className="secondary"
-  disabled={!venueId}
-  onClick={() => { if (venueId) router.push(`/account/venues/${venueId}#recurring-shows`); }}
+
+  onClick={() => router.push('/account/venues')}
   style={{
     width: '100%',
     display: 'flex',
@@ -968,8 +955,8 @@ return (
     alignItems: 'center',
     gap: 8,
     marginTop: 10,
-    cursor: venueId ? 'pointer' : 'not-allowed',
-    opacity: venueId ? 1 : 0.55,
+    cursor: 'pointer',
+    opacity: 1,
   }}
 >
   <Radio size={16} />
@@ -1169,7 +1156,7 @@ return (
     not count toward this limit.
   </p>
 </section>
-        
+
         <section className="sv-card">
           <h2
             style={{

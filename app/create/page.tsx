@@ -172,6 +172,8 @@ function CreatePageContent() {
 
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');
+  const [venueChoices,setVenueChoices]=useState<{id:string;name:string}[]>([]);
+  const [selectedVenueId,setSelectedVenueId]=useState('');
 
   const [createdId, setCreatedId] =
     useState<string | null>(null);
@@ -322,9 +324,10 @@ function CreatePageContent() {
         )
         .single();
 
-    if (account?.name) {
-      setVenue(account.name);
-    }
+    const {data:locations,error:venueError}=await supabase.from('venues').select('id,name').eq('account_id',accountUser.account_id).order('name');
+    if(venueError)setError('Unable to load venues. Please refresh.');
+    setVenueChoices(locations||[]);
+    if(!recurringShowId&&locations?.length===1){setSelectedVenueId(locations[0].id);setVenue(locations[0].name);}
 
     setSubscriptionStatus(
       account?.subscription_status || ''
@@ -463,10 +466,12 @@ function CreatePageContent() {
       return;
     }
 
+   if(!(recurringVenueId||selectedVenueId)){setError('Choose a venue before creating this show.');return;}
    try {
   const result = await createStageVotesEvent({
   accountId,
   venueName: venue,
+  venueId: recurringVenueId || selectedVenueId || undefined,
   name,
   judgingEnabled,
   categories: validCategories,
@@ -871,20 +876,8 @@ setCreatedId(result.eventId);
                       }}
                     />
 
-                    <input
-                      id="venue"
-                      value={venue}
-                      onChange={(event) =>
-                        setVenue(
-                          event.target.value
-                        )
-                      }
-                      placeholder="Venue name"
-                      style={{
-                        ...inputStyle,
-                        paddingLeft: 44,
-                      }}
-                    />
+                    <select id="venue" value={recurringVenueId||selectedVenueId} disabled={Boolean(recurringShowId)} required onChange={event=>{const id=event.target.value;setSelectedVenueId(id);setVenue(venueChoices.find(v=>v.id===id)?.name||'');}} style={{...inputStyle,paddingLeft:44}}><option value="">Choose a venue</option>{venueChoices.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
+                    <Link href="/account/venues" style={{color:'#7dd3fc',display:'inline-block',marginTop:8}}>Add or manage venues →</Link>
                   </div>
                 </div>
               </div>
