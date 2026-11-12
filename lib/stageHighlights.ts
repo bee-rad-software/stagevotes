@@ -1,4 +1,4 @@
-export type HighlightBadge={id:string;singer:string;title:string;icon:string};
+export type HighlightBadge={color?:string;artworkUrl?:string|null;id:string;singer:string;title:string;icon:string};
 export type Highlight={kind:'badge';badge:HighlightBadge}|{kind:'shoutout';text:string}|{kind:'signup'}|{kind:'applause'};
 export function chooseStageHighlight(badges:HighlightBadge[],seen:string[],shoutouts:string[],signupOpen:boolean,turn:number):Highlight {
  const pending=badges.filter(b=>!seen.includes(b.id));

@@ -5938,6 +5938,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
+  {event?.venue_id && <a href={`/account/venues/${event.venue_id}/badges?event=${eventId}`} target="_blank" rel="noreferrer" style={{display:'inline-block',margin:'12px 0',color:'#7dd3fc'}}>Create / award venue badges ↗</a>}
   {account?.singa_enabled && <SingaExperiment key={eventId} onPlaybackStart={()=>{requestStageLyrics();void markPlaybackStarted();}} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}

@@ -1,4 +1,5 @@
 'use client';
+import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
 
@@ -276,6 +277,7 @@ export default function ShowRecapPage() {
               <Link href={`/venues/${venue.slug}`}>Explore {venue.name} →</Link>
             </header>
 
+            <VenueBadgeCollection eventId={eventId}/>
             {mySongs.length > 0 && (
               <section className={styles.personal}>
                 <span className={styles.kicker}>MY NIGHT</span>

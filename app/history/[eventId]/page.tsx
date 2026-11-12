@@ -1,4 +1,5 @@
 'use client';
+import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import ContestHistory from '@/components/contest/ContestHistory';
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
@@ -272,6 +273,7 @@ const recentArchivedEvents = useMemo(() => {
           : 'Review completed performances and previous shows.'
       }
     >
+      <VenueBadgeCollection eventId={eventId}/>
       <ContestHistory key={'contest-'+eventId} eventId={eventId}/>
       <SVEventPhotos key={eventId} eventId={eventId} host />
       {event?.is_show_ended && <SVAIRecap eventId={eventId} kind="show" audience="host" />}
