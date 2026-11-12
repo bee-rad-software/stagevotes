@@ -465,6 +465,14 @@ export default function VenueEditorPage() {
     setMessage(data.is_active ? 'Show listed again.' : 'Show removed from upcoming listings.');
   }
 
+  useEffect(() => {
+    if (loading || !venue || window.location.hash !== '#recurring-shows') return;
+    setShowRecurrence('weekly');
+    const section = document.getElementById('recurring-shows');
+    section?.focus({ preventScroll: true });
+    section?.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }, [loading, venue?.id]);
+
   if (loading) {
     return (
       <main className={styles.page}>
@@ -635,10 +643,10 @@ export default function VenueEditorPage() {
           </article>
         </section>
 
-        <section className={`${styles.formCard} ${styles.scheduleCard}`}>
+        <section id="recurring-shows" tabIndex={-1} aria-labelledby="recurring-shows-heading" style={{scrollMarginTop:24}} className={`${styles.formCard} ${styles.scheduleCard}`}>
           <div className={styles.formHeading}>
             <span className={styles.sectionLabel}>Karaoke calendar</span>
-            <h2>Upcoming karaoke nights</h2>
+            <h2 id="recurring-shows-heading">Recurring shows &amp; upcoming nights</h2>
             <p>List a single date, every Saturday, or every other Saturday. Singers will see the actual dates in My Schedule.</p>
           </div>
 

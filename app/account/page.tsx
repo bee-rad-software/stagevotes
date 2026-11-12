@@ -959,7 +959,8 @@ return (
 <button
   type="button"
   className="secondary"
-  onClick={() => router.push('/')}
+  disabled={!venueId}
+  onClick={() => { if (venueId) router.push(`/account/venues/${venueId}#recurring-shows`); }}
   style={{
     width: '100%',
     display: 'flex',
@@ -967,6 +968,8 @@ return (
     alignItems: 'center',
     gap: 8,
     marginTop: 10,
+    cursor: venueId ? 'pointer' : 'not-allowed',
+    opacity: venueId ? 1 : 0.55,
   }}
 >
   <Radio size={16} />
