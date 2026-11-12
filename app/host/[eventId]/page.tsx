@@ -853,7 +853,7 @@ const { data: accountData } = await supabase
     return false;
   }
 
-  const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, accountId);
+  const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, accountId, eventId);
 setAccountLoaded(true);
 
 if (venueAccount) {

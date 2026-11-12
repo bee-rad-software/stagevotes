@@ -124,7 +124,7 @@ const signupUrl =
       .eq('id', data.account_id)
       .single();
 
-    const venueAccount=await settingsForVenue(supabase,accountData,data.venue_id,data.account_id);
+    const venueAccount=await settingsForVenue(supabase,accountData,data.venue_id,data.account_id,eventId);
     setLogoUrl(venueAccount.logo_url || '');
   }
 }

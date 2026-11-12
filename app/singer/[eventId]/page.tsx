@@ -87,7 +87,7 @@ async function loadEvent() {
       return;
     }
 
-    const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, data.account_id);
+    const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, data.account_id, eventId);
     setTipsEnabled(venueAccount?.tips_enabled || false);
     setVenmoUrl(venueAccount?.venmo_url || '');
     setCashappUrl(venueAccount?.cashapp_url || '');

@@ -47,11 +47,17 @@ export function parseVenueSettings(input: unknown): VenueSettings {
 
 /** Account settings are only a compatibility fallback for unlinked shows / pre-migration venues. */
 export async function settingsForVenue<T extends Record<string, any>>(
-  client: SupabaseClient<any>, account: T | null, venueId?: string | null, accountId?: string | null
+  client: SupabaseClient<any>, account: T | null, venueId?: string | null, accountId?: string | null, eventId?: string | null
 ): Promise<T & Partial<VenueSettings>> {
   const base = account || {} as T;
   if (!venueId || !accountId) return base;
-  const {data, error} = await client.from('venues').select('settings,logo_url').eq('id', venueId).eq('account_id', accountId).maybeSingle();
+  // Public show pages must work even when the venue's directory profile is private.
+  // This RPC returns only public show configuration, never the full private venue row.
+  const result = eventId
+    ? await client.rpc('stagevotes_event_venue_settings', {p_event_id: eventId})
+    : await client.from('venues').select('settings,logo_url').eq('id', venueId).eq('account_id', accountId).maybeSingle();
+  const {data,error}=result;
+  if (eventId && (error || !data || data.venue_id !== venueId || data.account_id !== accountId)) throw Error('Unable to load this venue’s show settings. Please refresh or check with the host.');
   if (error || !data) return base;
   if (!data.settings) return {...base, ...(data.logo_url ? {logo_url: data.logo_url} : {})};
   // Stored snapshots may contain older payment links; validation belongs at the write boundary.

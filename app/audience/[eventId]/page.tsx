@@ -113,7 +113,7 @@ export default function AudiencePage() {
         .single(),
     ]);
 
-    const venueAccount = await settingsForVenue(supabase, accountResult.data, eventResult.data?.venue_id, accountUser.account_id);
+    const venueAccount = await settingsForVenue(supabase, accountResult.data, eventResult.data?.venue_id, accountUser.account_id, eventId);
     if (venueAccount) {
       setStaticSignupQr(
         venueAccount.static_signup_qr || false

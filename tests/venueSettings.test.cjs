@@ -38,3 +38,13 @@ test('settings writes require owner/admin and scope venue IDs to the authenticat
  const member=route('host',[{id:'own',account_id:'mine'}]);assert.equal((await member.put('own')).status,403);assert.equal(member.updates(),0);
  const owner=route('owner',[{id:'own',account_id:'mine'},{id:'foreign',account_id:'other'}]);assert.equal((await owner.put('own')).status,200);assert.equal((await owner.put('foreign')).status,404);
 });
+test('public show configuration loads by event even if the venue profile is private',async()=>{
+ let calls=0;const db={rpc:async(name,args)=>{calls++;assert.equal(name,'stagevotes_event_venue_settings');assert.equal(args.p_event_id,'show');return {data:{venue_id:'private',account_id:'account',settings:{...defaults,singa_enabled:true,karafun_channel:''}},error:null};}};
+ const settings=await out.settingsForVenue(db,{singa_enabled:false,karafun_channel:'999'},'private','account','show');
+ assert.equal(settings.singa_enabled,true);assert.equal(settings.karafun_channel,'');assert.equal(calls,1);
+});
+test('public configuration errors or mismatched venue never fall back to the wrong provider',async()=>{
+ const db={rpc:async()=>({data:{venue_id:'other',account_id:'account'},error:null})};
+ await assert.rejects(out.settingsForVenue(db,{karafun_channel:'999'},'private','account','show'));
+ await assert.rejects(out.settingsForVenue({rpc:async()=>({error:{message:'offline'},data:null})},{karafun_channel:'999'},'private','account','show'));
+});

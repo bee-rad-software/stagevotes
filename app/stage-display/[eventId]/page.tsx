@@ -40,7 +40,7 @@ export default function StageDisplayPage() {
           show.data.account_id ? supabase.from('accounts').select('logo_url,static_signup_qr').eq('id', show.data.account_id).abortSignal(controller.signal).maybeSingle() : Promise.resolve({ data: null }),
           show.data.venue_id ? supabase.from('venues').select('logo_url').eq('id',show.data.venue_id).eq('account_id',show.data.account_id).abortSignal(controller.signal).maybeSingle() : Promise.resolve({data:null}),
         ]);
-        const venueSettings = await settingsForVenue(supabase,branding.data,show.data.venue_id,show.data.account_id);
+        const venueSettings = await settingsForVenue(supabase,branding.data,show.data.venue_id,show.data.account_id,eventId);
         if (!active) return;
         const photos = new Map((profiles.data || []).map(row => [row.id, row.photo_url]));
         setEvent({...show.data,static_signup_qr:venueSettings.static_signup_qr ?? true} as StageEvent);

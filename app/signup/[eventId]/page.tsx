@@ -493,7 +493,7 @@ const [recoveryRequest, setRecoveryRequest] =
       return;
     }
 
-    const venueAccount = await settingsForVenue(supabase, accountData, eventData.venue_id, eventData.account_id);
+    const venueAccount = await settingsForVenue(supabase, accountData, eventData.venue_id, eventData.account_id, eventId);
     setSingaEnabled(venueAccount?.singa_enabled === true);
     setTipsEnabled(
       venueAccount?.tips_enabled || false
