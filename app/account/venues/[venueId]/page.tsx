@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 import styles from './venue-editor.module.css';
+import {venueShowTypes,validVenueShowType,venueShowTypeOrDefault} from '@/lib/venueShowTypes';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -100,7 +101,9 @@ export default function VenueEditorPage() {
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
   const [showTitle, setShowTitle] = useState('');
-  const [showType, setShowType] = useState('Karaoke Night');
+  const [showType, setShowType] = useState('karaoke');
+  const [scheduleMessage,setScheduleMessage]=useState('');
+  const [scheduleError,setScheduleError]=useState('');
   const [showTime, setShowTime] = useState('20:00');
   const [showDay, setShowDay] = useState(6);
   const [showRecurrence, setShowRecurrence] = useState<RecurrenceType>('one_time');
@@ -382,47 +385,47 @@ export default function VenueEditorPage() {
   function resetScheduleForm() {
     setEditingScheduleId(null);
     setShowTitle('');
-    setShowType('Karaoke Night');
+    setShowType('karaoke');
     setShowTime('20:00');
     setShowDay(6);
-    setShowRecurrence('one_time');
     setShowDate('');
   }
 
   function editSchedule(show: VenueSchedule) {
     setEditingScheduleId(show.id);
     setShowTitle(show.title);
-    setShowType(show.show_type || 'Karaoke Night');
+    setShowType(venueShowTypeOrDefault(show.show_type));
     setShowTime(show.start_time.slice(0, 5));
     setShowDay(show.day_of_week);
     setShowRecurrence(show.recurrence_type);
     setShowDate(show.start_date || '');
-    setMessage('');
-    setErrorMessage('');
+    setScheduleMessage('');
+    setScheduleError('');
   }
 
   async function saveSchedule(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!venue || !scheduleReady || scheduleSaving) return;
     if (!showTitle.trim() || !showTime || (showRecurrence !== 'weekly' && !showDate)) {
-      setErrorMessage('Add a title, time, and a first date for one-time or every-other-week shows.');
+      setScheduleError('Add a title, time, and a first date for one-time or every-other-week shows.');
       return;
     }
 
+    if (!validVenueShowType(showType)) { setScheduleError('Choose a show type from the list.'); return; }
     const selectedDate = showDate ? new Date(`${showDate}T12:00:00`) : null;
     if (showRecurrence !== 'weekly' && (!selectedDate || Number.isNaN(selectedDate.getTime()))) {
-      setErrorMessage('Choose a valid show date.');
+      setScheduleError('Choose a valid show date.');
       return;
     }
     const dayOfWeek = showRecurrence === 'weekly' ? showDay : selectedDate!.getDay();
     const existing = schedule.find((show) => show.id === editingScheduleId);
     setScheduleSaving(true);
-    setMessage('');
-    setErrorMessage('');
+    setScheduleMessage('');
+    setScheduleError('');
     const values = {
       venue_id: venue.id,
       title: showTitle.trim(),
-      show_type: showType.trim() || 'Karaoke Night',
+      show_type: showType,
       day_of_week: dayOfWeek,
       start_time: showTime,
       recurrence_type: showRecurrence,
@@ -430,27 +433,32 @@ export default function VenueEditorPage() {
       is_active: existing?.is_active ?? true,
     };
 
+    try {
     const query = editingScheduleId
       ? supabase.from('venue_recurring_shows').update(values).eq('id', editingScheduleId).eq('venue_id', venue.id)
       : supabase.from('venue_recurring_shows').insert(values);
     const { data, error } = await query
       .select('id, title, day_of_week, start_time, show_type, recurrence_type, start_date, is_active')
       .maybeSingle();
-    setScheduleSaving(false);
     if (error || !data) {
-      setErrorMessage(error?.message || 'Could not save the show. Check your venue permissions.');
+      setScheduleError(error?.message || 'Could not save the show. Check your venue permissions.');
       return;
     }
     setSchedule((current) => [data as VenueSchedule, ...current.filter((item) => item.id !== data.id)]);
-    setMessage(editingScheduleId ? 'Karaoke night updated.' : 'Upcoming karaoke night published.');
+    setScheduleMessage(editingScheduleId ? 'Karaoke night updated.' : 'Upcoming karaoke night published.');
     resetScheduleForm();
+    } catch {
+      setScheduleError('Could not save this night. Check your connection and try again.');
+    } finally {
+      setScheduleSaving(false);
+    }
   }
 
   async function toggleSchedule(show: VenueSchedule) {
     if (!venue || scheduleSaving) return;
     setScheduleSaving(true);
-    setMessage('');
-    setErrorMessage('');
+    setScheduleMessage('');
+    setScheduleError('');
     const { data, error } = await supabase.from('venue_recurring_shows')
       .update({ is_active: !show.is_active })
       .eq('id', show.id).eq('venue_id', venue.id)
@@ -458,11 +466,11 @@ export default function VenueEditorPage() {
       .maybeSingle();
     setScheduleSaving(false);
     if (error || !data) {
-      setErrorMessage(error?.message || 'Could not update the karaoke night.');
+      setScheduleError(error?.message || 'Could not update the karaoke night.');
       return;
     }
     setSchedule((current) => current.map((item) => item.id === show.id ? data as VenueSchedule : item));
-    setMessage(data.is_active ? 'Show listed again.' : 'Show removed from upcoming listings.');
+    setScheduleMessage(data.is_active ? 'Show listed again.' : 'Show removed from upcoming listings.');
   }
 
   useEffect(() => {
@@ -650,6 +658,8 @@ export default function VenueEditorPage() {
             <p>List a single date, every Saturday, or every other Saturday. Singers will see the actual dates in My Schedule.</p>
           </div>
 
+          {scheduleError&&<p className={styles.errorMessage} role="alert">{scheduleError}</p>}
+          {scheduleMessage&&!scheduleError&&<p className={styles.successMessage} role="status">{scheduleMessage}</p>}
           {!scheduleReady ? (
             <p className={styles.scheduleHint}>Scheduling is unavailable right now. Please try again later.</p>
           ) : (
@@ -688,7 +698,7 @@ export default function VenueEditorPage() {
                     <label className={styles.field}><span>{showRecurrence === 'biweekly' ? 'First show date' : 'Show date'}</span><input type="date" required value={showDate} onChange={(event) => setShowDate(event.target.value)} /></label>
                   )}
                   <label className={styles.field}><span>Start time</span><input type="time" required value={showTime} onChange={(event) => setShowTime(event.target.value)} /></label>
-                  <label className={styles.field}><span>Show type</span><input value={showType} onChange={(event) => setShowType(event.target.value)} placeholder="Karaoke Night" /></label>
+                  <label className={styles.field}><span>Show type</span><select value={showType} onChange={(event) => setShowType(event.target.value)}>{venueShowTypes.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 </div>
                 <p className={styles.scheduleHint}>{showRecurrence === 'biweekly'
                   ? 'Choose the first actual show date. The next nights will be exactly 14 days apart.'
