@@ -18,10 +18,10 @@ test('host authorization verifies venue ownership; read-only roles cannot write'
  const viewer=hostModule('viewer');await assert.rejects(viewer.mod.badgeHost({},venue),/Only hosts/);assert.equal(viewer.calls.length,0);
 });
 test('public display/history filters private profiles while host history retains them',async()=>{
- const rows=[{id:'public',artwork_path:null,singer_profiles:{profile_visibility:'public'}},{id:'private',artwork_path:null,singer_profiles:{profile_visibility:'private'}}];let filters=[];
+ const rows=[{id:'public',artwork_path:null,singer_profiles:{profile_visibility:'public'}},{id:'private',artwork_path:null,singer_profiles:{profile_visibility:'private'}},{id:'public-array',artwork_path:null,singer_profiles:[{profile_visibility:'public'}]}];let filters=[];
  const db={from:()=>({select(){return this},eq(k,v){filters.push([k,v]);return this},order(){return this},limit:async()=>({data:rows,error:null})})};
  const mod=load('lib/server/venueBadges.ts',name=>name.includes('stageVotesAuth')?{getSupabaseAdmin:()=>db}:lib);
- assert.deepEqual(Array.from(await mod.showVenueBadges('show',true),r=>r.id),['public']);assert.deepEqual(Array.from(await mod.showVenueBadges('show',false),r=>r.id),['public','private']);assert.deepEqual(filters,[['event_id','show'],['event_id','show']]);
+ assert.deepEqual(Array.from(await mod.showVenueBadges('show',true),r=>r.id),['public','public-array']);assert.deepEqual(Array.from(await mod.showVenueBadges('show',false),r=>r.id),['public','private','public-array']);assert.deepEqual(filters,[['event_id','show'],['event_id','show']]);
 });
 test('manual awards reject badges or shows from other venues before invoking the award RPC',async()=>{
  let writes=0;class AuthError extends Error{constructor(message,status){super(message);this.status=status;}}

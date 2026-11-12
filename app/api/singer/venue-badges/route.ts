@@ -7,7 +7,7 @@ export async function GET(request:Request){
  const db=getSupabaseAdmin();const {data:{user},error}=await db.auth.getUser(token);if(error||!user)return NextResponse.json({error:'Please sign in again.'},{status:401});
  const {data:profile,error:profileError}=await db.from('singer_profiles').select('id').eq('user_id',user.id).maybeSingle();if(profileError)return NextResponse.json({error:'Unable to load profile.'},{status:500});
  if(!profile)return NextResponse.json({badges:[]});
- const {data,error:badgeError}=await db.from('venue_badge_awards').select('*').eq('singer_profile_id',profile.id).order('earned_at',{ascending:false}).limit(200);
+ const {data,error:badgeError}=await db.from('venue_badge_awards').select('id,title,description,icon,color,artwork_path,venue_name,singer_name,singer_profile_id,event_id,performance_id,earned_at').eq('singer_profile_id',profile.id).order('earned_at',{ascending:false}).limit(200);
  if(badgeError)return NextResponse.json({error:'Venue badges are unavailable.'},{status:503});
  return NextResponse.json({badges:(data||[]).map(withArtwork)},{headers:{'Cache-Control':'no-store'}});
 }
