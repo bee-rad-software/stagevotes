@@ -1,4 +1,5 @@
 'use client';
+import {removeVenueSchedule} from '@/lib/removeVenueSchedule';
 import type {PointCategory} from '@/lib/tournamentScoring';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -229,6 +230,20 @@ const [
   launchingTournament,
   setLaunchingTournament,
 ] = useState(false);
+
+  const [deletingSchedule,setDeletingSchedule]=useState<RecurringShow|null>(null);
+  const [deleteScheduleBusy,setDeleteScheduleBusy]=useState(false);
+  const [deleteScheduleError,setDeleteScheduleError]=useState('');
+  async function deleteSchedule(){
+    if(!deletingSchedule||deleteScheduleBusy)return;
+    setDeleteScheduleBusy(true);setDeleteScheduleError('');
+    try{
+      // Keep the schedule record for past show references and attendance.
+      await removeVenueSchedule(supabase,deletingSchedule.id,deletingSchedule.venue_id);
+      setDeletingSchedule(null);await loadHostHome();setMessage('Schedule removed. Past shows and history are preserved.');
+    }catch(error:any){setDeleteScheduleError(error?.message||'Unable to remove this schedule.');}
+    finally{setDeleteScheduleBusy(false);}
+  }
 
   const [dateEditor, setDateEditor] = useState<{ kind: 'recurring' | 'tournament'; id: string; title: string; recurrence?: RecurrenceType } | null>(null);
   const [editDate, setEditDate] = useState('');
@@ -1382,7 +1397,8 @@ if (currentEventError) {
                       </div>
 
                       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                      <button type="button" onClick={() => openShowDate(show)}>Edit date</button>
+                      <button type="button" onClick={() => router.push(`/account/venues/${show.venue_id}?editShow=${show.id}#recurring-shows`)}>Edit show</button>
+                      <button type="button" onClick={() => {setDeletingSchedule(show);setDeleteScheduleError('');}}>Delete</button>
                       <button
   type="button"
   onClick={() =>
@@ -1920,6 +1936,10 @@ setTournamentExpectedJudges(
   </div>
 )}
 
+{deletingSchedule&&<div className="sv-host-home-modal-backdrop"><section className="sv-host-home-modal" role="dialog" aria-modal="true" aria-labelledby="delete-schedule-title">
+  <h2 id="delete-schedule-title">Delete this schedule?</h2><p><strong>{deletingSchedule.title}</strong></p><p>This removes all upcoming occurrences from your dashboard and public venue schedule. Past shows, results and attendance remain. You can restore the schedule from Manage Venue.</p>
+  {deleteScheduleError&&<p role="alert">{deleteScheduleError}</p>}<div className="sv-host-home-modal-actions"><button type="button" disabled={deleteScheduleBusy} onClick={()=>setDeletingSchedule(null)}>Cancel</button><button type="button" disabled={deleteScheduleBusy} onClick={()=>void deleteSchedule()}>{deleteScheduleBusy?'Removing…':'Delete schedule'}</button></div>
+</section></div>}
 {dateEditor && (
   <div className="sv-host-home-modal-backdrop">
     <form className="sv-host-home-modal" role="dialog" aria-modal="true" aria-labelledby="edit-show-date-title"

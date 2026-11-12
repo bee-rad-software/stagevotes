@@ -475,7 +475,9 @@ export default function VenueEditorPage() {
 
   useEffect(() => {
     if (loading || !venue || window.location.hash !== '#recurring-shows') return;
-    setShowRecurrence('weekly');
+    const requestedId=new URLSearchParams(window.location.search).get('editShow');
+    const requested=requestedId?schedule.find(show=>show.id===requestedId):undefined;
+    if(requested)editSchedule(requested);else if(requestedId)setScheduleError('That schedule is not available for this venue.');else setShowRecurrence('weekly');
     const section = document.getElementById('recurring-shows');
     section?.focus({ preventScroll: true });
     section?.scrollIntoView({ block: 'start', behavior: 'auto' });
