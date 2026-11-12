@@ -1,3 +1,4 @@
+import {settingsForVenue} from '@/lib/venueSettings';
 import { findSingaRecommendation } from '@/lib/singaCatalog';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -188,11 +189,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (event.is_show_ended) return NextResponse.json({ error: 'This show has ended.' }, { status: 409 });
-    const [{ data: queue, error: queueError }, { data: account, error: accountError }] = await Promise.all([
+    const [{ data: queue, error: queueError }, { data: accountDefaults, error: accountError }] = await Promise.all([
       supabaseAdmin.from('performances').select('song_title, artist, status').eq('event_id', eventId),
       supabaseAdmin.from('accounts').select('karafun_channel, singa_enabled').eq('id', event.account_id).maybeSingle(),
     ]);
     if (queueError || accountError) throw new Error('Catalog settings unavailable.');
+    const account = await settingsForVenue(supabaseAdmin, accountDefaults, event.venue_id, event.account_id);
     const excluded = (queue || []).filter(song => !['skipped', 'removed', 'cancelled'].includes(song.status))
       .map(song => ({ title: song.song_title, artist: song.artist || '' }));
     const controller = new AbortController();

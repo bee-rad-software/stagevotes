@@ -343,7 +343,7 @@ export default function VenueEditorPage() {
         website_url: websiteUrl.trim() || null,
         facebook_url: facebookUrl.trim() || null,
         instagram_url: instagramUrl.trim() || null,
-        music_provider: musicProvider.trim() || null,
+
         personality_tags: parsedTags,
       })
       .eq('id', venue.id)
@@ -533,6 +533,7 @@ export default function VenueEditorPage() {
         </div>
 
         <div className={styles.headerActions}>
+          <button type="button" className={styles.publicButton} onClick={()=>router.push(`/account/venues/${venueId}/settings`)}>Venue settings</button>
           <button
             type="button"
             className={styles.secondaryButton}
@@ -776,19 +777,7 @@ export default function VenueEditorPage() {
                 </small>
               </label>
 
-              <label className={styles.field}>
-                <span>Music provider</span>
-
-                <input
-                  value={musicProvider}
-                  onChange={(event) =>
-                    setMusicProvider(
-                      event.target.value
-                    )
-                  }
-                  placeholder="KaraFun"
-                />
-              </label>
+              <div className={styles.field}><span>Karaoke software</span><button type="button" className={styles.secondaryButton} onClick={()=>router.push(`/account/venues/${venueId}/settings`)}>Configure in Venue settings →</button></div>
 
               <label className={styles.field}>
                 <span>Phone</span>

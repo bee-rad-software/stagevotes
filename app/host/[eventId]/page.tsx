@@ -1,4 +1,5 @@
 'use client'
+import {settingsForVenue} from '@/lib/venueSettings';
 import {venueAudienceLink} from '@/lib/venueAudienceLink';
 import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
@@ -565,15 +566,13 @@ if (!accountUser) {
       
 const { data: account } = await supabase
   .from('accounts')
-  .select('id, static_signup_qr, static_judge_qr, static_people_qr')
+  .select('id')
   .eq('id', accountUser.account_id)
   .single();
 
 if (account) {
   setAccountId(account.id);
-  setStaticSignupQr(account.static_signup_qr || false);
-  setStaticJudgeQr(account.static_judge_qr || false);
-  setStaticPeopleQr(account.static_people_qr || false);
+
 }
       
   loadAll();
@@ -839,21 +838,6 @@ const { data: accountData } = await supabase
   .eq('id', accountId)
   .single();
 
-setAccountLoaded(true);
-
-if (accountData) {
-  setAccount(accountData);
-
-  setWelcomeAccountId(accountData.id);
-
-  setKarafunChannel(
-  accountData.singa_enabled ? '' : (accountData.karafun_channel || '')
-);
-
-  if (!accountData.has_seen_host_welcome) {
-    setShowFirstWelcome(true);
-  }
-}
     
   const { data, error } = await supabase
     .from('events')
@@ -869,6 +853,26 @@ if (accountData) {
     return false;
   }
 
+  const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, accountId, eventId);
+setAccountLoaded(true);
+
+if (venueAccount) {
+  setAccount(venueAccount);
+
+  setWelcomeAccountId(venueAccount.id);
+
+  setKarafunChannel(
+  venueAccount.singa_enabled ? '' : (venueAccount.karafun_channel || '')
+);
+
+  if (!venueAccount.has_seen_host_welcome) {
+    setShowFirstWelcome(true);
+  }
+}
+
+  setStaticSignupQr(venueAccount.static_signup_qr ?? true);
+  setStaticJudgeQr(venueAccount.static_judge_qr ?? true);
+  setStaticPeopleQr(venueAccount.static_people_qr ?? true);
   setEvent(data);
 }
 
@@ -2590,6 +2594,9 @@ function disconnectKaraFun() {
     'KaraFun disconnected manually.'
   );
 }
+
+// A provider or venue change must never keep controlling the previous connection.
+useEffect(() => () => disconnectKaraFun(), [eventId, karafunChannel, account?.singa_enabled]);
 
 function toggleKaraFunConnection() {
   if (
@@ -5931,7 +5938,7 @@ karafunPlayerOnline={karafunPlayerOnline}
   />
 ) : (
   <div id="watchdog-host-queue">
-  {account?.singa_enabled && <SingaExperiment onPlaybackStart={()=>{requestStageLyrics();void markPlaybackStarted();}} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
+  {account?.singa_enabled && <SingaExperiment key={eventId} onPlaybackStart={()=>{requestStageLyrics();void markPlaybackStarted();}} paused={Boolean(event?.show_paused_at)} items={hostQueueItems} excludeExplicit={Boolean((event as any)?.exclude_explicit_songs)} onCompleted={(performanceId) => { if (performanceId === event?.current_performance_id) void nextSinger(true); }} />}
   <SVHostQueue
     items={hostQueueItems}
     completedCount={completedPerformanceCount}
