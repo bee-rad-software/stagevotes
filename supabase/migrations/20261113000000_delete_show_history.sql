@@ -48,6 +48,8 @@ begin
  update public.events set current_performance_id=null where id=e.id;
  -- Explicitly remove only show-owned rows, including legacy foreign keys without cascading deletes.
  foreach child in array array['scoring_votes','votes','peoples_choice_votes','judge_ballot_notes','judge_sessions','event_checkins','singer_competition_wins','event_results','singer_recovery_requests','performance_sms_subscriptions','sms_notification_deliveries','show_shoutouts','show_shoutout_settings','event_photo_reports','event_photos','side_contests','performances','vote_categories'] loop
+  -- Read-only scoring/summary views are projections, not independent show data.
+  if not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname=child and c.relkind in ('r','p')) then continue; end if;
   if exists(select 1 from information_schema.columns where table_schema='public' and table_name=child and column_name='event_id') then
    execute format('delete from public.%I where event_id=$1',child) using e.id;
   elsif child in ('scoring_votes','votes','peoples_choice_votes','judge_ballot_notes','performance_sms_subscriptions','sms_notification_deliveries') and exists(select 1 from information_schema.columns where table_schema='public' and table_name=child and column_name='performance_id') then
