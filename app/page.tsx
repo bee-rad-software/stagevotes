@@ -1257,7 +1257,7 @@ if (currentEventError) {
         </section>
         {account?.id && <SVTrialReminder key={account.id} />}
 
-        {account?.id && <SVActiveShows key={account.id+selectedVenue} accountId={account.id} venueId={selectedVenue} />}
+        {account?.id && <SVActiveShows key={account.id} accountId={account.id} venueId={selectedVenue} />}
 
         {account?.id && <SVFirstShowChecklist key={account.id} accountId={account.id} venueCount={venues.length} />}
 
