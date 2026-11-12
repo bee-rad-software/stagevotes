@@ -1,0 +1,29 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs');let PGlite;try{({PGlite}=require(process.env.PGLITE_MODULE||'@electric-sql/pglite'));}catch{}
+const id=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
+test('PostgreSQL venue deletion preserves history and prevents reuse',{skip:!PGlite},async t=>{
+ const db=new PGlite();await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
+ create table venues(id uuid primary key,account_id uuid,name text,is_active boolean default true,is_public boolean default true,current_event_id uuid);
+ create table account_users(account_id uuid,user_id uuid,role text);
+ create table events(id uuid primary key,venue_id uuid references venues,account_id uuid,is_show_ended boolean default false,is_archived boolean default false);
+ create table venue_recurring_shows(id uuid primary key,venue_id uuid references venues,is_active boolean default true);
+ create table venue_badges(id uuid primary key,venue_id uuid references venues,is_active boolean default true);
+ create table venue_badge_awards(id uuid primary key,venue_id uuid references venues,badge_id uuid references venue_badges);
+ create table performances(id uuid primary key,event_id uuid references events);
+ `);
+ const sql=fs.readFileSync('supabase/migrations/20261112230000_delete_venues.sql','utf8');await db.exec(sql);
+ const account=id(1),venue=id(2),other=id(3),owner=id(4),host=id(5),foreign=id(6);
+ await db.query('insert into venues(id,account_id,name) values($1,$2,$3),($4,$2,$5),($6,$7,$8)',[venue,account,'Test Venue',other,'Other Venue',foreign,id(7),'Foreign']);
+ await db.query('insert into account_users values($1,$2,$3),($1,$4,$5)',[account,owner,'owner',host,'host']);
+ await db.query('insert into events(id,venue_id,account_id,is_show_ended) values($1,$2,$3,true),($4,$2,$3,false)',[id(10),venue,account,id(11)]);
+ await db.query('insert into performances values($1,$2)',[id(12),id(10)]);
+ await db.query('insert into venue_recurring_shows(id,venue_id) values($1,$2),($3,$4)',[id(20),venue,id(21),other]);
+ await db.query('insert into venue_badges(id,venue_id) values($1,$2)',[id(30),venue]);await db.query('insert into venue_badge_awards values($1,$2,$3)',[id(31),venue,id(30)]);
+ const remove=(v=venue,actor=owner,name='Test Venue')=>db.query('select delete_stagevotes_venue($1,$2,$3,$4) as result',[v,account,actor,name]);
+ await t.test('wrong account, role and name are rejected',async()=>{await assert.rejects(remove(foreign),/Venue not found/);await assert.rejects(remove(venue,host),/Only account owners/);await assert.rejects(remove(venue,owner,'Wrong'),/Type the venue name/);});
+ await t.test('an open show blocks deletion without changing the venue or schedule',async()=>{await assert.rejects(remove(),/End or archive/);assert.equal((await db.query('select deleted_at from venues where id=$1',[venue])).rows[0].deleted_at,null);assert.equal((await db.query('select is_active from venue_recurring_shows where id=$1',[id(20)])).rows[0].is_active,true);await db.query('update events set account_id=$1 where id=$2',[id(7),id(11)]);await assert.rejects(remove(),/End or archive/);});
+ await t.test('deletion removes active use but preserves shows, performances, and awards',async()=>{await db.query('update events set is_show_ended=true where id=$1',[id(11)]);assert.equal((await remove()).rows[0].result.deleted,true);const v=(await db.query('select * from venues where id=$1',[venue])).rows[0];assert.ok(v.deleted_at);assert.equal(v.is_active,false);assert.equal(v.is_public,false);assert.equal((await db.query('select count(*)::integer as n from events where venue_id=$1',[venue])).rows[0].n,2);assert.equal((await db.query('select count(*)::integer as n from performances')).rows[0].n,1);assert.equal((await db.query('select count(*)::integer as n from venue_badge_awards')).rows[0].n,1);assert.equal((await db.query('select is_active from venue_recurring_shows where id=$1',[id(20)])).rows[0].is_active,false);assert.equal((await db.query('select is_active from venue_badges where id=$1',[id(30)])).rows[0].is_active,false);assert.equal((await db.query('select is_active from venues where id=$1',[other])).rows[0].is_active,true);});
+ await t.test('old tabs cannot create/reopen shows, reactivate the venue, or restart recurring listings',async()=>{await assert.rejects(db.query('insert into events(id,venue_id,account_id) values($1,$2,$3)',[id(13),venue,account]),/no longer available/);await assert.rejects(db.query('update events set is_show_ended=false where id=$1',[id(10)]),/no longer available/);await assert.rejects(db.query('update venues set is_active=true where id=$1',[venue]),/deleted_venues_stay_inactive/);await assert.rejects(db.query('update venue_recurring_shows set is_active=true where id=$1',[id(20)]),/has been deleted/);await db.query('insert into events(id,venue_id,account_id) values($1,$2,$3)',[id(14),other,account]);});
+ await t.test('authenticated table updates cannot bypass the guarded deletion action',async()=>{await db.exec('grant select,update on venues to authenticated;set role authenticated;');await assert.rejects(db.query('update venues set deleted_at=null where id=$1',[venue]),/Use the venue delete action/);await db.exec('reset role;');});
+ await t.test('deletion and migration are idempotent; guests cannot invoke the delete function',async()=>{assert.equal((await remove()).rows[0].result.deleted,true);await db.exec(sql);const r=(await db.query("select has_function_privilege('anon','delete_stagevotes_venue(uuid,uuid,uuid,text)','EXECUTE') as anon,has_function_privilege('authenticated','delete_stagevotes_venue(uuid,uuid,uuid,text)','EXECUTE') as member")).rows[0];assert.equal(r.anon,false);assert.equal(r.member,false);});
+ await db.close();
+});

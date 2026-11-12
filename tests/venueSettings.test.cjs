@@ -29,7 +29,7 @@ test('validate only allowed venue fields; normalize KaraFun links and reject inv
 });
 function route(role,rows){
  const result={};let updates=0;
- const db={from(table){assert.equal(table,'venues');let filters={};return {update(value){updates++;return this},eq(k,v){filters[k]=v;return this},select(){return this},async maybeSingle(){return {data:rows.find(v=>v.id===filters.id&&v.account_id===filters.account_id)||null,error:null};}};}};
+ const db={from(table){assert.equal(table,'venues');let filters={};return {update(value){updates++;return this},eq(k,v){filters[k]=v;return this},select(){return this},is(k,v){filters[k]=v;return this},async maybeSingle(){return {data:rows.find(v=>v.id===filters.id&&v.account_id===filters.account_id)||null,error:null};}};}};
  class AuthError extends Error{constructor(message,status){super(message);this.status=status;}}
  const requireMock=name=>name==='next/server'?{NextResponse:{json:(body,options={})=>({body,status:options.status||200})}}:name.includes('stageVotesAuth')?{AuthError,getSupabaseAdmin:()=>db,requireStageVotesAccount:async()=>({account:{id:'mine'},role})}:out;
  vm.runInNewContext(ts.transpileModule(fs.readFileSync('app/api/account/venues/[venueId]/settings/route.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:result,require:requireMock});return {put:id=>result.PUT({json:async()=>defaults},{params:Promise.resolve({venueId:id})}),updates:()=>updates};

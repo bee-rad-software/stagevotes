@@ -9,7 +9,7 @@ export async function GET(request:Request,context:{params:Promise<{venueId:strin
  const url=process.env.NEXT_PUBLIC_SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
  if(!url||!key)return new NextResponse('Audience access is temporarily unavailable.',{status:503});
  const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
- const {data:venue,error}=await admin.from('venues').select('account_id,current_event_id').eq('id',venueId).maybeSingle();
+ const {data:venue,error}=await admin.from('venues').select('account_id,current_event_id').eq('id',venueId).is('deleted_at',null).eq('is_active',true).maybeSingle();
  if(error)return new NextResponse('Unable to check this venue. Please try again.',{status:503});
  if(!venue)return new NextResponse('Venue not found. Please check your QR code.',{status:404,headers:{'Cache-Control':'no-store'}});
  // Resolve only within this venue and account. A missing or stale pointer must

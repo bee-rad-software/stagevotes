@@ -3,3 +3,5 @@
 .card label{display:block;font-size:14px}.card label>input:not([type="checkbox"]):not([type="radio"]){display:block;width:100%;box-sizing:border-box;font:inherit;margin-top:8px;background:#070f1d;border:1px solid #475569;padding:12px;border-radius:10px;color:white}
 
 .fields select{width:100%;box-sizing:border-box;font:inherit;background:#070f1d;color:#eef4ff;padding:12px;border:1px solid #475569;border-radius:10px}.card fieldset:disabled{opacity:.7}
+
+.page .danger{background:#421d27;color:#fecaca;border-color:#a74355}.dialog{width:min(520px,calc(100vw - 48px));box-sizing:border-box;padding:28px;border:1px solid #475569;border-radius:18px;background:#101b2d;color:#eef4ff}.dialog::backdrop{background:#020617c9}.dialog input{display:block;width:100%;box-sizing:border-box;padding:12px;margin:10px 0 20px;background:#070f1d;border:1px solid #64748b;border-radius:10px;color:white;font:inherit}.dialog .actions{margin-top:20px}

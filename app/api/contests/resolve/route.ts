@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   if (showError || !show) return reply({error:'Unable to find show'}, 500);
   return reply({ended: show.is_show_ended === true || show.is_archived === true, venueId:show.venue_id});
  }
- const {data: venue,error: venueError} = await admin.from('venues').select('id,account_id,current_side_contest_id').eq('id',venueId).maybeSingle();
+ const {data: venue,error: venueError} = await admin.from('venues').select('id,account_id,current_side_contest_id').eq('id',venueId).is('deleted_at',null).eq('is_active',true).maybeSingle();
  if (venueError) return reply({error:'Unable to find venue'}, 500);
  if (!venue) return reply({contestId:null});
  // Honour an explicitly selected contest while its show remains active.

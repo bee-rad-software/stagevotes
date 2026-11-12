@@ -4,7 +4,7 @@ export async function badgeHost(request:Request,venueId:string){
  if(!uuidPattern.test(venueId))throw new AuthError('Invalid venue.',400);
  const identity=await requireStageVotesAccount(request);
  if(!canManageBadges(identity.role))throw new AuthError('Only hosts, owners and admins can manage venue badges.',403);
- const {data:venue,error}=await getSupabaseAdmin().from('venues').select('id,name,account_id').eq('id',venueId).eq('account_id',identity.account.id).maybeSingle();
+ const {data:venue,error}=await getSupabaseAdmin().from('venues').select('id,name,account_id').eq('id',venueId).eq('account_id',identity.account.id).is('deleted_at',null).maybeSingle();
  if(error)throw Error('Unable to load venue.');if(!venue)throw new AuthError('Venue not found.',404);
  return {...identity,venue};
 }

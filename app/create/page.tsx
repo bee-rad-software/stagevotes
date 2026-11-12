@@ -324,7 +324,7 @@ function CreatePageContent() {
         )
         .single();
 
-    const {data:locations,error:venueError}=await supabase.from('venues').select('id,name').eq('account_id',accountUser.account_id).order('name');
+    const {data:locations,error:venueError}=await supabase.from('venues').select('id,name').eq('account_id',accountUser.account_id).is('deleted_at',null).eq('is_active',true).order('name');
     if(venueError)setError('Unable to load venues. Please refresh.');
     setVenueChoices(locations||[]);
     const requestedVenue=locations?.find(location=>location.id===searchParams.get('venue'));

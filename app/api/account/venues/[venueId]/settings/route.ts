@@ -8,7 +8,7 @@ export async function GET(request:Request,context:Context){
   const {account,role}=await requireStageVotesAccount(request);
   const {venueId}=await context.params;
   const db=getSupabaseAdmin();
-  const {data:venue,error}=await db.from('venues').select('id,name,settings').eq('id',venueId).eq('account_id',account.id).maybeSingle();
+  const {data:venue,error}=await db.from('venues').select('id,name,settings').eq('id',venueId).eq('account_id',account.id).is('deleted_at',null).maybeSingle();
   if(error)throw Error('Venue settings are not available. The venue-settings database update must be applied first.');
   if(!venue)throw new AuthError('Venue not found.',404);
   let settings=venue.settings;
@@ -23,7 +23,7 @@ export async function PUT(request:Request,context:Context){
   const {venueId}=await context.params;
   let settings;
   try{settings=parseVenueSettings(await request.json());}catch(e){return NextResponse.json({error:(e as Error).message},{status:400});}
-  const {data,error}=await getSupabaseAdmin().from('venues').update({settings,music_provider:settings.singa_enabled?'Singa':'KaraFun'}).eq('id',venueId).eq('account_id',account.id).select('id').maybeSingle();
+  const {data,error}=await getSupabaseAdmin().from('venues').update({settings,music_provider:settings.singa_enabled?'Singa':'KaraFun'}).eq('id',venueId).eq('account_id',account.id).is('deleted_at',null).select('id').maybeSingle();
   if(error)throw Error('Unable to save venue settings. Check that the database update has been applied.');
   if(!data)throw new AuthError('Venue not found.',404);
   return NextResponse.json({saved:true,settings});

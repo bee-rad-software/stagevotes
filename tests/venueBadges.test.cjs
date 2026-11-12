@@ -10,10 +10,10 @@ test('badge designs accept only scoped fields and validated artwork/colors/rules
 });
 test('only host/owner/admin roles manage venue badges',()=>{for(const role of ['owner','admin','host'])assert.equal(lib.canManageBadges(role),true);for(const role of ['judge','viewer','singer',''])assert.equal(lib.canManageBadges(role),false);});
 function hostModule(role,found=true){let calls=[];class AuthError extends Error{constructor(message,status){super(message);this.status=status;}}
- const db={from:()=>({select(){return this},eq(k,v){calls.push([k,v]);return this},maybeSingle:async()=>({data:found?{id:venue,account_id:account}:null,error:null})})};
+ const db={from:()=>({select(){return this},eq(k,v){calls.push([k,v]);return this},is(k,v){calls.push([k,v]);return this},maybeSingle:async()=>({data:found?{id:venue,account_id:account}:null,error:null})})};
  const mod=load('lib/server/venueBadges.ts',name=>name.includes('stageVotesAuth')?{AuthError,getSupabaseAdmin:()=>db,requireStageVotesAccount:async()=>({account:{id:account},role,user:{id:'host'}})}:lib);return {mod,calls};}
 test('host authorization verifies venue ownership; read-only roles cannot write',async()=>{
- const {mod,calls}=hostModule('host');await mod.badgeHost({},venue);assert.deepEqual(calls,[['id',venue],['account_id',account]]);
+ const {mod,calls}=hostModule('host');await mod.badgeHost({},venue);assert.deepEqual(calls,[['id',venue],['account_id',account],['deleted_at',null]]);
  await assert.rejects(hostModule('host',false).mod.badgeHost({},other),/Venue not found/);
  const viewer=hostModule('viewer');await assert.rejects(viewer.mod.badgeHost({},venue),/Only hosts/);assert.equal(viewer.calls.length,0);
 });

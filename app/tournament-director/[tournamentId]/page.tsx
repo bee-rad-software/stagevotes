@@ -395,6 +395,8 @@ const [editingRoundId, setEditingRoundId] =
   city,
   state
 `)
+  .is('deleted_at',null)
+  .eq('is_active',true)
   .order('name');
 
 if (venueError) {
