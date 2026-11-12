@@ -234,6 +234,7 @@ return (
     title="Account"
     subtitle="Manage your organization, branding, billing, and audience settings."
   >
+    <section className="sv-card" style={{marginBottom:20}}><h2>Settings for each venue</h2><p>Choose a venue to configure its karaoke software, remote channel, tip links, QR codes and song limit independently.</p><Link href="/account/venues">Manage venue settings →</Link><p>The karaoke, tips, QR and queue settings below are legacy defaults for shows without a linked venue. Changing them does not change your venues. Billing and organization details remain shared.</p></section>
     <HostCatalog accountId={accountId} />
     <div
       style={{
@@ -281,7 +282,7 @@ return (
           fontSize: 20,
         }}
       >
-        Karaoke Software
+        Legacy Karaoke Defaults
       </h2>
 
       <p
@@ -639,7 +640,7 @@ return (
                   fontSize: 20,
                 }}
               >
-                Static QR Codes
+                Legacy Static QR Defaults
               </h2>
 
               <p
@@ -1082,7 +1083,7 @@ return (
         fontSize: 20,
       }}
     >
-      Singer Queue Limit
+      Legacy Singer Queue Limit
     </h2>
 
     <p

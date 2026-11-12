@@ -1,3 +1,4 @@
+import {settingsForVenue} from '@/lib/venueSettings';
 import { findSingaRecommendation } from '@/lib/singaCatalog';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
@@ -223,7 +224,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const [{ data: history, error: historyError }, { data: queue }, { data: account }] =
+    const [{ data: history, error: historyError }, { data: queue }, { data: accountDefaults }] =
       await Promise.all([
         supabaseAdmin
           .from('performances')
@@ -244,6 +245,7 @@ export async function POST(request: NextRequest) {
           .maybeSingle(),
       ]);
 
+    const account = await settingsForVenue(supabaseAdmin, accountDefaults, event.venue_id, event.account_id);
     if (historyError) {
       throw historyError;
     }

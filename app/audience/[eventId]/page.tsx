@@ -1,4 +1,5 @@
 'use client';
+import {settingsForVenue} from '@/lib/venueSettings';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -112,17 +113,18 @@ export default function AudiencePage() {
         .single(),
     ]);
 
-    if (accountResult.data) {
+    const venueAccount = await settingsForVenue(supabase, accountResult.data, eventResult.data?.venue_id, accountUser.account_id);
+    if (venueAccount) {
       setStaticSignupQr(
-        accountResult.data.static_signup_qr || false
+        venueAccount.static_signup_qr || false
       );
 
       setStaticJudgeQr(
-        accountResult.data.static_judge_qr || false
+        venueAccount.static_judge_qr || false
       );
 
       setStaticPeopleQr(
-        accountResult.data.static_people_qr || false
+        venueAccount.static_people_qr || false
       );
     }
 

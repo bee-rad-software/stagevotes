@@ -37,7 +37,7 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
     async function load() {
       try {
         const [account, latest, current] = await Promise.all([
-          supabase.from('accounts').select('karafun_channel').eq('id', accountId).maybeSingle(),
+          supabase.from('venues').select('settings').eq('account_id', accountId),
           supabase.from('events').select('id').eq('account_id', accountId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
           supabase.from('events').select('id').eq('account_id', accountId).eq('is_show_ended', false)
             .order('created_at', { ascending: false }).limit(1).maybeSingle(),
@@ -46,7 +46,7 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
         if (account.error || latest.error || current.error) {
           setError('Some setup checks are unavailable. You can still use the setup links.');
         } else {
-          setHasChannel(Boolean(account.data?.karafun_channel));
+          setHasChannel(Boolean(account.data?.some(venue=>venue.settings?.karafun_channel || venue.settings?.singa_enabled)));
           setHasShow(Boolean(latest.data?.id));
           if (!hasSavedProgress && latest.data?.id) setProgress({ ...initial, collapsed: true });
           setActiveEventId(current.data?.id || null);
@@ -105,9 +105,9 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
           <Link href={activeEventId ? '/host/' + activeEventId : '/create'} className={styles.action}>{activeEventId ? 'Open current show' : 'Create a show'}<ArrowRight size={14} /></Link>
         </SetupCard>
         <SetupCard number={3} icon={<Music2 size={18} />} title="Test KaraFun" done={checks[2]} wide status={progress.skipKaraFun ? 'Manual playback' : progress.karaokeTest ? 'Tested' : 'Optional'}>
-          <p className={styles.description}>{hasChannel ? 'Your channel is saved. ' : 'Save your remote link in Account settings. '}Keep KaraFun running, connect from Mission Control, then test play and pause with the correct song.</p>
+          <p className={styles.description}>{hasChannel ? 'Your channel is saved. ' : 'Save your remote link in Venue settings. '}Keep KaraFun running, connect from Mission Control, then test play and pause with the correct song.</p>
           <div className={styles.actions}>
-            <Link href="/account" className={styles.action}>KaraFun settings<ArrowRight size={14} /></Link>
+            <Link href="/account/venues" className={styles.action}>Venue settings<ArrowRight size={14} /></Link>
             <a href="https://www.stagevotes.com/guides/karafun-setup" target="_blank" rel="noreferrer" className={styles.textLink}>Setup guide<ExternalLink size={13} /></a>
           </div>
           <div className={styles.checks}>

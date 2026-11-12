@@ -1,4 +1,5 @@
 'use client';
+import {settingsForVenue} from '@/lib/venueSettings';
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -36,12 +37,13 @@ export default function StageDisplayPage() {
         const ids = [...new Set(rows.map(row => row.singer_profile_id).filter((id): id is string => Boolean(id)))];
         const [profiles, branding,venueBranding] = await Promise.all([
           ids.length ? supabase.from('singer_profiles').select('id,photo_url').in('id', ids).abortSignal(controller.signal) : Promise.resolve({ data: [] }),
-          show.data.account_id ? supabase.from('accounts').select('logo_url').eq('id', show.data.account_id).abortSignal(controller.signal).maybeSingle() : Promise.resolve({ data: null }),
+          show.data.account_id ? supabase.from('accounts').select('logo_url,static_signup_qr').eq('id', show.data.account_id).abortSignal(controller.signal).maybeSingle() : Promise.resolve({ data: null }),
           show.data.venue_id ? supabase.from('venues').select('logo_url').eq('id',show.data.venue_id).eq('account_id',show.data.account_id).abortSignal(controller.signal).maybeSingle() : Promise.resolve({data:null}),
         ]);
+        const venueSettings = await settingsForVenue(supabase,branding.data,show.data.venue_id,show.data.account_id);
         if (!active) return;
         const photos = new Map((profiles.data || []).map(row => [row.id, row.photo_url]));
-        setEvent(show.data as StageEvent);
+        setEvent({...show.data,static_signup_qr:venueSettings.static_signup_qr ?? true} as StageEvent);
         setSingers(rows.map(row => ({ ...row, photo_url: row.singer_profile_id ? photos.get(row.singer_profile_id) || null : null })));
         setLogo(venueBranding.data?.logo_url || branding.data?.logo_url || ''); setError(''); setReady(true);
       } catch {

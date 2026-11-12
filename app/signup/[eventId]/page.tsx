@@ -1,4 +1,5 @@
 'use client';
+import {settingsForVenue} from '@/lib/venueSettings';
 import { searchHostCatalog } from '@/lib/hostCatalog';
 import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
@@ -80,6 +81,7 @@ type Performance = {
 };
 
 type EventData = {
+  venue_id?: string | null;
   id: string;
   account_id?: string | null;
   name?: string | null;
@@ -491,19 +493,20 @@ const [recoveryRequest, setRecoveryRequest] =
       return;
     }
 
-    setSingaEnabled(accountData?.singa_enabled === true);
+    const venueAccount = await settingsForVenue(supabase, accountData, eventData.venue_id, eventData.account_id);
+    setSingaEnabled(venueAccount?.singa_enabled === true);
     setTipsEnabled(
-      accountData?.tips_enabled || false
+      venueAccount?.tips_enabled || false
     );
 
-    setVenmoUrl(accountData?.venmo_url || '');
-    setCashappUrl(accountData?.cashapp_url || '');
-    setApplePayUrl(accountData?.apple_pay_url || '');
+    setVenmoUrl(venueAccount?.venmo_url || '');
+    setCashappUrl(venueAccount?.cashapp_url || '');
+    setApplePayUrl(venueAccount?.apple_pay_url || '');
     setMaxQueuedSongsPerSinger(
-  accountData?.max_songs_per_singer ?? 3
+  venueAccount?.max_songs_per_singer ?? 3
 );
     setKarafunChannel(
-  accountData?.karafun_channel || ''
+  venueAccount?.karafun_channel || ''
 );
   }
 

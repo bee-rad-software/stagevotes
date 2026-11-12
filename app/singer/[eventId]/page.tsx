@@ -1,4 +1,5 @@
 'use client';
+import {settingsForVenue} from '@/lib/venueSettings';
 import SVInstallSingerApp from '@/components/singer/SVInstallSingerApp';
 
 import SVShowAvailability from '@/components/singer/SVShowAvailability';
@@ -86,11 +87,12 @@ async function loadEvent() {
       return;
     }
 
-    setTipsEnabled(accountData?.tips_enabled || false);
-    setVenmoUrl(accountData?.venmo_url || '');
-    setCashappUrl(accountData?.cashapp_url || '');
-    setApplePayUrl(accountData?.apple_pay_url || '');
-    setLogoUrl(accountData?.logo_url || '');
+    const venueAccount = await settingsForVenue(supabase, accountData, data.venue_id, data.account_id);
+    setTipsEnabled(venueAccount?.tips_enabled || false);
+    setVenmoUrl(venueAccount?.venmo_url || '');
+    setCashappUrl(venueAccount?.cashapp_url || '');
+    setApplePayUrl(venueAccount?.apple_pay_url || '');
+    setLogoUrl(venueAccount?.logo_url || '');
   }
 }
   

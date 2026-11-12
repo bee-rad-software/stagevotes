@@ -1,4 +1,5 @@
 'use client';
+import {settingsForVenue} from '@/lib/venueSettings';
 
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useMemo, useState } from 'react';
@@ -123,7 +124,8 @@ const signupUrl =
       .eq('id', data.account_id)
       .single();
 
-    setLogoUrl(accountData?.logo_url || '');
+    const venueAccount=await settingsForVenue(supabase,accountData,data.venue_id,data.account_id);
+    setLogoUrl(venueAccount.logo_url || '');
   }
 }
 
