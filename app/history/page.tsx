@@ -1,4 +1,5 @@
 'use client';
+import DeleteShowButton from '@/components/DeleteShowButton';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -15,6 +16,7 @@ type EventRow = {
 };
 
 export default function HistoryPage() {
+  const [canDelete,setCanDelete]=useState(false);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [message, setMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,7 +43,7 @@ const [duplicateName, setDuplicateName] = useState('');
 
     const { data: accountUser, error: accountUserError } = await supabase
       .from('account_users')
-      .select('account_id')
+      .select('account_id,role')
       .eq('user_id', userData.user.id)
       .single();
 
@@ -61,6 +63,7 @@ const [duplicateName, setDuplicateName] = useState('');
       return;
     }
 
+    setCanDelete(['owner','admin','host'].includes(accountUser.role));
     setEvents(data || []);
   }
 
@@ -407,6 +410,7 @@ setTimeout(() => {
   >
     📋 Duplicate Show
   </button>
+  {canDelete&&<DeleteShowButton event={event} onDeleted={()=>setEvents(old=>old.filter(show=>show.id!==event.id))}/>}
 </div>
               </div>
             ))}
