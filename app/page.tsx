@@ -1231,8 +1231,9 @@ if (currentEventError) {
             </span>
 
             <h1>
-              {account?.name ||
-                'StageVotes'}
+              {selectedVenue
+                ? venues.find(venue => venue.id === selectedVenue)?.name || 'Venue'
+                : 'All venues'}
             </h1>
 
             <p>
