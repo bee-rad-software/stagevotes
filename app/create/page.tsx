@@ -327,7 +327,9 @@ function CreatePageContent() {
     const {data:locations,error:venueError}=await supabase.from('venues').select('id,name').eq('account_id',accountUser.account_id).order('name');
     if(venueError)setError('Unable to load venues. Please refresh.');
     setVenueChoices(locations||[]);
-    if(!recurringShowId&&locations?.length===1){setSelectedVenueId(locations[0].id);setVenue(locations[0].name);}
+    const requestedVenue=locations?.find(location=>location.id===searchParams.get('venue'));
+    const initialVenue=requestedVenue||(locations?.length===1?locations[0]:null);
+    if(!recurringShowId&&initialVenue){setSelectedVenueId(initialVenue.id);setVenue(initialVenue.name);}
 
     setSubscriptionStatus(
       account?.subscription_status || ''

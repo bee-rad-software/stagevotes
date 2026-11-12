@@ -1,4 +1,5 @@
 'use client';
+import {filterShowsByVenue} from '@/lib/filterShowsByVenue';
 import {removeVenueSchedule} from '@/lib/removeVenueSchedule';
 import type {PointCategory} from '@/lib/tournamentScoring';
 
@@ -62,6 +63,7 @@ type RecurringShow = {
 };
 
 type TournamentEvent = {
+  venue_id?: string | null;
   id: string;
   name: string;
   status: string;
@@ -163,6 +165,7 @@ export default function HostHomePage() {
   const [account, setAccount] =
     useState<Account | null>(null);
 
+  const [selectedVenue,setSelectedVenue]=useState('');
   const [venues, setVenues] =
     useState<Venue[]>([]);
 
@@ -1183,13 +1186,19 @@ if (currentEventError) {
   }
 }
 
+  useEffect(()=>{
+    if(!account?.id)return;
+    try{const saved=localStorage.getItem('stage-dashboard-venue:'+account.id)||'';setSelectedVenue(venues.some(v=>v.id===saved)?saved:'');}catch{setSelectedVenue('');}
+  },[account?.id,venues]);
+  const visibleRecurringShows=filterShowsByVenue(recurringShows,selectedVenue);
+  const visibleTournamentEvents=filterShowsByVenue(tournamentEvents,selectedVenue);
   const nextTournamentEvent =
     useMemo(() => {
-      return tournamentEvents.find(
+      return visibleTournamentEvents.find(
         (event) =>
           event.status !== 'completed'
       );
-    }, [tournamentEvents]);
+    }, [tournamentEvents,selectedVenue]);
 
   if (loading) {
 
@@ -1204,7 +1213,7 @@ if (currentEventError) {
   }
 
   const activeTournamentEvents =
-  tournamentEvents.filter(
+  visibleTournamentEvents.filter(
     (event) =>
       event.status !== 'completed'
   );
@@ -1234,7 +1243,7 @@ if (currentEventError) {
           </div>
 
           <Link
-            href="/create"
+            href={selectedVenue?`/create?venue=${selectedVenue}`:"/create"}
             className="sv-host-home-create"
           >
             <Plus size={17} />
@@ -1242,9 +1251,13 @@ if (currentEventError) {
           </Link>
         </header>
 
+        <section aria-label="Dashboard venue" style={{display:'flex',gap:14,alignItems:'center',flexWrap:'wrap',padding:'18px 20px',marginBottom:20,background:'#101c2d',border:'1px solid #334155',borderRadius:14}}>
+          <label htmlFor="dashboard-venue" style={{fontWeight:700}}>Venue</label><select id="dashboard-venue" value={selectedVenue} onChange={e=>{setSelectedVenue(e.target.value);try{if(account?.id)localStorage.setItem('stage-dashboard-venue:'+account.id,e.target.value);}catch{}}} style={{padding:'11px 14px',borderRadius:10,border:'1px solid #475569',background:'#0b1423',color:'#f8fafc',fontSize:16,maxWidth:'100%'}}><option value="">All venues</option>{venues.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
+          <Link href="/account/venues" style={{color:'#7dd3fc'}}>Manage venues</Link>{selectedVenue&&<Link href={`/account/venues/${selectedVenue}#recurring-shows`} style={{color:'#7dd3fc'}}>Set up recurring shows</Link>}
+        </section>
         {account?.id && <SVTrialReminder key={account.id} />}
 
-        {account?.id && <SVActiveShows accountId={account.id} />}
+        {account?.id && <SVActiveShows key={account.id+selectedVenue} accountId={account.id} venueId={selectedVenue} />}
 
         {account?.id && <SVFirstShowChecklist key={account.id} accountId={account.id} venueCount={venues.length} />}
 
@@ -1345,13 +1358,13 @@ if (currentEventError) {
             </div>
 
             <strong>
-              {recurringShows.length}
+              {visibleRecurringShows.length}
             </strong>
           </div>
 
-          {recurringShows.length > 0 ? (
+          {visibleRecurringShows.length > 0 ? (
             <div className="sv-host-home-grid">
-              {recurringShows.map(
+              {visibleRecurringShows.map(
                 (show) => {
                   const venue =
                     getRelation(
@@ -1415,8 +1428,7 @@ if (currentEventError) {
             </div>
           ) : (
             <div className="sv-host-home-empty">
-              No recurring shows are
-              configured yet.
+              No recurring shows are configured {selectedVenue?'for this venue':'yet'}. {selectedVenue&&<Link href={`/account/venues/${selectedVenue}#recurring-shows`}>Add a recurring show →</Link>}
             </div>
           )}
         </section>
