@@ -1,7 +1,7 @@
 export const badgeRules = {manual:'Host awards manually',song:'Complete a song here',five_shows:'Sing in five shows here',contest_entry:'Approved contest entry here'} as const;
 export type BadgeRule=keyof typeof badgeRules;
 export type VenueBadgeDesign={title:string;description:string;icon:string;color:string;artwork_path:string|null;rule:BadgeRule;is_active:boolean};
-export type VenueBadgeAward={id:string;title:string;description:string;icon:string;color:string;artwork_path:string|null;venue_name:string;singer_name:string;singer_profile_id:string;event_id:string;performance_id:string|null;earned_at:string;artworkUrl?:string|null};
+export type VenueBadgeAward={id:string;title:string;description:string;icon:string;color:string;artwork_path:string|null;venue_name:string;singer_name:string;singer_profile_id:string;event_id:string|null;performance_id:string|null;earned_at:string;artworkUrl?:string|null};
 export const uuidPattern=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function badgeDesign(input:unknown,prefix:string):VenueBadgeDesign{
  if(!input||typeof input!=='object')throw Error('Enter a badge design.');

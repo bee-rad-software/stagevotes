@@ -1,4 +1,5 @@
 'use client';
+import DeleteShowButton from '@/components/DeleteShowButton';
 import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import ContestHistory from '@/components/contest/ContestHistory';
@@ -43,6 +44,7 @@ export default function HistoryPage() {
   const [performances, setPerformances] =
     useState<PerformanceRow[]>([]);
 
+  const [canDelete,setCanDelete]=useState(false);
   const [archivedEvents, setArchivedEvents] =
     useState<ArchivedEvent[]>([]);
 
@@ -69,7 +71,7 @@ export default function HistoryPage() {
       error: accountUserError,
     } = await supabase
       .from('account_users')
-      .select('account_id')
+      .select('account_id,role')
       .eq('user_id', userData.user.id)
       .single();
 
@@ -87,6 +89,7 @@ export default function HistoryPage() {
       return;
     }
 
+    setCanDelete(['owner','admin','host'].includes(accountUser.role));
     const accountId =
       accountUser.account_id;
 
@@ -273,6 +276,7 @@ const recentArchivedEvents = useMemo(() => {
           : 'Review completed performances and previous shows.'
       }
     >
+      {canDelete&&event&&<div style={{marginBottom:20}}><DeleteShowButton event={event} onDeleted={()=>router.push('/history')}/></div>}
       <VenueBadgeCollection eventId={eventId}/>
       <ContestHistory key={'contest-'+eventId} eventId={eventId}/>
       <SVEventPhotos key={eventId} eventId={eventId} host />
