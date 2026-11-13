@@ -126,7 +126,7 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
     betweenSongs.current=true;setView('break');setEditingAnnouncement(false);setGuides(false);setEntranceId(null);
     void (window as any).stagevotesDesktop?.setStagePresentation?.('front');
   });
-  useEffect(()=>{setAutoWindowHandoff(false);betweenSongs.current=false;return()=>{void (window as any).stagevotesDesktop?.setStagePresentation?.('manual');};},[event?.id]);
+  useEffect(()=>{setAutoWindowHandoff(typeof (window as any).stagevotesDesktop?.setStagePresentation==='function');betweenSongs.current=false;return()=>{void (window as any).stagevotesDesktop?.setStagePresentation?.('manual');};},[event?.id]);
   useEffect(()=>{
     const key=(e:KeyboardEvent)=>{
       if(e.target instanceof HTMLElement&&['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName))return;
