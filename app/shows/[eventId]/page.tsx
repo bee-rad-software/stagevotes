@@ -1,4 +1,5 @@
 'use client';
+import { useSongFavorites } from '@/hooks/useSongFavorites';
 import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import SVEventPhotos from '@/components/photos/SVEventPhotos';
@@ -53,6 +54,7 @@ function songKey(song: { title: string; artist: string }) {
 
 export default function ShowRecapPage() {
   const { eventId } = useParams<{ eventId: string }>();
+  const accountFavorites = useSongFavorites();
   const [show, setShow] = useState<Show | null>(null);
   const [venue, setVenue] = useState<Venue | null>(null);
   const [songs, setSongs] = useState<Song[]>([]);
@@ -187,8 +189,13 @@ export default function ShowRecapPage() {
     month: 'long', day: 'numeric', year: 'numeric',
   }) : '';
 
-  function saveSong(song: Song) {
+  async function saveSong(song: Song) {
     const favorite = { title: song.song_title, artist: song.artist || '' };
+    if (accountFavorites.userId) {
+      const saved = await accountFavorites.update(favorite);
+      if (saved) setActionMessage(`Saved “${song.song_title}” to your account favorites.`);
+      return;
+    }
     if (saveSingerFavoriteSong(favorite)) {
       setSavedKeys(getSingerFavoriteSongs().map(songKey));
       setActionMessage(`Saved “${song.song_title}” for your next show on this device.`);
@@ -301,13 +308,13 @@ export default function ShowRecapPage() {
                     <li key={song.id}>
                       <div><strong>{song.song_title}</strong><span>{song.artist || 'Karaoke favorite'}</span></div>
                       <button type="button" onClick={() => saveSong(song)}
-                        disabled={savedKeys.includes(songKey({ title: song.song_title, artist: song.artist || '' }))}>
-                        {savedKeys.includes(songKey({ title: song.song_title, artist: song.artist || '' }))
-                          ? '★ Saved on this device' : '☆ Sing it again'}
+                        disabled={accountFavorites.loading || accountFavorites.busy || (accountFavorites.userId ? accountFavorites.has({ title: song.song_title, artist: song.artist || '' }) : savedKeys.includes(songKey({ title: song.song_title, artist: song.artist || '' })))}>
+                        {accountFavorites.userId ? (accountFavorites.has({ title: song.song_title, artist: song.artist || '' }) ? '★ Favorite saved' : '☆ Save favorite') : savedKeys.includes(songKey({ title: song.song_title, artist: song.artist || '' })) ? '★ Saved on this device' : '☆ Sing it again'}
                       </button>
                     </li>
                   ))}
                 </ol>
+                {accountFavorites.error && <p role="alert">{accountFavorites.error}</p>}
                 {actionMessage && <p className={styles.feedback} role="status">{actionMessage}</p>}
                 <button type="button" className={styles.share} onClick={() => void shareRecap()}>
                   Share my night

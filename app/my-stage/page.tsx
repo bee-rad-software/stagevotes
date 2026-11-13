@@ -1,4 +1,5 @@
 'use client';
+import SVFavoriteSongs from '@/components/singer/SVFavoriteSongs';
 import VenueBadgeCollection from '@/components/VenueBadgeCollection';
 
 import styles from '@/components/my-stage/MyStage.module.css';
@@ -1253,6 +1254,7 @@ const active =
 
         <ExploreGrid />
 
+               <SVFavoriteSongs />
                <VenueBadgeCollection />
                <AchievementGrid
           achievements={achievements}

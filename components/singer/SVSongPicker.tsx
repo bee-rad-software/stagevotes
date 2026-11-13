@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import SVSmartSongDiscovery from './SVSmartSongDiscovery';
+import { useSongFavorites } from '@/hooks/useSongFavorites';
+import { FavoriteSongList } from './SVFavoriteSongs';
 import { Search } from 'lucide-react';
 
 export type SVSongStatus = 'available' | 'queued' | 'favorite';
@@ -27,6 +29,7 @@ export type SVSongSection = {
 };
 
 type Props = {
+  accountFavorites?: boolean;
   discoveryEventId?: string;
   songs: SVSongOption[];
   sections?: SVSongSection[];
@@ -45,6 +48,7 @@ type Props = {
 
 export default function SVSongPicker({
   songs,
+  accountFavorites = false,
   discoveryEventId,
   sections = [],
   onSelect,
@@ -59,6 +63,7 @@ export default function SVSongPicker({
   recommendationsMessage = '',
   onGenerateRecommendations,
 }: Props) {
+  const favorites = useSongFavorites(accountFavorites);
   const [searchTerm, setSearchTerm] = useState('');
   const [versionChoices, setVersionChoices] = useState<SVSongOption[]>([]);
   const versionHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -109,9 +114,16 @@ return songs.filter(song => {
 
   const searching = searchTerm.trim().length > 0;
 
+  function saveButton(song: SVSongOption) {
+    if (!accountFavorites || !favorites.userId) return null;
+    const saved = favorites.has(song);
+    return <button type="button" className="sv-brave-button" style={{ width: 'auto', flexShrink: 0 }} aria-label={`${saved ? 'Remove' : 'Save'} ${song.title} ${saved ? 'from' : 'to'} favorites`} aria-pressed={saved} disabled={favorites.busy} onClick={() => void favorites.update(song, saved)}>{saved ? '★ Saved' : '☆ Save'}</button>;
+  }
   function renderSong(song: SVSongOption) {
   return (
+    <div key={`${song.id ?? ''}-${song.title}-${song.artist}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
     <button
+  style={{ flex: 1, minWidth: 0 }}
   key={`${song.id ?? ''}-${song.title}-${song.artist}`}
   className="sv-picker-song"
   onClick={() => {
@@ -146,6 +158,8 @@ return songs.filter(song => {
         )}
       </div>
     </button>
+    {saveButton(song)}
+    </div>
   );
 }
 
@@ -155,11 +169,12 @@ return songs.filter(song => {
       <button type="button" className="sv-brave-button" onClick={() => { setVersionChoices([]); window.setTimeout(() => searchInputRef.current?.focus(), 0); }}>← Back to songs</button>
       <h3 id="singa-version-heading" ref={versionHeadingRef} tabIndex={-1}>Choose your version</h3>
       <p><strong>{song.title}</strong><br />{song.artist}</p>
+      {favorites.error && <p role="alert">{favorites.error}</p>}
       <div className="sv-picker-results">
-        {versionChoices.map(version => <button key={version.singaVariantId} type="button" className="sv-picker-song" onClick={() => { onSelect(version); setVersionChoices([]); }}>
+        {versionChoices.map(version => <div key={version.singaVariantId} style={{ display: 'flex', alignItems: 'center', gap: 8 }}><button style={{ flex: 1 }} type="button" className="sv-picker-song" onClick={() => { onSelect(version); setVersionChoices([]); }}>
           <div><div className="sv-picker-title">{version.note || 'Singa version'}</div><div className="sv-picker-artist">Select this version to continue</div></div>
           <span className="sv-chip sv-chip-blue">Choose</span>
-        </button>)}
+        </button>{saveButton(version)}</div>)}
       </div>
     </div>;
   }
@@ -192,6 +207,12 @@ return songs.filter(song => {
     </button>
   )}
 </div>
+
+{accountFavorites && <FavoriteSongList favorites={favorites} onFind={song => {
+  setSearchTerm(song.title);
+  setVersionChoices([]);
+  searchInputRef.current?.focus();
+}} />}
 
 {alertContent && (
   <div
