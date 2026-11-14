@@ -11,9 +11,15 @@ test('rotation keeps spotlight and signup highlights, replacing stats with trivi
  assert.deepEqual(Array.from(lib.audienceSlots(false,false,false,0)),['trivia']);
 });
 test('trivia has distinct questions and nonempty answers without song lyric excerpts',()=>{
- assert.ok(lib.musicTrivia.length>=12);assert.equal(new Set(lib.musicTrivia.map(q=>q.question)).size,lib.musicTrivia.length);
+ assert.equal(lib.musicTrivia.length,100);assert.equal(new Set(lib.musicTrivia.map(q=>q.question)).size,lib.musicTrivia.length);
  for(const q of lib.musicTrivia){assert.ok(q.question.length<180&&q.answer.length>0&&q.answer.length<120);}
 });
+test('every question is used before the next cycle repeats',()=>{
+ const first=Array.from({length:100},(_,turn)=>lib.musicTrivia[turn%lib.musicTrivia.length].question);
+ assert.equal(new Set(first).size,100);
+ assert.equal(lib.musicTrivia[100%lib.musicTrivia.length].question,first[0]);
+});
+
 test('trivia reveals the answer after nine seconds and cancels the reveal on unmount',()=>{
  const exports={},state=[],effects=[],timers=[];let cursor=0;const jsx=(type,props)=>({type,props});
  const react={useState:initial=>{const i=cursor++;if(!(i in state))state[i]=typeof initial==='function'?initial():initial;return[state[i],v=>state[i]=v]},useRef:()=>({current:false}),useEffect:fn=>effects.push(fn)};
