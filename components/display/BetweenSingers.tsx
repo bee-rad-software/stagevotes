@@ -1,20 +1,25 @@
 'use client';
 import {useEffect,useState,type ReactNode} from 'react';
 import NextSingerSpotlight from './NextSingerSpotlight';
-import {tonightStats} from '@/lib/stageIntermission';
+import {audienceSlots} from '@/lib/stageAudienceContent';
+import {StageShowPhoto,StageTrivia,useStagePhotos} from './StageAudienceMoments';
 import type {StageSinger} from './StageBackdrop';
 import styles from './BetweenSingers.module.css';
-export default function BetweenSingers({active,eventId,nextSinger,intro,singers,promotions,highlight}:{active:boolean;eventId:string;nextSinger?:StageSinger;intro:string;singers:StageSinger[];promotions:string[];highlight?:ReactNode}){
+export default function BetweenSingers({active,eventId,nextSinger,intro,promotions,highlight}:{active:boolean;eventId:string;nextSinger?:StageSinger;intro:string;singers:StageSinger[];promotions:string[];highlight?:ReactNode}){
  const [tick,setTick]=useState(0);
+ const {photos,remove}=useStagePhotos(eventId,active);
  const signature=promotions.join('\n');
- useEffect(()=>{setTick(0);if(!active)return;const timer=setInterval(()=>setTick(t=>t+1),9000);return()=>clearInterval(timer);},[active,eventId,nextSinger?.id,signature]);
+ const promos=promotions.filter(p=>p.trim());
+ const slots=audienceSlots(Boolean(nextSinger),true,Boolean(highlight),promos.length);
+ const slot=slots[tick%slots.length];
+ useEffect(()=>{setTick(0);},[active,eventId,nextSinger?.id,signature]);
+ useEffect(()=>{if(!active)return;if(slot==='photo'&&!photos.length){setTick(t=>t+1);return;}const timer=setTimeout(()=>setTick(t=>t+1),slot==='trivia'?18000:9000);return()=>clearTimeout(timer);},[active,tick,slot,eventId,photos.length]);
  if(!active)return null;
- const slots=[...(nextSinger?['next']:[]),'stats',...(highlight?['highlight']:[]),...promotions.filter(p=>p.trim()).map((_,i)=>'promo:'+i)];
- const slot=slots[tick%slots.length];const stats=tonightStats(singers);
+ if(slot==='trivia')return <StageTrivia key={'trivia:'+tick} eventId={eventId}/>;
+ if(slot==='photo')return <StageShowPhoto key={'photo:'+tick} eventId={eventId} photos={photos} onFailed={remove}/>;
  if(slot==='highlight')return <div key={tick} className={styles.highlightSlot}>{highlight}</div>;
  if(slot==='next'&&nextSinger)return <NextSingerSpotlight singer={nextSinger} intro={intro}/>;
- return <div className={styles.card} key={slot} role="region" aria-label={slot==='stats'?'Tonight so far':'From your venue'}>
-  <span className={styles.kicker}>{slot==='stats'?'TONIGHT SO FAR':'FROM YOUR VENUE'}</span>
-  {slot==='stats'?<><h2>Look what we started.</h2><div className={styles.numbers}><div><strong>{stats.songs}</strong><span>{stats.songs===1?'song sung':'songs sung'}</span></div><div><strong>{stats.singers}</strong><span>{stats.singers===1?'singer on stage':'singers on stage'}</span></div></div><p>Good songs. Great company. Keep it going!</p></>:<><span className={styles.icon} aria-hidden="true">✦</span><h2 className={styles.promotion}>{promotions.filter(p=>p.trim())[Number(slot.split(':')[1])]}</h2><p>Make a night of it.</p></>}
+ return <div className={styles.card} key={slot} role="region" aria-label="From your venue">
+  <span className={styles.kicker}>FROM YOUR VENUE</span><span className={styles.icon} aria-hidden="true">✦</span><h2 className={styles.promotion}>{promos[Number(slot.split(':')[1])]}</h2><p>Make a night of it.</p>
  </div>;
 }

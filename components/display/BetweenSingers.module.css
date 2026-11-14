@@ -9,3 +9,8 @@
 
 .card{border-radius:var(--stage-card-radius,22px);border:var(--stage-card-border,1px solid transparent);background:var(--stage-card-fill,transparent);box-shadow:var(--stage-card-shadow,none)}
 .card h2{font-family:var(--stage-title-font,Arial,sans-serif)}
+.photoCard{gap:1.5vh;min-height:0;overflow:hidden;padding-bottom:3vh}
+.showPhoto{display:block;min-height:0;max-width:100%;width:100%;flex:1;object-fit:contain;border-radius:var(--stage-card-radius,16px)}
+.card .photoCaption{margin:0;max-width:95%;font-size:clamp(14px,1.6vw,30px);overflow-wrap:anywhere}
+.card .triviaQuestion{font-size:clamp(20px,2.3vw,46px);color:#cbd5e1}
+.card .triviaAnswer{font-family:var(--stage-title-font,Arial,sans-serif);font-size:clamp(30px,4.6vw,88px);font-weight:800;color:var(--spotlight-accent,#fdba74);line-height:1.15;overflow-wrap:anywhere}
