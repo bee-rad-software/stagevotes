@@ -9,5 +9,5 @@
 @keyframes arrive{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.spotlight{animation:none}}
 
-.spotlight{border-radius:var(--stage-card-radius,22px);border:var(--stage-card-border,1px solid transparent);background:var(--stage-card-fill,transparent);box-shadow:var(--stage-card-shadow,none)}
+.spotlight{border-radius:0;border:0;background:transparent;box-shadow:none}
 .spotlight h2{font-family:var(--stage-title-font,Arial,sans-serif)}
