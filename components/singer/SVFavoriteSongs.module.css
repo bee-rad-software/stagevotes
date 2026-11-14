@@ -1,0 +1,14 @@
+.compact { margin: 8px 0; border: 1px solid #38bdf840; border-radius: 12px; background: #0f172acc; color: #f8fafc; }
+.compact > summary { padding: 10px 12px; cursor: pointer; font-size: 14px; font-weight: 700; line-height: 22px; }
+.compact > summary span { margin-left: 6px; color: #94a3b8; font-weight: 500; }
+.content { padding: 0 10px 8px; }
+.content p { margin: 8px 2px; font-size: 13px; line-height: 1.4; color: #cbd5e1; }
+.filter { width: 100%; min-height: 40px; padding: 8px 10px; font-size: 16px; border: 1px solid #475569; border-radius: 8px; background: #020617; color: white; }
+.list { max-height: 200px; overflow-y: auto; }
+.row { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #ffffff15; }
+.song { flex: 1; min-width: 0; padding: 9px 2px; border: 0; background: transparent; text-align: left; color: inherit; cursor: pointer; }
+.song strong, .song span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song strong { font-size: 14px; line-height: 20px; }
+.song span { font-size: 12px; line-height: 18px; color: #94a3b8; }
+.remove { width: 44px; height: 44px; padding: 0; flex-shrink: 0; border: 0; border-radius: 8px; background: transparent; color: #cbd5e1; font-size: 22px; cursor: pointer; }
+.song:focus-visible, .remove:focus-visible, .compact > summary:focus-visible { outline: 2px solid #38bdf8; outline-offset: 2px; }

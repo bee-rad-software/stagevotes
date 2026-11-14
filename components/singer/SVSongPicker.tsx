@@ -117,7 +117,7 @@ return songs.filter(song => {
   function saveButton(song: SVSongOption) {
     if (!accountFavorites || !favorites.userId) return null;
     const saved = favorites.has(song);
-    return <button type="button" className="sv-brave-button" style={{ width: 'auto', flexShrink: 0 }} aria-label={`${saved ? 'Remove' : 'Save'} ${song.title} ${saved ? 'from' : 'to'} favorites`} aria-pressed={saved} disabled={favorites.busy} onClick={() => void favorites.update(song, saved)}>{saved ? '★ Saved' : '☆ Save'}</button>;
+    return <button type="button" className="sv-brave-button" style={{ width: 44, height: 44, padding: 0, flexShrink: 0, fontSize: 22, borderRadius: 12, background: 'transparent', color: '#fbbf24' }} aria-label={`${saved ? 'Remove' : 'Save'} ${song.title} ${saved ? 'from' : 'to'} favorites`} aria-pressed={saved} disabled={favorites.busy} onClick={() => void favorites.update(song, saved)}>{saved ? '★' : '☆'}</button>;
   }
   function renderSong(song: SVSongOption) {
   return (
@@ -208,7 +208,8 @@ return songs.filter(song => {
   )}
 </div>
 
-{accountFavorites && <FavoriteSongList favorites={favorites} onFind={song => {
+{accountFavorites && favorites.error && <p role="alert">{favorites.error}</p>}
+{accountFavorites && !searching && <FavoriteSongList favorites={favorites} onFind={song => {
   setSearchTerm(song.title);
   setVersionChoices([]);
   searchInputRef.current?.focus();
