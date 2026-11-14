@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FolderOpen, Music2, Pause, Play, SkipForward, VolumeX } from 'lucide-react';
-import { initialBreakMusicState, breakTrackPlayback, nextBreakTrack, updateBreakMusicState } from '@/lib/breakMusicState';
+import { initialBreakMusicState, breakTrackPlayback, unplayedBreakTrack, updateBreakMusicState } from '@/lib/breakMusicState';
 import styles from './SVBreakMusic.module.css';
 
 export type BreakMusicHandle = { silence: () => Promise<void> };
@@ -36,6 +36,8 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   const wantsPlayback = useRef(false);
   const pendingSingerTrack = useRef(false);
   const hasPlayedTrack = useRef(false);
+  const playedTracks = useRef(new Set<number>());
+  const playlistGeneration = useRef(0);
   const advance = useRef<() => void>(() => {});
   options.current = { volume, shuffle, muted };
   blocked.current = ended || commandPending || (connected && online && (playbackState === 4 || playbackState === 5));
@@ -67,9 +69,15 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
 
   useImperativeHandle(ref, () => ({ silence: async () => { blocked.current = true; await stop(); } }), [stop]);
 
-  const start = useCallback(async (explicit?:number) => {
+  const start = useCallback(async (explicit?:number, advanceTrack=false) => {
     const plan=breakTrackPlayback(indexRef.current,tracksRef.current.length,options.current.shuffle,pendingSingerTrack.current,hasPlayedTrack.current,explicit);
-    const at=plan.index;
+    const choosingNext=advanceTrack||(pendingSingerTrack.current&&hasPlayedTrack.current&&explicit===undefined);
+    const shuffled=options.current.shuffle&&choosingNext&&explicit===undefined
+      ? unplayedBreakTrack(indexRef.current,tracksRef.current.length,playedTracks.current)
+      : null;
+    const at=shuffled?.index ?? (advanceTrack&&explicit===undefined ? (indexRef.current+1)%tracksRef.current.length : plan.index);
+    const restart=plan.restart||advanceTrack;
+    const generation=playlistGeneration.current;
     const el = audio.current, track = tracksRef.current[at];
     if (!el || !track || blocked.current || options.current.muted) return;
     wantsPlayback.current = true;
@@ -77,18 +85,21 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     window.clearTimeout(frame.current); cancelFade.current?.(); cancelFade.current = null;
     setError('');
     if (el.getAttribute('src') !== track.url) { el.src = track.url; indexRef.current = at; setIndex(at); }
-    if(plan.restart)el.currentTime=0;
+    if(restart)el.currentTime=0;
     pendingSingerTrack.current=false;
     el.volume = 0;
     try {
       await el.play();
-      hasPlayedTrack.current=true;
+      if(generation!==playlistGeneration.current)return;
       if (ticket !== intent.current || blocked.current || options.current.muted) { if (!wantsPlayback.current || ticket === intent.current) el.pause(); return; }
+      if(shuffled?.newRound||(restart&&playedTracks.current.size>=tracksRef.current.length))playedTracks.current.clear();
+      playedTracks.current.add(at);
+      hasPlayedTrack.current=true;
       await fade(options.current.volume);
     } catch { if (ticket === intent.current) { setPlaying(false); setError('Could not play this file. Select another track or press Play to try again.'); } }
   }, [fade]);
 
-  advance.current = () => { void start(nextBreakTrack(indexRef.current, tracksRef.current.length, options.current.shuffle)); };
+  advance.current = () => { void start(undefined,true); };
 
   useEffect(() => {
     if (!(window as Window & { stagevotesDesktop?: { isDesktop?: boolean } }).stagevotesDesktop?.isDesktop) return;
@@ -132,6 +143,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     if (!files?.length) return;
     const selected = Array.from(files).filter(f => /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(f.name)).sort((a,b) => a.name.localeCompare(b.name));
     if (!selected.length) { setError('No supported audio files found. Choose MP3, WAV, M4A, AAC, OGG, or FLAC files.'); return; }
+    ++playlistGeneration.current; playedTracks.current.clear();
     await stop(true); audio.current?.removeAttribute('src'); audio.current?.load();
     tracksRef.current.forEach(t => URL.revokeObjectURL(t.url));
     const next = selected.map(f => ({ name: f.name, url: URL.createObjectURL(f) }));
@@ -167,7 +179,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
       <label className={styles.option}><input type="checkbox" checked={shuffle} onChange={e => setShuffle(e.target.checked)} />Shuffle</label>
     </div>
     <div className={styles.row}><label className={styles.option}><input type="checkbox" checked={automatic} onChange={e => { setAutomatic(e.target.checked); if (!e.target.checked) void stop(); }} />Automatically play between KaraFun songs</label></div>
-    <p className={styles.note}>A fresh track starts after each singer. Shuffle picks a different track; a one-track playlist restarts from the beginning.</p>
+    <p className={styles.note}>A fresh track starts after each singer. Shuffle plays every track before repeating; a one-track playlist restarts from the beginning.</p>
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {automatic && <details className={styles.note}><summary>Automatic playback troubleshooting</summary><p>KaraFun status sequence: {statusHistory.join(' → ')}. {between ? 'Between songs detected.' : 'Waiting for a completed playback transition.'} {commandPending ? 'Waiting for a playback command.' : ''}</p></details>}
     <p className={styles.note}>{ended ? 'Show ended. Break music is stopped.' : automatic && !connected ? 'Connect KaraFun for automatic playback. Manual controls are available.' : automatic && !between ? 'Waiting for a KaraFun performance. Pausing a singer will keep break music silent.' : 'Press Play in StageVotes to start each karaoke song. Break music never advances singers.'} Choose your playlist again after reloading or leaving this show. Use music you are authorized to play at your venue.</p>

@@ -25,3 +25,12 @@ export function breakTrackPlayback(index:number,count:number,shuffle:boolean,pen
  if(pendingSinger&&hasPlayed)return {index:nextBreakTrack(index,count,shuffle,random),restart:true};
  return {index,restart:false};
 }
+
+/** Choose uniformly from unheard tracks; begin a new round only when exhausted. */
+export function unplayedBreakTrack(index:number,count:number,played:ReadonlySet<number>,random=Math.random):{index:number;newRound:boolean} {
+ if(count<1)return {index:0,newRound:false};
+ let candidates=Array.from({length:count},(_,i)=>i).filter(i=>!played.has(i));
+ const newRound=candidates.length===0;
+ if(newRound)candidates=Array.from({length:count},(_,i)=>i).filter(i=>count===1||i!==index);
+ return {index:candidates[Math.min(candidates.length-1,Math.floor(Math.max(0,random())*candidates.length))],newRound};
+}
