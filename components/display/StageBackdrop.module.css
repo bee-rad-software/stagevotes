@@ -202,10 +202,10 @@
 .welcomeQr { flex-shrink:0; width:clamp(150px,29vh,340px); aspect-ratio:1; background:#fff; border-radius:18px; overflow:hidden; line-height:0; margin:1.5vh auto 0; }
 .welcomeQr svg { display:block; width:100%; height:auto; }
 .welcomeWithQr h2 { margin:1vh 0; }
-.welcomeWithQr > p { margin:1vh 0 0; }
+.welcomeWithQr > p { margin:1vh auto 0; }
 .welcomeWithQr .welcomeSteps { margin-top:1.5vh; }
 
-.welcomeSignup { padding-bottom:5vh; }
+.welcomeSignup { padding:0; margin-inline:auto; }
 .welcomeSignup h2 { font-family:var(--stage-title-font,Arial,sans-serif); font-size:clamp(32px,4.5vw,82px); margin:1.5vh 0; overflow-wrap:anywhere; text-wrap:balance; }
 .welcomeSignup .welcomeEyebrow { font-size:clamp(12px,1.15vw,21px); }
 .welcomeSignup .welcomeQr { margin-top:2.5vh; }
