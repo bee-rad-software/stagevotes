@@ -45,3 +45,26 @@ test('first break keeps first track, shuffle changes tracks, and one track resta
  assert.equal(plan(0,1,true,true,true).index,0);assert.equal(plan(0,1,true,true,true).restart,true);
  const explicit=plan(1,3,false,true,true,2);assert.equal(explicit.index,2);assert.equal(explicit.restart,true);
 });
+
+const {unplayedBreakTrack:unplayed}=moduleObject.exports;
+test('shuffle exhausts the entire playlist before repeating across many rounds',()=>{
+ for(const count of [1,2,3,15])for(const r of [0,.25,.9,.999]){
+  const played=new Set();let current=0;
+  for(let round=0;round<4;round++){
+   const heard=[];
+   for(let i=0;i<count;i++){
+    const choice=unplayed(current,count,played,()=>r);
+    if(choice.newRound){assert.equal(played.size,count);if(count>1)assert.notEqual(choice.index,current);played.clear();}
+    assert.ok(!played.has(choice.index));played.add(choice.index);heard.push(choice.index);current=choice.index;
+   }
+   assert.equal(new Set(heard).size,count);
+  }
+ }
+});
+test('manual first track and resumes stay counted; failed choices do not consume a song',()=>{
+ const played=new Set([2]);const a=unplayed(2,4,played,()=>0),retry=unplayed(2,4,played,()=>0);
+ assert.equal(a.index,retry.index);assert.equal(played.size,1);assert.notEqual(a.index,2);
+ played.add(a.index);played.add(a.index);assert.equal(played.size,2);
+ const b=unplayed(a.index,4,played,()=>0);assert.ok(!played.has(b.index));
+ assert.equal(unplayed(0,0,new Set()).index,0);
+});
