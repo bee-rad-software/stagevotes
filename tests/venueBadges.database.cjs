@@ -10,7 +10,7 @@ test('venue badge PostgreSQL rules and permissions',{skip:!PGlite},async t=>{
  create table public.venues(id uuid primary key,account_id uuid,name text);
  create table public.account_users(account_id uuid,user_id uuid,role text);
  create table public.singer_profiles(id uuid primary key,user_id uuid);
- create table public.events(id uuid primary key,venue_id uuid,account_id uuid);
+ create table public.events(id uuid primary key,venue_id uuid,account_id uuid,venue text);
  create table public.performances(id uuid primary key,event_id uuid,singer_profile_id uuid,status text,singer_name text,created_at timestamptz default now());
  create table public.side_contests(id uuid primary key,event_id uuid);
  create table public.side_contest_entries(id uuid primary key,contest_id uuid,singer_profile_id uuid,approval_status text,name text);
@@ -19,11 +19,20 @@ test('venue badge PostgreSQL rules and permissions',{skip:!PGlite},async t=>{
  `);
  const migration=fs.readFileSync('supabase/migrations/20261112210000_venue_badges.sql','utf8');
  await db.exec(migration);
+ await db.exec(fs.readFileSync('supabase/migrations/20261114223000_fix_venue_badge_variable_ambiguity.sql','utf8'));
  const account=id(1),a=id(2),b=id(3),actor=id(4),singer=id(5),second=id(6);
  await db.query('insert into venues values($1,$2,$3),($4,$2,$5)',[a,account,'Venue A',b,'Venue B']);
  await db.query('insert into account_users values($1,$2,$3)',[account,actor,'host']);
  await db.query('insert into singer_profiles values($1,$2),($3,$4)',[singer,id(7),second,id(8)]);
- for(let n=0;n<6;n++)await db.query('insert into events values($1,$2,$3)',[id(20+n),n===5?b:a,account]);
+ for(let n=0;n<6;n++)await db.query('insert into events(id,venue_id,account_id) values($1,$2,$3)',[id(20+n),n===5?b:a,account]);
+ await t.test('reproduces the production venue-column ambiguity and applies the repair',async()=>{
+  const repair=fs.readFileSync('supabase/migrations/20261114223000_fix_venue_badge_variable_ambiguity.sql','utf8');
+  await db.exec(repair.replace(/v_venue_id/g,'venue').replace(/v_account_id/g,'account'));
+  await assert.rejects(db.query('select evaluate_venue_badges($1,$2,null)',[singer,id(20)]),/column reference "venue" is ambiguous/);
+  await db.exec(repair);
+  await db.query('select evaluate_venue_badges($1,$2,null)',[singer,id(20)]);
+ });
+
  const badge=async(n,venue,rule)=>db.query('insert into venue_badges(id,venue_id,title,rule) values($1,$2,$3,$4)',[id(n),venue,rule+' original',rule]);
  await badge(40,a,'song');await badge(41,a,'five_shows');await badge(42,a,'contest_entry');await badge(43,a,'manual');await badge(44,b,'song');
  const perf=async(n,event,profile=singer,status='completed')=>db.query('insert into performances(id,event_id,singer_profile_id,status,singer_name) values($1,$2,$3,$4,$5)',[id(n),event,profile,status,'Singer']);
