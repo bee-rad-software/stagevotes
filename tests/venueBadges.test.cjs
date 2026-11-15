@@ -31,7 +31,7 @@ test('manual awards reject badges or shows from other venues before invoking the
 });
 test('SQL awards are unique, snapshotted, scoped by venue, and cannot be minted by guests',()=>{
  const sql=fs.readFileSync('supabase/migrations/20261112210000_venue_badges.sql','utf8');
- assert.match(sql,/unique\(badge_id,singer_profile_id\)/);assert.match(sql,/on conflict\(badge_id,singer_profile_id\) do nothing/);assert.match(sql,/e\.venue_id=venue and e\.account_id=account/);assert.match(sql,/shows>=5 and has_song/);assert.match(sql,/approval_status='approved'/);assert.match(sql,/status='completed'/);
+ assert.match(sql,/unique\(badge_id,singer_profile_id\)/);assert.match(sql,/on conflict\(badge_id,singer_profile_id\) do nothing/);assert.match(sql,/e\.venue_id=v_venue_id and e\.account_id=v_account_id/);assert.match(sql,/shows>=5 and has_song/);assert.match(sql,/approval_status='approved'/);assert.match(sql,/status='completed'/);
  assert.match(sql,/p_performance[\s\S]*event_id=e\.id and singer_profile_id=p_profile/);assert.match(sql,/b\.title,b\.description,b\.icon,b\.color,b\.artwork_path,v\.name,label/);
  assert.match(sql,/revoke all on function public\.award_venue_badge_manual\(uuid,uuid,uuid,uuid\) from public,anon,authenticated/);assert.match(sql,/grant execute on function public\.award_venue_badge_manual\(uuid,uuid,uuid,uuid\) to service_role/);
  assert.match(sql,/as restrictive for all to anon,authenticated/);
