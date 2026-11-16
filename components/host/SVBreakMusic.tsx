@@ -2,7 +2,7 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { FolderOpen, Music2, Pause, Play, SkipForward, VolumeX } from 'lucide-react';
-import { initialBreakMusicState, breakTrackPlayback, unplayedBreakTrack, updateBreakMusicState } from '@/lib/breakMusicState';
+import { initialBreakMusicState, breakTrackPlayback, unplayedBreakTrack, shouldSilenceBreakMusic, updateBreakMusicState } from '@/lib/breakMusicState';
 import styles from './SVBreakMusic.module.css';
 
 export type BreakMusicHandle = { silence: () => Promise<void> };
@@ -127,8 +127,10 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     const next = updateBreakMusicState(was, connected && online, playbackState);
     machine.current = next; setBetween(next.between);
     if (playbackState === 4 && connected && online) { manualHold.current = false; pendingSingerTrack.current = true; }
-    // Disconnects, pauses, pending commands and show end are always silent.
-    if (next.blocked || ended) { void stop(true); return; }
+    // Loading the first queued song is not singer playback. Preserve manual pre-show music.
+    // After a performance has been observed, loading/disconnects still fail silent.
+    if (shouldSilenceBreakMusic(was,next,connected&&online,playbackState,ended)) { void stop(true); return; }
+    if (next.blocked) return;
     // Play awaits imperative silence; do not interrupt that fade with a second stop.
     if (commandPending) return;
     if (!automatic || !next.between || muted || manualHold.current) return;
