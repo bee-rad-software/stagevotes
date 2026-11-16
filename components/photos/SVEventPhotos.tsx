@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, ChevronDown, ChevronUp, LoaderCircle } from 'lucide-react';
+import SubmissionTime,{useSubmissionClock} from '@/components/SubmissionTime';
+import {HOST_REVIEW_EVENT} from '@/lib/hostActivity';
 import { supabase } from '@/lib/supabase';
 import { EventPhoto, PHOTO_CAPTION_LIMIT } from '@/lib/eventPhotos';
 import { prepareEventPhoto } from '@/lib/prepareEventPhoto';
@@ -25,6 +27,8 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const input = useRef<HTMLInputElement>(null);
+  const panel=useRef<HTMLElement>(null);
+  const now=useSubmissionClock(host&&open);
   const alive = useRef(true);
   const endpoint = `/api/events/${encodeURIComponent(eventId)}/photos`;
   const receiptKey = 'sv_event_photos_' + eventId;
@@ -55,6 +59,11 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
     window.addEventListener('focus', focus);
     return () => { window.clearInterval(timer); window.removeEventListener('focus', focus); };
   }, [open, refresh]);
+  useEffect(()=>{
+    if(!host)return;
+    const review=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.eventId!==eventId||detail?.kind!=='photos')return;setOpen(true);setFilter('pending');panel.current?.scrollIntoView({behavior:'smooth',block:'start'});panel.current?.focus({preventScroll:true});void refresh();};
+    window.addEventListener(HOST_REVIEW_EVENT,review);return()=>window.removeEventListener(HOST_REVIEW_EVENT,review);
+  },[host,eventId,refresh]);
   useEffect(() => {
     if (!file) { setPreview(''); return; }
     const url = URL.createObjectURL(file); setPreview(url);
@@ -101,7 +110,7 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
   const pending = photos.filter(p => p.status === 'pending');
   const shown = host ? photos.filter(p => p.status === filter) : photos;
   if (!host && (!data || (!data.enabled && !photoCount && !receipts.length))) return null;
-  return <section className={styles.panel} aria-label={host ? 'Host photo review' : 'Show photos'}>
+  return <section ref={panel} tabIndex={-1} style={{scrollMarginTop:24}} className={styles.panel} aria-label={host ? 'Host photo review' : 'Show photos'}>
     <button type="button" className={styles.toggle} aria-expanded={open} onClick={() => { setOpen(!open); setError(''); }}>
       <Camera size={22} /><span><strong>{host ? 'Show photos & captions' : data?.closed || readOnly ? 'Show Photos' : 'Tonight’s Photos'}</strong>
       <small>{host ? `${pending.length} awaiting approval · ${photos.filter(p => p.status === 'approved').length} approved` : `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'} · ${data?.enabled && !data.closed && !readOnly ? 'Share a photo' : 'Relive this show'}`}</small></span>
@@ -129,7 +138,7 @@ export default function SVEventPhotos({ eventId, host = false, readOnly = false 
       <div className={styles.grid}>{shown.map(photo => <article className={styles.photo} key={photo.id}>
         <a href={photo.url} target="_blank" rel="noopener noreferrer" aria-label="Open photo at full size"><img src={photo.url} alt={photo.caption || 'Photo from this karaoke show'} loading="lazy" /></a>
         <div className={styles.caption}>{photo.status === 'approved' && <SVPhotoSocial eventId={eventId} photoId={photo.id} />}{photo.caption && <p>{photo.caption}</p>}{photo.displayName && <small>Shared by {photo.displayName}</small>}
-        {host ? <><span className={styles.badge}>{photo.status === 'pending' ? 'Awaiting approval' : 'Approved'}{photo.reports ? ` · ${photo.reports} reported` : ''}</span>
+        {host ? <><SubmissionTime createdAt={photo.createdAt} now={now}/><span className={styles.badge}>{photo.status === 'pending' ? 'Awaiting approval' : 'Approved'}{photo.reports ? ` · ${photo.reports} reported` : ''}</span>
           {data?.reports.filter(r => r.photoId === photo.id).map((r,i) => <p className={styles.report} key={i}>Report: {r.reason}</p>)}
           <div className={styles.controls}>{photo.status === 'pending' && <button type="button" className={styles.primary} disabled={Boolean(busy)} onClick={() => void action(photo.id,async () => { await mutate('PATCH',{ action:'approve',photoId:photo.id },true); })}>Approve photo & caption</button>}
           <button type="button" disabled={Boolean(busy)} onClick={() => { if (window.confirm('Remove this photo and caption from the event?')) void action(photo.id,async () => { await mutate('PATCH',{ action:photo.status === 'pending' ? 'reject' : 'remove',photoId:photo.id },true); }); }}>{photo.status === 'pending' ? 'Reject' : 'Remove'}</button></div></>
