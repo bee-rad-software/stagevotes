@@ -32,6 +32,7 @@ import AppQRCode from '@/components/AppQRCode';
 import AppShell from '@/components/AppShell';
 import SVShell from '@/components/ui/SVShell';
 import { calculateJudgeScore } from '@/lib/olympicScoring';
+import HostActivityAlerts from '@/components/dashboard/HostActivityAlerts';
 import SVHostHero from '@/components/dashboard/SVHostHero';
 import SVMissionControl from '@/components/dashboard/SVMissionControl';
 import SVSongPicker, {
@@ -5830,6 +5831,7 @@ if (!isSubscribed) {
     null
   }
 />
+<HostActivityAlerts key={eventId} eventId={eventId} />
 
 {event?.show_paused_at && <div className="sv-card" role="status" style={{padding:16,marginBottom:16,border:'1px solid #f59e0b'}}>Show paused · The singer timer and automatic advancement are paused. Control music playback in your karaoke player, then select Resume Show when ready.</div>}
 {pauseError && <p role="alert">{pauseError}</p>}
