@@ -34,3 +34,8 @@ export function unplayedBreakTrack(index:number,count:number,played:ReadonlySet<
  if(newRound)candidates=Array.from({length:count},(_,i)=>i).filter(i=>count===1||i!==index);
  return {index:candidates[Math.min(candidates.length-1,Math.floor(Math.max(0,random())*candidates.length))],newRound};
 }
+
+/** Pre-show queue loading must not interrupt music the host started manually. */
+export function shouldSilenceBreakMusic(previous:BreakMusicState,next:BreakMusicState,online:boolean,state:number|null,ended:boolean):boolean {
+ return ended || (online&&(state===4||state===5)) || (next.blocked&&(previous.armed||next.armed));
+}

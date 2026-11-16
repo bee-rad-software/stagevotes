@@ -68,3 +68,20 @@ test('manual first track and resumes stay counted; failed choices do not consume
  const b=unplayed(a.index,4,played,()=>0);assert.ok(!played.has(b.index));
  assert.equal(unplayed(0,0,new Set()).index,0);
 });
+
+const {shouldSilenceBreakMusic:silence}=moduleObject.exports;
+test('first signup/loading preserves manual pre-show music without arming automatic playback',()=>{
+ let previous=initial;
+ for(const [online,status] of [[false,null],[true,null],[true,2],[true,3],[true,2],[true,3]]){
+  const updated=step(previous,online,status);assert.equal(silence(previous,updated,online,status,false),false);assert.equal(updated.between,false);previous=updated;
+ }
+});
+test('actual singing, singer pause, and ending the show still silence pre-show music',()=>{
+ for(const status of [4,5])assert.equal(silence(initial,step(initial,true,status),true,status,false),true);
+ assert.equal(silence(initial,step(initial,true,2),true,2,true),true);
+});
+test('loading, disconnects, and unknown states after singer playback still fail silent',()=>{
+ const playing=step(initial,true,4);
+ for(const [online,status] of [[true,2],[true,null],[true,99],[false,null]])assert.equal(silence(playing,step(playing,online,status),online,status,false),true);
+ const ready=step(playing,true,3);assert.equal(ready.between,true);assert.equal(silence(playing,ready,true,3,false),false);
+});

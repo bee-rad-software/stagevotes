@@ -27,7 +27,8 @@ Audio uses the computer's default output; check it at the venue before the show.
   ended-show states also silence it.
 - Automatic music requires observed playback, followed by status 3 (ready),
   stable for 1.2 seconds. A fresh connection in ready state does not start music.
-- Disconnection/unknown states reset the playback baseline and stop music.
+- Loading or connecting the first queued song preserves manually started pre-show music.
+- After observed singer playback, disconnection/unknown states stop music; disconnect resets the playback baseline.
 - Status 3 indicates ready, not a separately documented natural-end event.
   Thus automatic music can also return after a performance is stopped/loaded
   into ready state. Test actual KaraFun transitions on both host platforms.
