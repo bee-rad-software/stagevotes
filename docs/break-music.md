@@ -10,7 +10,7 @@ isDesktop flag is sufficient; no Electron rebuild or database migration is neede
 1. Choose a folder or multiple audio files (MP3, WAV, M4A, AAC, OGG, FLAC).
 2. Set volume (starts at 25%) and choose shuffle or sequential playback.
 3. Press Play music once. This also gives the audio element a user gesture.
-4. Optionally enable automatic playback between KaraFun songs.
+4. Automatic playback between KaraFun songs starts enabled. Uncheck it for manual-only music.
 5. Mute now stops music immediately. Unmute does not start it; press Play.
 
 Selections last while this show page stays mounted. Reloading, switching away
