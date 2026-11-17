@@ -105,7 +105,7 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
           <Link href={activeEventId ? '/host/' + activeEventId : '/create'} className={styles.action}>{activeEventId ? 'Open current show' : 'Create a show'}<ArrowRight size={14} /></Link>
         </SetupCard>
         <SetupCard number={3} icon={<Music2 size={18} />} title="Test KaraFun" done={checks[2]} wide status={progress.skipKaraFun ? 'Manual playback' : progress.karaokeTest ? 'Tested' : 'Optional'}>
-          <p className={styles.description}>{hasChannel ? 'Your channel is saved. ' : 'Save your remote link in Venue settings. '}Keep KaraFun running, connect from Mission Control, then test play and pause with the correct song.</p>
+          <p className={styles.description}>{hasChannel ? 'Karaoke settings exist for a venue. Confirm the channel for the venue hosting this show. ' : 'Save your remote link in Venue settings. '}Keep KaraFun running, connect from Mission Control, then test play and pause with the correct song.</p>
           <div className={styles.actions}>
             <Link href="/account/venues" className={styles.action}>Venue settings<ArrowRight size={14} /></Link>
             <a href="https://www.stagevotes.com/guides/karafun-setup" target="_blank" rel="noreferrer" className={styles.textLink}>Setup guide<ExternalLink size={13} /></a>
