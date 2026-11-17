@@ -1647,7 +1647,7 @@ function isTournamentPerformanceReady(
   if (!karafunChannel) {
     setKarafunConnected(false);
     setKarafunConnectionError(
-      'No KaraFun channel is configured.'
+      'No KaraFun channel is saved for this show. Open KaraFun settings for this show below, save the remote link, then refresh and connect.'
     );
     return;
   }
@@ -5882,6 +5882,7 @@ onOpenKaraFunDisplay={() => {
       '_blank'
     )
   }
+  karaokeSettingsHref={event?.venue_id ? `/account/venues/${event.venue_id}/settings` : '/account'}
   onConnectKaraFun={toggleKaraFunConnection}
   onPlayKaraFun={playKaraFunSong}
   onPauseKaraFun={() => { void controlKaraFun('pause'); }}

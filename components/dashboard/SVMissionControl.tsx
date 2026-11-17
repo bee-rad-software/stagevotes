@@ -17,6 +17,7 @@ type Props = {
   onOpenStageDisplay?: () => void;
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
+  karaokeSettingsHref?: string;
   onPlayKaraFun?: () => void;
   onPauseKaraFun?: () => void;
   onSkipKaraFun?: () => void;
@@ -73,6 +74,7 @@ export default function SVMissionControl(p: Props) {
         <button type="button" className={styles.quiet} onClick={p.onConnectKaraFun} disabled={p.karafunConnecting}>{p.karafunConnected ? 'Disconnect' : 'Connect'}</button>
       </div>
     </div>}
+    {showKaraFun && p.karaokeSettingsHref && <p className={styles.notice}><a href={p.karaokeSettingsHref} target="_blank" rel="noreferrer">KaraFun settings for this show ↗</a> · Save the channel there, then refresh this show before connecting.</p>}
     {showKaraFun && error && <p className={styles.error} role="alert">{error}</p>}
     {showKaraFun && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Open the KaraFun player to use playback controls.</p>}
     <div className={styles.utilities}>

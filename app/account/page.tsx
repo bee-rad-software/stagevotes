@@ -23,6 +23,8 @@ import {
 
 export default function AccountPage() {
   const [accountId, setAccountId] = useState('');
+  const [venues, setVenues] = useState<{id:string;name:string}[]>([]);
+  const [venueLoadError, setVenueLoadError] = useState(false);
   const [name, setName] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [hasSubscription, setHasSubscription] = useState(false);
@@ -78,6 +80,9 @@ export default function AccountPage() {
       return;
     }
 
+    const {data: venueRows, error: venueError} = await supabase.from('venues').select('id,name').eq('account_id', account.id).is('deleted_at', null).order('name');
+    setVenues(venueRows || []);
+    setVenueLoadError(Boolean(venueError));
     setAccountId(account.id);
     setName(account.name || '');
     setSubscriptionStatus(account.subscription_status || '');
@@ -234,7 +239,17 @@ return (
     title="Account"
     subtitle="Manage your organization, branding, billing, and audience settings."
   >
-    <section className="sv-card" style={{marginBottom:20}}><h2>Settings for each venue</h2><p>Choose a venue to configure its karaoke software, remote channel, tip links, QR codes and song limit independently.</p><Link href="/account/venues">Manage venue settings →</Link><p>The karaoke, tips, QR and queue settings below are legacy defaults for shows without a linked venue. Changing them does not change your venues. Billing and organization details remain shared.</p></section>
+    <section className="sv-card" style={{marginBottom:20}}>
+      <h2>Set up karaoke for your venue</h2>
+      <p>Choose a venue below to select KaraFun or Singa and save its remote channel. Each venue has its own connection.</p>
+      <div style={{display:'flex',flexWrap:'wrap',gap:12,margin:'16px 0'}}>
+        {venues.map(venue => <Link key={venue.id} href={`/account/venues/${venue.id}/settings`} className="sv-button">Set up {venue.name} →</Link>)}
+      </div>
+      {venueLoadError && <p role="status">Unable to load the venue shortcuts. Open Manage venues to try again.</p>}
+      <Link href="/account/venues">Manage venues →</Link>
+      <p>Save the channel for the venue where your show takes place, then refresh the show page and click Connect with KaraFun running. Saving settings does not test the live connection.</p>
+      <p>Billing and organization details are shared across your venues.</p>
+    </section>
     <HostCatalog accountId={accountId} />
     <div
       style={{
@@ -252,7 +267,9 @@ return (
         }}
       >
 
-       <section className="sv-card">
+       <details className="sv-card">
+  <summary style={{cursor:'pointer',fontWeight:700}}>Legacy karaoke defaults · older shows without a venue</summary>
+  <p>These controls do not configure venue-linked shows. Use the venue setup links above for your current shows.</p>
   <div
     style={{
       display: 'flex',
@@ -292,7 +309,7 @@ return (
           fontSize: 13,
         }}
       >
-        Choose the karaoke software you use for your shows.
+        Only applies to older shows that have no linked venue.
       </p>
     </div>
   </div>
@@ -310,7 +327,7 @@ return (
         </label>
       ))}
     </div>
-    <p style={{fontSize:13, color:'#94a3b8', margin:'12px 0 0'}}>Choose one, then save your account settings below. Using another catalog? Leave KaraFun selected.</p>
+    <p style={{fontSize:13, color:'#94a3b8', margin:'12px 0 0'}}>Changes here only apply to shows without a linked venue. Save account settings below to keep these legacy defaults.</p>
   </fieldset>
   {singaEnabled && <p style={{fontSize: 13}}>Singers will search the Singa catalog, and Singa controls will appear on the host page.</p>}
   {!singaEnabled && <>
@@ -351,9 +368,7 @@ return (
       lineHeight: 1.5,
     }}
   >
-    Paste your static KaraFun remote link or enter the channel
-    number. StageVotes will use it to connect your show
-    queue to KaraFun.
+    This legacy channel is only used for shows without a linked venue. To use it at a venue, copy it into that venue’s settings and save.
   </p>
 
   {karafunChannel && (
@@ -368,11 +383,11 @@ return (
         fontWeight: 700,
       }}
     >
-      KaraFun channel: {karafunChannel}
+      Legacy channel entered: {karafunChannel} · not a live connection test
     </div>
   )}
   </>}
-</section>
+</details>
 
         <section className="sv-card">
           <div
