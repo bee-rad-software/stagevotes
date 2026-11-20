@@ -2,7 +2,6 @@ import {
   Trophy,
   LayoutDashboard,
   Users,
-  Monitor,
   ChartColumn,
   History,
   Settings,
@@ -22,11 +21,6 @@ export const navigation = [
         icon: Users,
         label: 'Audience',
         href: '/audience',
-      },
-      {
-        icon: Monitor,
-        label: 'Displays',
-        href: '/displays',
       },
       {
         icon: Trophy,
