@@ -1360,10 +1360,33 @@ return Boolean(
   }, [event?.is_show_ended, signupsAreOpen, additionalSongsAreOpen, hasJoined, editingPerformanceId]);
 
   useEffect(() => {
-    const refresh = () => { if (document.visibilityState === 'visible') void loadEvent(); };
+    if (!eventId) return;
+    let stopped = false;
+    let refreshing = false;
+    // Mobile browsers can suspend realtime while locked or in another app.
+    // Keep queue position fresh even when signups have closed.
+    const refresh = async () => {
+      if (stopped || refreshing || document.visibilityState !== 'visible') return;
+      refreshing = true;
+      try {
+        await Promise.all([loadEvent(), loadQueue()]);
+      } catch (error) {
+        console.error('Unable to refresh singer show status:', error);
+      } finally {
+        refreshing = false;
+      }
+    };
     window.addEventListener('focus', refresh);
-    const timer = window.setInterval(refresh, 60_000);
-    return () => { window.removeEventListener('focus', refresh); window.clearInterval(timer); };
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      stopped = true;
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+      window.clearInterval(timer);
+    };
   }, [eventId]);
 
   const additionalSongsPaused =
