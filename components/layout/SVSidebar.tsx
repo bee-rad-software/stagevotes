@@ -144,7 +144,7 @@ useEffect(() => {
 const href =
   item.label === 'Dashboard' && currentEventId
     ? `/host/${currentEventId}`
-    : item.label === 'Audience' && currentEventId
+    : item.label === 'QR Codes' && currentEventId
     ? `/audience/${currentEventId}`
     : item.label === 'Analytics' && currentEventId
     ? `/analytics/${currentEventId}`

@@ -1,7 +1,7 @@
 import {
   Trophy,
   LayoutDashboard,
-  Users,
+  QrCode,
   ChartColumn,
   History,
   Settings,
@@ -18,8 +18,8 @@ export const navigation = [
         href: '/',
       },
       {
-        icon: Users,
-        label: 'Audience',
+        icon: QrCode,
+        label: 'QR Codes',
         href: '/audience',
       },
       {
