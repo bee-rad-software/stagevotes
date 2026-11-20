@@ -71,12 +71,12 @@ export default function SVMissionControl(p: Props) {
           {pausing ? <Pause size={18}/> : <Play size={18}/>}{p.karafunPlayPending ? 'Starting…' : p.karafunControlPending === 'pause' ? 'Pausing…' : pausing ? 'Pause' : 'Play'}
         </button>
         <button type="button" onClick={p.onSkipKaraFun} disabled={!p.karafunSkipReady || busy} title="Skip the KaraFun track after checking the next singer and required judge ballots"><SkipForward size={18}/>{p.karafunControlPending === 'skip' ? 'Skipping…' : 'Skip Song'}</button>
-        <button type="button" className={styles.quiet} onClick={p.onConnectKaraFun} disabled={p.karafunConnecting}>{p.karafunConnected ? 'Disconnect' : 'Connect'}</button>
+        <button type="button" className={styles.quiet} onClick={p.onConnectKaraFun} disabled={p.karafunConnecting}>{connected ? 'Disconnect' : p.karafunConnected ? 'Retry connection' : 'Connect'}</button>
       </div>
     </div>}
     {showKaraFun && p.karaokeSettingsHref && <p className={styles.notice}><a href={p.karaokeSettingsHref} target="_blank" rel="noreferrer">KaraFun settings for this show ↗</a> · Save the channel there, then refresh this show before connecting.</p>}
     {showKaraFun && error && <p className={styles.error} role="alert">{error}</p>}
-    {showKaraFun && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Open the KaraFun player to use playback controls.</p>}
+    {showKaraFun && !p.karafunConnecting && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Bring KaraFun to the front and confirm remote control is enabled, then click Retry connection.</p>}
     <div className={styles.utilities}>
       {p.judgingEnabled && <button type="button" role="switch" aria-checked={Boolean(p.votingOpen)} onClick={p.onToggleVoting} disabled={!p.hasCurrentSinger} title="Open or close judging for the current singer"><Vote size={17}/>Voting: {p.votingOpen ? 'Open' : 'Closed'}</button>}
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>

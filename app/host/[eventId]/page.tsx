@@ -1,6 +1,7 @@
 'use client'
 import {settingsForVenue} from '@/lib/venueSettings';
 import {venueAudienceLink} from '@/lib/venueAudienceLink';
+import {createKaraFunConnectionAttempt} from '@/lib/karafunConnectionAttempt';
 import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
 import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
@@ -313,6 +314,7 @@ const [
 ] = useState<Set<string>>(new Set());
 
 const karafunSocketRef = useRef<WebSocket | null>(null);
+const karaFunConnectionAttemptRef = useRef<ReturnType<typeof createKaraFunConnectionAttempt> | null>(null);
 
 const karafunSendingPerformanceIdsRef =
   useRef<Set<string>>(new Set());
@@ -1655,10 +1657,12 @@ function isTournamentPerformanceReady(
   if (
     karafunSocketRef.current &&
     karafunSocketRef.current.readyState === WebSocket.OPEN &&
-    karafunConnected
+    karafunConnected && karafunPlayerOnline
   ) {
     return;
   }
+
+  karaFunConnectionAttemptRef.current?.cancel();
 
   // Retire any half-closed socket before reconnecting.
   // Its eventual onclose must not clear the fresh socket.
@@ -1707,11 +1711,18 @@ karaFunRecoveryNeedsAdvanceRef.current =
     karafunPlayTimeoutRef.current = null;
   }
 
+  const connectionAttempt = createKaraFunConnectionAttempt(() => {
+    disconnectKaraFun();
+    setKarafunConnectionError('KaraFun did not respond in time. Bring KaraFun to the front, confirm its remote control is enabled, then click Connect to try a fresh connection.');
+  });
+  karaFunConnectionAttemptRef.current = connectionAttempt;
+
   try {
     const response = await fetch(
       `https://www.karafun.com/${karafunChannel}/`,
       {
         cache: 'no-store',
+        signal: connectionAttempt.signal,
       }
     );
 
@@ -1722,6 +1733,8 @@ karaFunRecoveryNeedsAdvanceRef.current =
     }
 
     const html = await response.text();
+
+    if (!connectionAttempt.isActive()) return;
 
     const socketMatch =
       html.match(/"kcs_url":\s*"([^"]+)"/);
@@ -1743,12 +1756,14 @@ karaFunRecoveryNeedsAdvanceRef.current =
     karafunSocketRef.current = ws;
 
     ws.onopen = () => {
+      if (!connectionAttempt.isActive() || karafunSocketRef.current !== ws) return;
       console.log(
         'KaraFun socket connected.'
       );
     };
 
     ws.onmessage = (event) => {
+      if (!connectionAttempt.isActive() || karafunSocketRef.current !== ws) return;
       let message;
 
 try {
@@ -1780,7 +1795,8 @@ console.log(
           })
         );
 
-        setKarafunConnecting(false);
+        // Authentication confirms the relay; wait for the desktop player too.
+        setKarafunConnecting(true);
 setKarafunConnectionError('');
 setKarafunConnected(true);
 setKarafunPlayerOnline(false);
@@ -1898,6 +1914,8 @@ if (
 }
 
 if (message.type === 'remote.StatusEvent') {
+  connectionAttempt.complete();
+  setKarafunConnecting(false);
   setKarafunPlayerOnline(true);
   setKarafunConnectionError('');
 
@@ -2338,6 +2356,8 @@ void advanceSinger(true).finally(() => {
 }
 
       if (message.type === 'remote.AppJoinEvent') {
+  connectionAttempt.complete();
+  setKarafunConnecting(false);
   setKarafunPlayerOnline(true);
 
   setKarafunConnectionError('');
@@ -2399,6 +2419,7 @@ if (message.type === 'remote.AppLeftEvent') {
     };
 
     ws.onerror = (error) => {
+      if (!connectionAttempt.isActive() || karafunSocketRef.current !== ws) return;
       console.error(
         'KaraFun WebSocket error:',
         error
@@ -2412,6 +2433,8 @@ if (message.type === 'remote.AppLeftEvent') {
     };
 
     ws.onclose = () => {
+  if (!connectionAttempt.isActive() || karafunSocketRef.current !== ws) return;
+  connectionAttempt.cancel();
   const wasIntentionallyClosed =
     karaFunIntentionallyClosedSocketsRef.current.has(ws);
 
@@ -2518,6 +2541,8 @@ if (message.type === 'remote.AppLeftEvent') {
     }, reconnectDelay);
 };
   } catch (error) {
+    if (!connectionAttempt.isActive()) return;
+    connectionAttempt.cancel();
     console.error(
       'Unable to connect to KaraFun:',
       error
@@ -2537,6 +2562,8 @@ if (message.type === 'remote.AppLeftEvent') {
 }
 
 function disconnectKaraFun() {
+  karaFunConnectionAttemptRef.current?.cancel();
+  karaFunConnectionAttemptRef.current = null;
   finishKaraFunControl();
   setKarafunControlError('');
   /*
@@ -2601,7 +2628,7 @@ useEffect(() => () => disconnectKaraFun(), [eventId, karafunChannel, account?.si
 
 function toggleKaraFunConnection() {
   if (
-    karafunConnected ||
+    karafunConnected && karafunPlayerOnline &&
     karafunSocketRef.current?.readyState ===
       WebSocket.OPEN
   ) {
