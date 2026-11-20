@@ -240,10 +240,15 @@ return (
     subtitle="Manage your organization, branding, billing, and audience settings."
   >
     <section className="sv-card" style={{marginBottom:20}}>
-      <h2>Set up karaoke for your venue</h2>
-      <p>Choose a venue below to select KaraFun or Singa and save its remote channel. Each venue has its own connection.</p>
+      <h2>Venue settings</h2>
+      <p>Choose a venue to manage its karaoke connection, Tip Your Host links, singer limits, and QR codes.</p>
       <div style={{display:'flex',flexWrap:'wrap',gap:12,margin:'16px 0'}}>
-        {venues.map(venue => <Link key={venue.id} href={`/account/venues/${venue.id}/settings`} className="sv-button">Set up {venue.name} →</Link>)}
+        {venues.map(venue => (
+          <div key={venue.id} style={{display:'grid',gap:8}}>
+            <Link href={`/account/venues/${venue.id}/settings`} className="sv-button">{venue.name} settings →</Link>
+            <Link href={`/account/venues/${venue.id}/settings#host-tips`}>Tip Your Host for {venue.name} →</Link>
+          </div>
+        ))}
       </div>
       {venueLoadError && <p role="status">Unable to load the venue shortcuts. Open Manage venues to try again.</p>}
       <Link href="/account/venues">Manage venues →</Link>
@@ -745,7 +750,10 @@ return (
           </div>
         </section>
 
-        <section className="sv-card">
+        <details className="sv-card">
+          <summary style={{cursor:'pointer',fontWeight:700}}>Legacy tip links · older shows without a venue</summary>
+          <p>These links apply only to older shows without a venue. For venue shows, use the Tip Your Host shortcuts above. Saving these defaults does not change any venue’s tip links.</p>
+          <section style={{marginTop:20}}>
           <div
             style={{
               display: 'flex',
@@ -783,7 +791,7 @@ return (
                     fontSize: 20,
                   }}
                 >
-                  Tip Your Host
+                  Legacy host tips
                 </h2>
 
                 <p
@@ -793,7 +801,7 @@ return (
                     fontSize: 13,
                   }}
                 >
-                  Show payment links on singer-facing pages.
+                  Show payment links for older shows without a venue.
                 </p>
               </div>
             </div>
@@ -881,7 +889,8 @@ return (
               </div>
             </div>
           )}
-        </section>
+          </section>
+        </details>
       </div>
 
       <aside
