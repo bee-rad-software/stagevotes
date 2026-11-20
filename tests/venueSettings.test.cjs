@@ -7,7 +7,7 @@ const defaults={...out.venueSettingsDefaults};
 function client(rows){return {from(table){assert.equal(table,'venues');let filters={};return {select(){return this},eq(k,v){filters[k]=v;return this},async maybeSingle(){return {data:rows.find(v=>v.id===filters.id&&v.account_id===filters.account_id)||null,error:null};}};}};}
 test('one account can have KaraFun and Singa venues without settings leaking',async()=>{
  const a={id:'account',singa_enabled:true,karafun_channel:'999',tips_enabled:true,max_songs_per_singer:9};
- const db=client([{id:'first',account_id:a.id,settings:{...defaults,karafun_channel:'123'},logo_url:'first-logo'},{id:'second',account_id:a.id,settings:{...defaults,singa_enabled:true,max_songs_per_singer:2,static_signup_qr:false}}]);
+ const db=client([{id:'first',account_id:a.id,settings:{...defaults,tips_enabled:false,karafun_channel:'123'},logo_url:'first-logo'},{id:'second',account_id:a.id,settings:{...defaults,singa_enabled:true,max_songs_per_singer:2,static_signup_qr:false}}]);
  const first=await out.settingsForVenue(db,a,'first',a.id),second=await out.settingsForVenue(db,a,'second',a.id);
  assert.equal(first.singa_enabled,false);assert.equal(first.karafun_channel,'123');assert.equal(first.tips_enabled,false);assert.equal(first.logo_url,'first-logo');assert.equal(second.singa_enabled,true);assert.equal(second.karafun_channel,'');assert.equal(second.max_songs_per_singer,2);assert.equal(second.static_signup_qr,false);
  assert.equal(a.karafun_channel,'999');
@@ -18,7 +18,7 @@ test('legacy shows retain defaults and cross-account venue IDs cannot load setti
  assert.equal((await out.settingsForVenue(db,a,'foreign','mine')).karafun_channel,'123');
 });
 test('new venues have independent safe defaults, and migration does not overwrite existing settings',()=>{
- assert.equal(defaults.singa_enabled,false);assert.equal(defaults.karafun_channel,'');assert.equal(defaults.static_signup_qr,true);
+ assert.equal(defaults.singa_enabled,false);assert.equal(defaults.karafun_channel,'');assert.equal(defaults.static_signup_qr,true);assert.equal(defaults.tips_enabled,true);assert.equal(out.parseVenueSettings({tips_enabled:false}).tips_enabled,false);
  const sql=fs.readFileSync('supabase/migrations/20261112190000_per_venue_settings.sql','utf8');assert.match(sql,/v\.settings is null/);assert.match(sql,/alter column settings set default/);
 });
 test('validate only allowed venue fields; normalize KaraFun links and reject invalid input',()=>{

@@ -3,7 +3,7 @@ import type {SupabaseClient} from '@supabase/supabase-js';
 export const venueSettingsDefaults = {
   singa_enabled: false,
   karafun_channel: '',
-  tips_enabled: false,
+  tips_enabled: true,
   venmo_url: '',
   cashapp_url: '',
   apple_pay_url: '',
