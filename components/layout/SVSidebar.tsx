@@ -146,8 +146,6 @@ const href =
     ? `/host/${currentEventId}`
     : item.label === 'Audience' && currentEventId
     ? `/audience/${currentEventId}`
-    : item.label === 'Displays' && currentEventId
-    ? `/displays/${currentEventId}`
     : item.label === 'Analytics' && currentEventId
     ? `/analytics/${currentEventId}`
     : item.label === 'History' && currentEventId
