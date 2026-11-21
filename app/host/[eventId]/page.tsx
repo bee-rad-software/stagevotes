@@ -2644,8 +2644,17 @@ function disconnectKaraFun() {
   );
 }
 
+const [karaFunConnectedOnce, setKaraFunConnectedOnce] = useState(false);
+
 // A provider or venue change must never keep controlling the previous connection.
-useEffect(() => () => disconnectKaraFun(), [eventId, karafunChannel, account?.singa_enabled]);
+useEffect(() => {
+  setKaraFunConnectedOnce(false);
+  return () => disconnectKaraFun();
+}, [eventId, karafunChannel, account?.singa_enabled]);
+
+useEffect(() => {
+  if (karafunConnected && karafunPlayerOnline) setKaraFunConnectedOnce(true);
+}, [karafunConnected, karafunPlayerOnline]);
 
 function toggleKaraFunConnection() {
   if (
@@ -2653,6 +2662,7 @@ function toggleKaraFunConnection() {
     karafunSocketRef.current?.readyState ===
       WebSocket.OPEN
   ) {
+    setKaraFunConnectedOnce(false);
     disconnectKaraFun();
     return;
   }
@@ -5910,6 +5920,7 @@ onOpenKaraFunDisplay={() => {
   karafunConnecting={karafunConnecting}
 karafunConnectionError={karafunConnectionError}
 karafunPlayerOnline={karafunPlayerOnline}
+  karafunConnectionLost={karaFunConnectedOnce && !(karafunConnected && karafunPlayerOnline)}
   showStarted={!!current}
   votingOpen={!!event?.is_voting_open}
   hasCurrentSinger={!!current}

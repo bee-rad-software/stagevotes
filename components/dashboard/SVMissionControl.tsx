@@ -2,7 +2,7 @@
 import { useKaraFunVisible } from './KaraFunVisibility';
 
 import type React from 'react';
-import { Play, Pause, Square, UserPlus, SkipForward, Vote, Monitor, Trophy, Radio, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { TriangleAlert, Play, Pause, Square, UserPlus, SkipForward, Vote, Monitor, Trophy, Radio, ChevronDown, MoreHorizontal } from 'lucide-react';
 import styles from './SVMissionControl.module.css';
 
 type Props = {
@@ -31,6 +31,7 @@ type Props = {
   karafunDisplayOpen?: boolean;
   onOpenKaraFunDisplay?: () => void;
   karafunConnecting?: boolean;
+  karafunConnectionLost?: boolean;
 karafunConnectionError?: string;
 karafunPlayerOnline?: boolean;
 
@@ -55,6 +56,20 @@ export default function SVMissionControl(p: Props) {
     action?.();
   };
   return <section className={styles.panel} aria-label="Show controls">
+    {showKaraFun && p.karafunConnectionLost && (
+      <div className={styles.connectionLost}>
+        <TriangleAlert size={24} aria-hidden="true" />
+        <div role="alert">
+          <strong>KaraFun connection lost</strong>
+          <p>{p.karafunConnecting
+            ? 'Reconnecting to KaraFun…'
+            : p.karafunConnectionError || 'Check that KaraFun is open and remote control is enabled, then reconnect.'}</p>
+        </div>
+        {!p.karafunConnecting && p.onConnectKaraFun && (
+          <button type="button" onClick={p.onConnectKaraFun}>Reconnect</button>
+        )}
+      </div>
+    )}
     <div className={styles.top}>
       <div className={styles.heading}><h2>Run the show</h2><p>{p.currentSingerName ? `Current: ${p.currentSingerName} · Next: ${p.nextSingerName || 'No one waiting'}` : 'Ready for your first singer'}</p></div>
       <div className={styles.actions}>
@@ -75,8 +90,8 @@ export default function SVMissionControl(p: Props) {
       </div>
     </div>}
     {showKaraFun && p.karaokeSettingsHref && <p className={styles.notice}><a href={p.karaokeSettingsHref} target="_blank" rel="noreferrer">KaraFun settings for this show ↗</a> · Save the channel there, then refresh this show before connecting.</p>}
-    {showKaraFun && error && <p className={styles.error} role="alert">{error}</p>}
-    {showKaraFun && !p.karafunConnecting && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Bring KaraFun to the front and confirm remote control is enabled, then click Retry connection.</p>}
+    {showKaraFun && error && (!p.karafunConnectionLost || !p.karafunConnectionError) && <p className={styles.error} role="alert">{error}</p>}
+    {showKaraFun && !p.karafunConnectionLost && !p.karafunConnecting && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Bring KaraFun to the front and confirm remote control is enabled, then click Retry connection.</p>}
     <div className={styles.utilities}>
       {p.judgingEnabled && <button type="button" role="switch" aria-checked={Boolean(p.votingOpen)} onClick={p.onToggleVoting} disabled={!p.hasCurrentSinger} title="Open or close judging for the current singer"><Vote size={17}/>Voting: {p.votingOpen ? 'Open' : 'Closed'}</button>}
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>

@@ -37,3 +37,10 @@
 .panel button.endShow { margin-left:16px; min-height:40px; padding:10px 16px; background:#7f1d1d26; border-color:#b45353; color:#fecaca; }
 .panel button.endShow:hover:not(:disabled) { background:#7f1d1d55; border-color:#f87171; color:#fff; }
 @media(max-width:640px) { .panel button.endShow { margin-left:0; } }
+
+.connectionLost { display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; margin:0 0 18px; padding:16px; border:2px solid #f87171; border-radius:12px; background:#451a24; color:#fff1f2; }
+.connectionLost > svg { flex:none; color:#fda4af; }
+.connectionLost > div { flex:1 1 180px; }
+.connectionLost strong { font-size:18px; }
+.connectionLost p { margin:4px 0 0; font-size:14px; line-height:1.5; }
+.panel .connectionLost button { background:#7f1d1d; border-color:#f87171; color:#fff; }
