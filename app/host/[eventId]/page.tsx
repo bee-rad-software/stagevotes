@@ -1171,7 +1171,12 @@ async function loadRememberedSingerNames() {
   setRememberedSingerNames(names);
 }
 
+ const queueOrderSavingRef = useRef(false);
+ const performanceLoadRevisionRef = useRef(0);
+
  async function loadPerformances() {
+  if (queueOrderSavingRef.current) return;
+  const revision = ++performanceLoadRevisionRef.current;
   const accountId = await getMyAccountId();
   if (!accountId) return;
 
@@ -1193,7 +1198,9 @@ async function loadRememberedSingerNames() {
     return false;
   }
 
-  setPerformances(data || []);
+  if (!queueOrderSavingRef.current && revision === performanceLoadRevisionRef.current) {
+    setPerformances(data || []);
+  }
 }
 
 async function loadPeoplesChoice() {
@@ -2824,6 +2831,7 @@ if (
 }
 
 if (
+  queueOrderSavingRef.current ||
   karaFunRecoveringRef.current ||
   !ws ||
   ws.readyState !== WebSocket.OPEN ||
@@ -2977,6 +2985,7 @@ const desiredKaraFunNext =
         protectedKaraFunItemId
     ) ||
     (
+      !protectedKaraFunItemId &&
       normalize(item.singer) ===
         normalize(
           karaFunCurrentSingerRef.current
@@ -3061,22 +3070,7 @@ const desiredNextTitle =
 
   const currentKaraFunItem =
   karafunQueueItems.find(
-    (item: any) =>
-      (
-        currentKaraFunItemId &&
-        item.queueItemId ===
-          currentKaraFunItemId
-      ) ||
-      (
-        normalize(item.singer) ===
-          normalize(
-            karaFunCurrentSingerRef.current
-          ) &&
-        normalize(item.title) ===
-          normalize(
-            karaFunCurrentTitleRef.current
-          )
-      )
+    isProtectedKaraFunItem
   ) || null;
 
   /*
@@ -3087,6 +3081,7 @@ const desiredNextTitle =
   const desiredNextKaraFunItem =
   karafunQueueItems.find(
     (item: any) =>
+      !isProtectedKaraFunItem(item) &&
       normalize(item.singer) ===
         desiredNextSinger &&
       normalize(item.title) ===
@@ -3101,7 +3096,6 @@ const desiredNextTitle =
    * only two songs deep.
    */
   if (
-    currentKaraFunItemId &&
     desiredNextKaraFunItem?.queueItemId
   ) {
     const staleItems =
@@ -4484,6 +4478,7 @@ async function moveSinger(
 
   const visibleQueue = rotatedQueue.filter(
     (p) =>
+      p.id !== event?.current_performance_id &&
       p.status !== 'completed' &&
       p.status !== 'skipped'
   );
@@ -4522,46 +4517,7 @@ async function moveSinger(
   const targetItem =
     sameRoundQueue[targetIndex];
 
-  const currentOrder =
-    currentItem.manual_queue_order ??
-    currentItem.queue_order ??
-    0;
-
-  const targetOrder =
-    targetItem.manual_queue_order ??
-    targetItem.queue_order ??
-    0;
-
-  const { error } = await supabase
-    .from('performances')
-    .update({
-      manual_queue_order: targetOrder,
-    })
-    .eq('id', currentItem.id)
-    .eq('event_id', eventId)
-    .eq('account_id', accountId);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  const { error: targetError } =
-    await supabase
-      .from('performances')
-      .update({
-        manual_queue_order: currentOrder,
-      })
-      .eq('id', targetItem.id)
-      .eq('event_id', eventId)
-      .eq('account_id', accountId);
-
-  if (targetError) {
-    alert(targetError.message);
-    return;
-  }
-
-  await loadAll();
+  await handleQueueReorder(currentItem.id, targetItem.id);
 }
 
 async function checkInSinger(
@@ -5731,6 +5687,10 @@ async function handleQueueReorder(
     })
   );
 
+  if (queueOrderSavingRef.current) return;
+  queueOrderSavingRef.current = true;
+  ++performanceLoadRevisionRef.current;
+  try {
   // Optimistic local update.
   setPerformances((current) =>
     current.map((performance) => {
@@ -5773,7 +5733,11 @@ async function handleQueueReorder(
       failedUpdate.error
     );
 
-    await loadAll();
+    alert('Could not save the queue order. Please try again.');
+  }
+  } finally {
+    queueOrderSavingRef.current = false;
+    await loadPerformances();
   }
 }
 
