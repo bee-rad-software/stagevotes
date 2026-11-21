@@ -2076,6 +2076,20 @@ karaFunRecoveryNeedsAdvanceRef.current =
   );
 }
 
+// A fresh idle status is also a baseline. Otherwise an empty player and
+// a selected StageVotes singer can wait on each other indefinitely.
+if (
+  karaFunRecoveringRef.current &&
+  !status?.current &&
+  typeof karaFunState === 'number' &&
+  karaFunState !== 4 &&
+  karaFunState !== 5
+) {
+  karaFunCurrentItemIdRef.current = null;
+  karaFunRecoveryBaselineSetRef.current = true;
+  karaFunRecoveryNeedsAdvanceRef.current = false;
+}
+
 karaFunRecoveryStatusSeenRef.current = true;
 
 const recoveryHasRequiredBaseline =
