@@ -1,4 +1,6 @@
-export type RotationPerformance = {
+import { getRotationIdentity, type RotationIdentityPerformance } from './rotationIdentity';
+
+export type RotationPerformance = RotationIdentityPerformance & {
   id: string;
   round?: number | null;
   queue_order?: number | null;
@@ -19,7 +21,7 @@ export function buildRotationQueue<
       performance.status !== 'skipped'
   );
 
-  const ordered = [...active].sort((a, b) => {
+  const compare = (a: T, b: T) => {
     const roundDiff =
       (a.round || 1) - (b.round || 1);
 
@@ -62,28 +64,44 @@ if (createdDiff !== 0) {
 }
 
 return a.id.localeCompare(b.id);
-  });
+  };
 
-  // The event record is authoritative about
-  // who is currently performing.
-  if (currentPerformanceId) {
-    const currentIndex = ordered.findIndex(
-      (performance) =>
-        performance.id === currentPerformanceId
-    );
-
-    if (currentIndex > 0) {
-      const [current] = ordered.splice(
-        currentIndex,
-        1
-      );
-
-      ordered.unshift(current);
-    }
+  // Keep an extra song out of an already occupied round. A host-entered
+  // name can match a signed-in singer when that name identifies only one profile.
+  const nameKey = (p: T) => (p.singer_name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const profilesByName = new Map<string, Set<string>>();
+  for (const p of performances) {
+    const name = nameKey(p);
+    if (!name || !p.singer_profile_id) continue;
+    const profiles = profilesByName.get(name) ?? new Set<string>();
+    profiles.add(getRotationIdentity(p));
+    profilesByName.set(name, profiles);
   }
-
+  const lastRound = new Map<string, number>();
+  const current = active.find(p => p.id === currentPerformanceId);
+  const waiting = active.filter(p => p !== current).sort(compare);
+  const identity = (p: T) => {
+    const name = nameKey(p);
+    const profiles = profilesByName.get(name);
+    if (p.singer_profile_id) return getRotationIdentity(p);
+    if (name && profiles?.size === 1) return [...profiles][0];
+    return name ? `guest:${name}` : getRotationIdentity(p);
+  };
+  for (const p of performances) {
+    if (p !== current && p.status !== 'completed') continue;
+    const key = identity(p);
+    lastRound.set(key, Math.max(lastRound.get(key) ?? 0, p.round || 1));
+  }
+  const ordered = waiting.map(p => {
+    const key = identity(p);
+    const round = Math.max(p.round || 1, (lastRound.get(key) ?? 0) + 1);
+    if (nameKey(p) || p.singer_profile_id || p.device_id) lastRound.set(key, round);
+    return { p, round };
+  }).sort((a, b) => a.round - b.round || compare(a.p, b.p)).map(({ p }) => p);
+  if (current) ordered.unshift(current);
   return ordered;
 }
+
 
 export function getQueuePosition<
   T extends RotationPerformance
