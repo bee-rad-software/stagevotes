@@ -6,6 +6,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { createClient } from '@supabase/supabase-js';
+import { nearbyLiveShows, nearbyShowRadiusMiles, venueCoordinates, type Coordinates } from '@/lib/nearbyLiveShows';
 import SVSingerShell from '@/components/navigation/SVSingerShell';
 import { scheduleLabel, upcomingShowDates, type RecurrenceType } from '@/lib/venueShowSchedule';
 
@@ -26,6 +27,8 @@ type LiveVenue = {
   currentSinger: string | null;
   currentSong: string | null;
   waitingCount: number;
+  coordinates: Coordinates | null;
+  area: string;
 };
 
 type UpcomingShow = {
@@ -108,6 +111,33 @@ export default function LiveTonightPage() {
 
 const [liveVenues, setLiveVenues] =
   useState<LiveVenue[]>([]);
+
+const [origin, setOrigin] = useState<Coordinates | null>(null);
+const [area, setArea] = useState('');
+const [locating, setLocating] = useState(false);
+const [locationError, setLocationError] = useState('');
+
+function useMyLocation() {
+  setLocationError('');
+  if (!navigator.geolocation) {
+    setLocationError('Location is unavailable. Choose a city or area instead.');
+    return;
+  }
+  setLocating(true);
+  navigator.geolocation.getCurrentPosition(({ coords }) => {
+    const position = venueCoordinates(coords.latitude, coords.longitude);
+    setLocating(false);
+    if (!position) {
+      setLocationError('Location is unavailable. Choose a city or area instead.');
+      return;
+    }
+    setOrigin(position);
+    setArea('');
+  }, () => {
+    setLocating(false);
+    setLocationError('Could not get your location. Choose a city or area instead.');
+  }, { timeout: 8000, maximumAge: 60000 });
+}
 
 const [loading, setLoading] =
   useState(true);
@@ -539,6 +569,8 @@ if (finishedEventError) {
         name,
         venue_id,
         current_performance_id,
+        venue_lat,
+        venue_lng,
         created_at
       `)
       .in('venue_id', venueIds)
@@ -708,6 +740,10 @@ if (finishedEventError) {
             currentSong:
               currentPerformance
                 ?.song_title || null,
+            coordinates: venueCoordinates(event.venue_lat, event.venue_lng),
+            area: venue.city?.trim() && venue.state?.trim()
+              ? [venue.city.trim(), venue.state.trim()].join(', ')
+              : '',
             waitingCount:
               waitingPerformances.length,
           };
@@ -734,9 +770,11 @@ if (finishedEventError) {
   }
 }
 
-const featuredVenue = liveVenues[0];
-
-const otherVenues = liveVenues.slice(1);
+const localVenues = origin
+  ? nearbyLiveShows(liveVenues, origin)
+  : liveVenues.filter(venue => area && venue.area === area);
+const areas = [...new Set(liveVenues.map(venue => venue.area).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+const [featuredVenue, ...otherVenues] = localVenues;
 
   return (
   <SVSingerShell
@@ -753,6 +791,26 @@ const otherVenues = liveVenues.slice(1);
           Find a StageVotes venue, see who is
           singing, and join the queue.
         </p>
+        <div>
+          <button type="button" disabled={locating} onClick={useMyLocation}>
+            {locating ? 'Finding your location…' : 'Use my location'}
+          </button>
+          {areas.length > 0 && (
+            <label>
+              {' '}Or choose a city or area{' '}
+              <select value={area} disabled={locating} onChange={event => {
+                setOrigin(null);
+                setArea(event.target.value);
+                setLocationError('');
+              }}>
+                <option value="">Choose an area</option>
+                {areas.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+        {locationError && <p role="status">{locationError}</p>}
+        {origin && <p>Looking within {nearbyShowRadiusMiles} miles of you. If a venue hasn’t shared its location, choose its area to find it.</p>}
         <p><Link href="/my-schedule">My Schedule →</Link>{' · '}<Link href="/my-history">My History →</Link></p>
       </section>
 
@@ -776,16 +834,19 @@ const otherVenues = liveVenues.slice(1);
 
 {!loading &&
   !error &&
-  liveVenues.length === 0 && (
+  localVenues.length === 0 && (
     <section className="atlas-live-state">
       <span>🎤</span>
 
       <strong>
-        No StageVotes shows are live yet.
+        {origin || area ? 'No live shows found in this area.' :
+          areas.length ? 'Use your location or choose an area to see live shows.' :
+          liveVenues.length ? 'Use your location to find live shows nearby.' :
+          'No StageVotes shows are live yet.'}
       </strong>
 
       <p>
-        Check back later tonight.
+        {(origin || area || !liveVenues.length) && 'Check back later tonight.'}
       </p>
     </section>
   )}
