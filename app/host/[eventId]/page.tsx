@@ -1748,7 +1748,7 @@ karaFunRecoveryNeedsAdvanceRef.current =
 
     if (!socketMatch) {
       throw new Error(
-        'KaraFun is not currently available. Start KaraFun and try again.'
+        'KaraFun’s remote link isn’t ready. Open Remote Control in KaraFun and check that it’s enabled. If it’s already on, turn it off and back on, then click Connect here. If the link changed, update it in KaraFun settings for this show and reload this page.'
       );
     }
 
@@ -2644,17 +2644,48 @@ function disconnectKaraFun() {
   );
 }
 
-const [karaFunConnectedOnce, setKaraFunConnectedOnce] = useState(false);
+const [karaFunConnectionHistory, setKaraFunConnectionHistory] =
+  useState<{ eventId: string; status: 'never' | 'connected' | 'disconnected' } | null>(null);
+const karaFunHistoryKey = `stagevotes:karafun-connected:${eventId}`;
+const karaFunHistoryStatus = karaFunConnectionHistory?.eventId === eventId
+  ? karaFunConnectionHistory.status
+  : 'never';
+const karaFunConnectedOnce = karaFunHistoryStatus !== 'never';
+const karaFunResumeAttemptedRef = useRef<string | null>(null);
 
 // A provider or venue change must never keep controlling the previous connection.
-useEffect(() => {
-  setKaraFunConnectedOnce(false);
-  return () => disconnectKaraFun();
-}, [eventId, karafunChannel, account?.singa_enabled]);
+useEffect(() => () => disconnectKaraFun(), [eventId, karafunChannel, account?.singa_enabled]);
 
 useEffect(() => {
-  if (karafunConnected && karafunPlayerOnline) setKaraFunConnectedOnce(true);
-}, [karafunConnected, karafunPlayerOnline]);
+  try {
+    const saved = window.localStorage.getItem(karaFunHistoryKey);
+    setKaraFunConnectionHistory({
+      eventId,
+      status: saved === '1' ? 'connected' : saved === 'off' ? 'disconnected' : 'never',
+    });
+  } catch { /* Keep connection history in memory if storage is unavailable. */ }
+}, [eventId, karaFunHistoryKey]);
+
+useEffect(() => {
+  if (event?.id !== eventId || !karafunConnected || !karafunPlayerOnline) return;
+  setKaraFunConnectionHistory({ eventId, status: 'connected' });
+  try {
+    window.localStorage.setItem(karaFunHistoryKey, '1');
+  } catch { /* The current screen still remembers the connection. */ }
+}, [event?.id, eventId, karaFunHistoryKey, karafunConnected, karafunPlayerOnline]);
+
+// The show page owns the socket. Resume once when reopening a show that
+// previously connected, after its venue and player settings are loaded.
+useEffect(() => {
+  if (event?.id !== eventId || event.is_show_ended || !accountLoaded ||
+      account?.singa_enabled || !karafunChannel.trim() ||
+      karaFunHistoryStatus !== 'connected' || karaFunResumeAttemptedRef.current === eventId) return;
+  karaFunResumeAttemptedRef.current = eventId;
+  if (!karafunSocketRef.current && !karafunConnecting && !karaFunReconnectTimerRef.current) {
+    void connectKaraFun();
+  }
+}, [event?.id, event?.is_show_ended, eventId, accountLoaded, account?.singa_enabled,
+  karafunChannel, karaFunHistoryStatus, karafunConnecting]);
 
 function toggleKaraFunConnection() {
   if (
@@ -2662,11 +2693,16 @@ function toggleKaraFunConnection() {
     karafunSocketRef.current?.readyState ===
       WebSocket.OPEN
   ) {
-    setKaraFunConnectedOnce(false);
+    karaFunResumeAttemptedRef.current = eventId;
+    setKaraFunConnectionHistory({ eventId, status: 'disconnected' });
+    try {
+      window.localStorage.setItem(karaFunHistoryKey, 'off');
+    } catch { /* Still honor Disconnect on this screen. */ }
     disconnectKaraFun();
     return;
   }
 
+  karaFunResumeAttemptedRef.current = eventId;
   void connectKaraFun();
 }
 
@@ -5928,7 +5964,7 @@ onOpenKaraFunDisplay={() => {
   karafunConnecting={karafunConnecting}
 karafunConnectionError={karafunConnectionError}
 karafunPlayerOnline={karafunPlayerOnline}
-  karafunConnectionLost={karaFunConnectedOnce && !(karafunConnected && karafunPlayerOnline)}
+  karafunConnectionLost={!event?.is_show_ended && karaFunConnectedOnce && !(karafunConnected && karafunPlayerOnline)}
   showStarted={!!current}
   votingOpen={!!event?.is_voting_open}
   hasCurrentSinger={!!current}

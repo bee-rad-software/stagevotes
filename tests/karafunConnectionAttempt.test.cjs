@@ -32,7 +32,7 @@ function host(){
  const start=source.indexOf('  async function connectKaraFun()'),end=source.indexOf('\nfunction disconnectKaraFun()',start);
  vm.createContext(ctx);vm.runInContext(ts.transpileModule(source.slice(start,end),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,ctx);
  const disconnectStart=source.indexOf('function disconnectKaraFun()');
- const disconnectEnd=source.indexOf('// A provider or venue change',disconnectStart);
+ const disconnectEnd=source.indexOf('const [karaFunConnectionHistory,',disconnectStart);
  vm.runInContext(ts.transpileModule(source.slice(disconnectStart,disconnectEnd),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText,ctx);
  return {ctx,h,sockets,state};
 }

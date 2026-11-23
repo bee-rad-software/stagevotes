@@ -152,10 +152,16 @@ const href =
     ? `/history/${currentEventId}`
     : item.href;
 
+              // Navigating away from the host screen closes its KaraFun connection.
+              const openQrSeparately = item.label === 'QR Codes' && pathname.startsWith('/host/') && Boolean(currentEventId);
+
               return (
                 <Link
   key={item.label}
   href={href}
+  target={openQrSeparately ? '_blank' : undefined}
+  rel={openQrSeparately ? 'noopener noreferrer' : undefined}
+  aria-label={openQrSeparately ? 'QR Codes (opens separately)' : undefined}
   className={
     pathname === href ||
     (
