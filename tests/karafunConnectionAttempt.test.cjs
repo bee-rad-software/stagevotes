@@ -72,3 +72,19 @@ test('unexpected live socket close retains automatic reconnect',async()=>{
  sockets[0].close();assert.equal(ctx.karafunSocketRef.current,null);assert.equal(h.timers.size,1);
  assert.ok(ctx.karaFunReconnectTimerRef.current);
 });
+
+test('a queue update cannot send commands while Skip Song is settling', async () => {
+ const {ctx,sockets}=host();
+ await ctx.connectKaraFun();
+ const commands=[];
+ sockets[0].send = command => commands.push(JSON.parse(command));
+ ctx.karafunControlRef.current = {kind:'skip',previousItemId:'first',expectedItemId:'second'};
+ ctx.karafunQueueItems = [{queueItemId:'first'}, {queueItemId:'second'}];
+ const start=source.indexOf('async function syncKaraFunQueueOrder()');
+ const end=source.indexOf('async function sendPerformanceToKaraFun',start);
+ vm.runInContext(ts.transpileModule(source.slice(start,end),{
+   compilerOptions:{target:ts.ScriptTarget.ES2022}
+ }).outputText,ctx);
+ await ctx.syncKaraFunQueueOrder();
+ assert.deepEqual(commands,[]);
+});

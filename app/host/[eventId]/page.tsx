@@ -269,8 +269,9 @@ const [karafunPlaybackSinger, setKarafunPlaybackSinger] =
   useState('');
 const [karafunControlPending, setKarafunControlPending] = useState<'pause' | 'skip' | null>(null);
 const [karafunControlError, setKarafunControlError] = useState('');
-const karafunControlRef = useRef<{kind:'pause'|'skip';previousItemId:string|null}|null>(null);
+const karafunControlRef = useRef<{kind:'pause'|'skip';previousItemId:string|null;expectedItemId?:string}|null>(null);
 const karafunControlBusyRef = useRef(false);
+const karaFunLoadedItemIdRef = useRef<string | null>(null);
 const karafunControlTimerRef = useRef<ReturnType<typeof setTimeout>|null>(null);
 useEffect(() => () => {
  if (karafunControlTimerRef.current) clearTimeout(karafunControlTimerRef.current);
@@ -1669,6 +1670,7 @@ function isTournamentPerformanceReady(
     return;
   }
 
+  karaFunLoadedItemIdRef.current = null;
   karaFunConnectionAttemptRef.current?.cancel();
 
   // Retire any half-closed socket before reconnecting.
@@ -1948,9 +1950,11 @@ if (message.type === 'remote.StatusEvent') {
   const karaFunCurrentId =
     status?.current?.id || null;
   const control = karafunControlRef.current;
+  if (status) karaFunLoadedItemIdRef.current = karaFunCurrentId;
   if (control && ((control.kind === 'pause' && karaFunState === 5) ||
-      (control.kind === 'skip' && karaFunCurrentId && karaFunCurrentId !== control.previousItemId))) {
-    finishKaraFunControl();
+      (control.kind === 'skip' && karaFunState === 3 && karaFunCurrentId &&
+        karaFunCurrentId !== control.previousItemId && karaFunCurrentId === control.expectedItemId))) {
+    if (control.kind === 'pause') finishKaraFunControl();
     setKarafunControlError('');
   }
 
@@ -2191,6 +2195,8 @@ if (
     return;
   }
 
+  if (control?.kind === 'skip' && karaFunCurrentId !== control.expectedItemId) return;
+
   karaFunCurrentItemIdRef.current =
     karaFunCurrentId;
 
@@ -2367,7 +2373,12 @@ console.log(
   expectedNext.song_title
 );
 
+if (control?.kind === 'skip' && karafunControlTimerRef.current) {
+  clearTimeout(karafunControlTimerRef.current);
+  karafunControlTimerRef.current = null;
+}
 void advanceSinger(true).finally(() => {
+  if (control?.kind === 'skip' && karafunControlRef.current === control) finishKaraFunControl();
   setTimeout(() => {
     karaFunAutoAdvancingRef.current = false;
   }, 750);
@@ -2765,8 +2776,8 @@ function karaFunSkipTargetReady() {
      normalize(karaFunCurrentTitleRef.current)!==normalize(current.song_title)) return false;
  const currentItemIndex=karafunQueueItems.findIndex((item:any)=>item.queueItemId===karaFunCurrentItemIdRef.current);
  const nextItem=currentItemIndex>=0?karafunQueueItems[currentItemIndex+1]:karafunQueueItems[0];
- return Boolean(nextItem && normalize(nextItem.singer)===normalize(getKaraFunSingerName(upNext)) &&
-   normalize(nextItem.title)===normalize(upNext.song_title) && isTournamentPerformanceReady(upNext));
+ return nextItem?.queueItemId && normalize(nextItem.singer)===normalize(getKaraFunSingerName(upNext)) &&
+   normalize(nextItem.title)===normalize(upNext.song_title) && isTournamentPerformanceReady(upNext) ? nextItem.queueItemId : null;
 }
 
 async function controlKaraFun(kind:'pause'|'skip') {
@@ -2800,7 +2811,12 @@ async function controlKaraFun(kind:'pause'|'skip') {
   if(kind==='skip' && (currentPerformanceRef.current?.id!==current?.id || !karaFunSkipTargetReady()))throw new Error('The song changed while checking. Check the queue before trying again.');
   await breakMusicRef.current?.silence();
   if (karafunSocketRef.current !== ws || ws.readyState !== WebSocket.OPEN) throw new Error('KaraFun disconnected while preparing playback.');
-  karafunControlRef.current={kind,previousItemId:karaFunCurrentItemIdRef.current};
+  const expectedItemId = kind === 'skip' ? karaFunSkipTargetReady() : null;
+  if (kind === 'skip' && (!expectedItemId || currentPerformanceRef.current?.id !== current?.id ||
+      rotatedQueueRef.current.find(performance => performance.id !== current?.id)?.id !== upNext?.id)) {
+    throw new Error('The queue changed before skipping. Check the next singer and try again.');
+  }
+  karafunControlRef.current={kind,previousItemId:karaFunCurrentItemIdRef.current,expectedItemId:expectedItemId || undefined};
   ws.send(JSON.stringify({id:Date.now(),type:kind==='pause'?'remote.PauseRequest':'remote.NextRequest',payload:{}}));
   karafunControlTimerRef.current=setTimeout(()=>{
    finishKaraFunControl();
@@ -2813,6 +2829,8 @@ async function controlKaraFun(kind:'pause'|'skip') {
 }
 
 async function syncKaraFunQueueOrder() {
+  // Queue updates can arrive before KaraFun confirms which song is now loaded.
+  if (karafunControlRef.current?.kind === 'skip') return;
   const ws = karafunSocketRef.current;
 
   console.log(
@@ -3016,7 +3034,7 @@ const desiredKaraFunNext =
    * What KaraFun is actually playing.
    */
   const currentKaraFunItemId =
-    karaFunCurrentItemIdRef.current;
+    karaFunLoadedItemIdRef.current ?? karaFunCurrentItemIdRef.current;
 
   const protectedKaraFunItemId =
   currentKaraFunItemId;
@@ -5152,6 +5170,7 @@ useEffect(() => {
   karafunConnected,
   karafunPlayerOnline,
   karafunQueueSynced,
+  karafunControlPending,
 ]);
 
 const completedPerformanceCount = performances.filter(
@@ -5942,7 +5961,7 @@ onOpenKaraFunDisplay={() => {
   onPauseKaraFun={() => { void controlKaraFun('pause'); }}
   onSkipKaraFun={() => { void controlKaraFun('skip'); }}
   karafunPauseReady={karafunConnected && karafunPlayerOnline && karafunPlaybackState === 4}
-  karafunSkipReady={karaFunSkipTargetReady()}
+  karafunSkipReady={Boolean(karaFunSkipTargetReady())}
   karafunControlPending={karafunControlPending}
   karafunControlError={karafunControlError}
   karafunPlayHint={!current
