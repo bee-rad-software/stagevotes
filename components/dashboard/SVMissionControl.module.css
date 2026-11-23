@@ -4,8 +4,8 @@
 .heading { flex:1; min-width:200px; }
 .heading h2 { margin:0; font-size:20px; }
 .heading p { margin:6px 0 0; font-size:13px; line-height:1.5; color:#94a3b8; }
-.panel button,.menu > summary { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:10px 14px; border:1px solid #34435b; border-radius:10px; background:#142238; color:#e2e8f0; font-size:13px; font-weight:700; cursor:pointer; line-height:1.3; }
-.panel button:hover:not(:disabled),.menu > summary:hover { background:#20334e; border-color:#64748b; }
+.panel button,.signupQr,.menu > summary { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:10px 14px; border:1px solid #34435b; border-radius:10px; background:#142238; color:#e2e8f0; font-size:13px; font-weight:700; cursor:pointer; line-height:1.3; }
+.panel button:hover:not(:disabled),.signupQr:hover,.menu > summary:hover { background:#20334e; border-color:#64748b; }
 .panel button.primary { background:#f97316; border-color:#f97316; color:#fff; min-width:145px; }
 .panel button.primary:hover:not(:disabled) { background:#ea580c; }
 .panel button:disabled { opacity:.45; cursor:not-allowed; }
@@ -44,3 +44,6 @@
 .connectionLost strong { font-size:18px; }
 .connectionLost p { margin:4px 0 0; font-size:14px; line-height:1.5; }
 .panel .connectionLost button { background:#7f1d1d; border-color:#f87171; color:#fff; }
+
+.signupQr { text-decoration:none; }
+.signupQr:focus-visible { outline:2px solid #7dd3fc; outline-offset:3px; }

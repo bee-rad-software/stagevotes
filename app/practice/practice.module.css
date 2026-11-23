@@ -1,0 +1,11 @@
+.card { max-width: 680px; padding: clamp(18px, 4vw, 36px); border: 1px solid #334155; border-radius: 18px; background: #101c2d; color: #f8fafc; line-height: 1.55; }
+.card h2 { margin: 10px 0; font-size: clamp(24px, 5vw, 34px); }
+.badge, .step { color: #7dd3fc; font-weight: 700; }
+.card fieldset, .card form, .queue { display: grid; gap: 10px; margin: 16px 0; }
+.card fieldset, .queue { border: 1px solid #475569; border-radius: 10px; padding: 14px; }
+.card fieldset label { display: flex; align-items: center; gap: 8px; }
+.card button, .actions a { width: fit-content; min-height: 44px; margin-top: 10px; }
+.actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.actions a { display: inline-flex; align-items: center; color: #7dd3fc; }
+.card .back { margin-left: 12px; background: transparent; border: 1px solid #64748b; color: #f8fafc; }
+.card :is(button, a, input, select):focus-visible { outline: 2px solid #7dd3fc; outline-offset: 3px; }

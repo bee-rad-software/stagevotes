@@ -94,6 +94,7 @@ export default function SVFirstShowChecklist({ accountId, venueCount }: { accoun
     </div>
     {!progress.collapsed && <div id={checklistId} className={styles.body}>
       <p className={styles.intro}>A quick practice run now means a smoother night when singers arrive.</p>
+      <Link href="/practice" className={styles.action}>Run a practice show<ArrowRight size={14} /></Link>
       {error && <p className={styles.error} role="status">{error}</p>}
       <div className={styles.grid}>
         <SetupCard number={1} icon={<MapPin size={18} />} title="Add your venue" done={venueCount > 0} status={venueCount > 0 ? 'Added' : 'Start here'}>
