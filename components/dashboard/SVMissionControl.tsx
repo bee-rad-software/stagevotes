@@ -63,7 +63,7 @@ export default function SVMissionControl(p: Props) {
       <div className={styles.connectionLost}>
         <TriangleAlert size={24} aria-hidden="true" />
         <div role="alert">
-          <strong>KaraFun connection lost</strong>
+          <strong>KaraFun is disconnected</strong>
           <p>{p.karafunConnecting
             ? 'Reconnecting to KaraFun…'
             : p.karafunConnectionError || 'Check that KaraFun is open and remote control is enabled, then reconnect.'}</p>
