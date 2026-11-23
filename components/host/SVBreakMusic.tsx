@@ -14,6 +14,8 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   const [tracks, setTracks] = useState<Track[]>([]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [audible, setAudible] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [volume, setVolume] = useState(0.25);
   const [shuffle, setShuffle] = useState(true);
   const [automatic, setAutomatic] = useState(true);
@@ -59,6 +61,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
 
   const stop = useCallback(async (immediate = false) => {
     wantsPlayback.current = false;
+    setAudible(false);
     const ticket = ++intent.current;
     if (!immediate) await fade(0);
     if (ticket !== intent.current) return;
@@ -84,6 +87,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     const ticket = ++intent.current;
     window.clearTimeout(frame.current); cancelFade.current?.(); cancelFade.current = null;
     setError('');
+    setAudible(false);
     if (el.getAttribute('src') !== track.url) { el.src = track.url; indexRef.current = at; setIndex(at); }
     if(restart)el.currentTime=0;
     pendingSingerTrack.current=false;
@@ -96,6 +100,11 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
       playedTracks.current.add(at);
       hasPlayedTrack.current=true;
       await fade(options.current.volume);
+      if (ticket === intent.current && !blocked.current && !el.paused) {
+        // A cancelled fade must not leave a running track at zero volume.
+        el.volume = options.current.muted ? 0 : options.current.volume;
+        setAudible(el.volume > 0);
+      }
     } catch { if (ticket === intent.current) { setPlaying(false); setError('Could not play this file. Select another track or press Play to try again.'); } }
   }, [fade]);
 
@@ -105,14 +114,16 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     if (!(window as Window & { stagevotesDesktop?: { isDesktop?: boolean } }).stagevotesDesktop?.isDesktop) return;
     setDesktop(true);
     const el = new Audio(); audio.current = el; el.volume = 0;
-    const onPlay = () => setPlaying(true), onPause = () => setPlaying(false);
+    const onPlay = () => { setPlaying(true); setBuffering(false); };
+    const onWaiting = () => setBuffering(true);
+    const onPause = () => { setPlaying(false); setAudible(false); setBuffering(false); };
     const onEnded = () => { setPlaying(false); advance.current(); };
     const onError = () => { setPlaying(false); setError('This audio file could not be read. Try another MP3, WAV, or M4A file.'); };
-    el.addEventListener('play', onPlay); el.addEventListener('pause', onPause); el.addEventListener('ended', onEnded); el.addEventListener('error', onError);
+    el.addEventListener('playing', onPlay); el.addEventListener('waiting', onWaiting); el.addEventListener('pause', onPause); el.addEventListener('ended', onEnded); el.addEventListener('error', onError);
     return () => {
       ++intent.current; window.clearTimeout(frame.current); cancelFade.current?.(); cancelFade.current = null;
       el.pause(); el.removeAttribute('src'); el.load();
-      el.removeEventListener('play', onPlay); el.removeEventListener('pause', onPause); el.removeEventListener('ended', onEnded); el.removeEventListener('error', onError);
+      el.removeEventListener('playing', onPlay); el.removeEventListener('waiting', onWaiting); el.removeEventListener('pause', onPause); el.removeEventListener('ended', onEnded); el.removeEventListener('error', onError);
       tracksRef.current.forEach(t => URL.revokeObjectURL(t.url)); tracksRef.current = []; audio.current = null;
     };
   }, []);
@@ -139,7 +150,16 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
     return () => window.clearTimeout(timer);
   }, [connected, online, playbackState, commandPending, ended, automatic, muted, tracks.length, start, stop]);
 
-  useEffect(() => { if (audio.current && !audio.current.paused) void fade(muted ? 0 : volume, 180); }, [volume, muted, fade]);
+  useEffect(() => {
+    const el = audio.current;
+    if (!el || el.paused || !wantsPlayback.current || blocked.current) return;
+    const ticket = intent.current;
+    void fade(muted ? 0 : volume, 180).then(() => {
+      if (ticket === intent.current && wantsPlayback.current && !blocked.current && !el.paused) {
+        setAudible(el.volume > 0);
+      }
+    });
+  }, [volume, muted, fade]);
 
   async function chooseFiles(files: FileList | null) {
     if (!files?.length) return;
@@ -156,7 +176,7 @@ const SVBreakMusic = forwardRef<BreakMusicHandle, Props>(function SVBreakMusic({
   const singerBusy = connected && online && (playbackState === 4 || playbackState === 5);
   const cannotPlay = !tracks.length || singerBusy || commandPending || ended;
   return <details className={styles.panel} aria-label="Break music">
-    <summary className={styles.head}><Music2 size={20} /><h3>Break music</h3><span className={styles.status}>{error ? 'Needs attention' : playing ? 'Playing' : singerBusy ? 'Singer on stage' : 'Ready when you are'}</span></summary>
+    <summary className={styles.head}><Music2 size={20} /><h3>Break music</h3><span className={styles.status}>{error ? 'Needs attention' : playing ? (muted || volume === 0 ? 'Muted' : buffering ? 'Buffering…' : audible ? 'Playing' : 'Starting…') : singerBusy ? 'Singer on stage' : 'Ready when you are'}</span></summary>
     <p>Your playlist, between singers. Files stay on this computer and play through its selected audio output.</p>
     <input className={styles.hidden} ref={filesInput} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac" multiple onChange={e => { void chooseFiles(e.target.files); e.target.value = ''; }} />
     <input className={styles.hidden} ref={folderInput} type="file" multiple {...{ webkitdirectory: '' }} onChange={e => { void chooseFiles(e.target.files); e.target.value = ''; }} />
