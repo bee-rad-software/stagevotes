@@ -5898,7 +5898,9 @@ onOpenKaraFunDisplay={() => {
     )
   }
   signupQrHref={`/audience/${eventId}`}
-  karaokeSettingsHref={event?.venue_id ? `/account/venues/${event.venue_id}/settings` : '/account'}
+  karaokeSettingsHref={!karafunChannel.trim()
+    ? (event?.venue_id ? `/account/venues/${event.venue_id}/settings` : '/account')
+    : undefined}
   onConnectKaraFun={toggleKaraFunConnection}
   onPlayKaraFun={playKaraFunSong}
   onPauseKaraFun={() => { void controlKaraFun('pause'); }}
