@@ -1256,6 +1256,9 @@ if (currentEventError) {
           <label htmlFor="dashboard-venue" style={{fontWeight:700}}>Venue</label><select id="dashboard-venue" value={selectedVenue} onChange={e=>{setSelectedVenue(e.target.value);try{if(account?.id)localStorage.setItem('stage-dashboard-venue:'+account.id,e.target.value);}catch{}}} style={{padding:'11px 14px',borderRadius:10,border:'1px solid #475569',background:'#0b1423',color:'#f8fafc',fontSize:16,maxWidth:'100%'}}><option value="">All venues</option>{venues.map(v=><option key={v.id} value={v.id}>{v.name}</option>)}</select>
           <Link href="/account/venues" style={{color:'#7dd3fc'}}>Manage venues</Link>{selectedVenue&&<Link href={`/account/venues/${selectedVenue}#recurring-shows`} style={{color:'#7dd3fc'}}>Set up recurring shows</Link>}{selectedVenue&&<Link href={`/account/venues/${selectedVenue}/settings`} style={{color:'#7dd3fc'}}>Venue settings</Link>}{selectedVenue&&<Link href={`/account/venues/${selectedVenue}/badges`} style={{color:'#7dd3fc'}}>Badges</Link>}
         </section>
+        {selectedVenue && venues.some(venue => venue.id === selectedVenue) && (
+          <p><Link href={`/create?venue=${encodeURIComponent(selectedVenue)}&format=karaoke`}>Start another karaoke show at this venue →</Link></p>
+        )}
         {account?.id && <SVTrialReminder key={account.id} />}
 
         {account?.id && <SVActiveShows key={account.id} accountId={account.id} venueId={selectedVenue} />}

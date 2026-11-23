@@ -11,6 +11,7 @@ import {
   QrCode,
   Rocket,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { createStageVotesEvent } from '@/lib/events/createStageVotesEvent';
@@ -55,10 +56,10 @@ export default function LaunchFirstShowStep({
     useState(initialShowName);
 
   const [judgingEnabled, setJudgingEnabled] =
-    useState(true);
+    useState(false);
 
   const [peoplesChoiceEnabled, setPeoplesChoiceEnabled] =
-    useState(true);
+    useState(false);
 
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] =
@@ -201,7 +202,7 @@ if (launchStage > 0) {
           <p className="onboarding-lead">
             Everything is ready.
 
-Launch your first karaoke show in under 30 seconds.
+Start with a karaoke night, or turn on voting for a contest.
           </p>
         </div>
       </div>
@@ -293,6 +294,7 @@ Launch your first karaoke show in under 30 seconds.
             )}
           </button>
 
+        <p><Link href="/practice">Try a practice show first →</Link></p>
         <p className="onboarding-first-show-help">
   You can change your show name, voting settings,
   QR codes, and everything else later.

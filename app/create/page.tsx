@@ -170,6 +170,7 @@ function CreatePageContent() {
   const recurringShowId =
     searchParams.get('recurringShow');
 
+  const format = searchParams.get('format');
   const [name, setName] = useState('');
   const [venue, setVenue] = useState('');
   const [venueChoices,setVenueChoices]=useState<{id:string;name:string}[]>([]);
@@ -193,18 +194,18 @@ function CreatePageContent() {
   ] = useState('Overall Performance');
 
   const [judgingEnabled, setJudgingEnabled] =
-  useState(true);
+  useState(format !== 'karaoke');
 
   const [showSignupQR, setShowSignupQR] =
     useState(true);
 
   const [showVotingQR, setShowVotingQR] =
-    useState(true);
+    useState(format !== 'karaoke');
 
   const [
     showPeoplesChoiceQR,
     setShowPeoplesChoiceQR,
-  ] = useState(true);
+  ] = useState(format !== 'karaoke');
 
   const [
     subscriptionStatus,

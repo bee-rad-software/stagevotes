@@ -1,8 +1,9 @@
 'use client';
 import { useKaraFunVisible } from './KaraFunVisibility';
 
+import Link from 'next/link';
 import type React from 'react';
-import { TriangleAlert, Play, Pause, Square, UserPlus, SkipForward, Vote, Monitor, Trophy, Radio, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { TriangleAlert, Play, Pause, Square, UserPlus, SkipForward, Vote, Monitor, Trophy, Radio, ChevronDown, MoreHorizontal, QrCode } from 'lucide-react';
 import styles from './SVMissionControl.module.css';
 
 type Props = {
@@ -18,6 +19,7 @@ type Props = {
   onAwards?: () => void;
   onConnectKaraFun?: () => void;
   karaokeSettingsHref?: string;
+  signupQrHref?: string;
   onPlayKaraFun?: () => void;
   onPauseKaraFun?: () => void;
   onSkipKaraFun?: () => void;
@@ -26,6 +28,7 @@ type Props = {
   karafunControlPending?: 'pause' | 'skip' | null;
   karafunControlError?: string;
   karafunPlaybackReady?: boolean;
+  karafunPlayHint?: string;
   karafunPlayPending?: boolean;
   karafunPlayError?: string;
   karafunDisplayOpen?: boolean;
@@ -73,6 +76,7 @@ export default function SVMissionControl(p: Props) {
     <div className={styles.top}>
       <div className={styles.heading}><h2>Run the show</h2><p>{p.currentSingerName ? `Current: ${p.currentSingerName} · Next: ${p.nextSingerName || 'No one waiting'}` : 'Ready for your first singer'}</p></div>
       <div className={styles.actions}>
+        {p.signupQrHref && <Link className={styles.signupQr} href={p.signupQrHref} target="_blank" rel="noreferrer"><QrCode size={18}/>Signup QR</Link>}
         {!p.showStarted && <button type="button" className={styles.primary} onClick={p.onStartShow}>
           <Play size={19}/>Start Show
         </button>}
@@ -89,6 +93,9 @@ export default function SVMissionControl(p: Props) {
         <button type="button" className={styles.quiet} onClick={p.onConnectKaraFun} disabled={p.karafunConnecting}>{connected ? 'Disconnect' : p.karafunConnected ? 'Retry connection' : 'Connect'}</button>
       </div>
     </div>}
+    {showKaraFun && connected && !busy && !pausing && !p.karafunPlaybackReady && p.karafunPlayHint && (
+      <p className={styles.notice} role="status">{p.karafunPlayHint}</p>
+    )}
     {showKaraFun && p.karaokeSettingsHref && <p className={styles.notice}><a href={p.karaokeSettingsHref} target="_blank" rel="noreferrer">KaraFun settings for this show ↗</a> · Save the channel there, then refresh this show before connecting.</p>}
     {showKaraFun && error && (!p.karafunConnectionLost || !p.karafunConnectionError) && <p className={styles.error} role="alert">{error}</p>}
     {showKaraFun && !p.karafunConnectionLost && !p.karafunConnecting && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Bring KaraFun to the front and confirm remote control is enabled, then click Retry connection.</p>}

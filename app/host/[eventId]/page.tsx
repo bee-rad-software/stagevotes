@@ -5897,6 +5897,7 @@ onOpenKaraFunDisplay={() => {
       '_blank'
     )
   }
+  signupQrHref={`/audience/${eventId}`}
   karaokeSettingsHref={event?.venue_id ? `/account/venues/${event.venue_id}/settings` : '/account'}
   onConnectKaraFun={toggleKaraFunConnection}
   onPlayKaraFun={playKaraFunSong}
@@ -5906,6 +5907,11 @@ onOpenKaraFunDisplay={() => {
   karafunSkipReady={karaFunSkipTargetReady()}
   karafunControlPending={karafunControlPending}
   karafunControlError={karafunControlError}
+  karafunPlayHint={!current
+    ? 'Start the show to select the first singer.'
+    : karafunPlaybackSinger.trim().toLowerCase() !== getKaraFunSingerName(current).trim().toLowerCase()
+      ? `${current.singer_name}’s song isn’t loaded in KaraFun yet. Check the KaraFun queue before playing.`
+      : 'KaraFun isn’t ready to play yet. Check the player for the selected song.'}
   karafunPlaybackReady={
     karafunConnected &&
     karafunPlayerOnline &&
