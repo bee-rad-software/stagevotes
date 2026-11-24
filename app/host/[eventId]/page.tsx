@@ -55,6 +55,10 @@ import {
 } from '@/lib/rotationIdentity';
 import {
   buildRotationQueue,
+  assignSignupRound,
+  getRotationProgress,
+  getFitIntoRoundUpdates,
+  rotationProgressFields,
 } from '@/lib/rotationQueue';
 import {
   buildHostIQRecommendation,
@@ -1299,16 +1303,6 @@ async function logout() {
   setCategories(data || []);
 }
 
-function getCurrentActiveRound() {
-  const active = performances.filter(
-    (p: any) => p.status !== 'completed' && p.status !== 'skipped'
-  );
-
-  if (active.length === 0) return 1;
-
-  return Math.min(...active.map((p: any) => p.round || 1));
-}
-  
 const [selectedEditSingaVersion, setSelectedEditSingaVersion] = useState<SVSongOption | null>(null);
 const [selectedSingaVersion, setSelectedSingaVersion] = useState<SVSongOption | null>(null);
 const searchPickerSongs = useCallback(
@@ -1472,9 +1466,6 @@ const singerExistingSongs = performances.filter(
       .toLowerCase() === normalizedSingerName
 );
 
-const currentRound =
-  getCurrentActiveRound();
-
 const singerHighestRound =
   singerExistingSongs.some(
     (performance: any) =>
@@ -1493,15 +1484,6 @@ const singerHighestRound =
       )
     : null;
 
-const assignedRound =
-  singerHighestRound === null
-    ? currentRound
-    : Math.max(
-        currentRound,
-        singerHighestRound + 1
-      );
-    
-
 const singerOriginalOrder =
   singerExistingSongs.length > 0
     ? Math.min(
@@ -1511,6 +1493,12 @@ const singerOriginalOrder =
         )
       )
     : null;
+
+const assignedRound = assignSignupRound(
+  getRotationProgress(performances, event?.current_performance_id),
+  singerOriginalOrder,
+  singerHighestRound
+);
 
 let nextOrder: number;
 
@@ -4442,6 +4430,33 @@ async function skipSinger(
   await loadAll();
 }
 
+async function fitIntoCurrentRound(id: string) {
+  const accountId = await getMyAccountId();
+  if (!accountId) return;
+
+  const [queue, currentEvent] = await Promise.all([
+    supabase.from('performances').select(rotationProgressFields).eq('event_id', eventId),
+    supabase.from('events').select('current_performance_id').eq('id', eventId).single(),
+  ]);
+  if (queue.error || currentEvent.error) {
+    alert('Could not refresh the rotation. Try again.');
+    return;
+  }
+  const rows = queue.data || [];
+  const update = getFitIntoRoundUpdates(rows, currentEvent.data?.current_performance_id).get(id);
+  const song = rows.find(p => p.id === id);
+  if (!song || !update) {
+    alert('This song can no longer be fitted into the current round.');
+    await loadAll();
+    return;
+  }
+  const { data, error } = await supabase.from('performances').update(update)
+    .eq('event_id', eventId).eq('account_id', accountId).eq('id', id)
+    .eq('round', song.round).eq('status', song.status).select('id').maybeSingle();
+  if (error || !data) alert('Could not move the song. The queue may have changed.');
+  await loadAll();
+}
+
 async function moveSingerToNextRound(
   performanceId: string,
   requestedRound?: number
@@ -6065,6 +6080,8 @@ karafunPlayerOnline={karafunPlayerOnline}
     setShowEditSongPicker(true);
     }}
     onSkip={skipSinger}
+    fitIntoRoundIds={getFitIntoRoundUpdates(performances, event?.current_performance_id)}
+    onFitIntoRound={fitIntoCurrentRound}
     onMoveToNextRound={
     moveSingerToNextRound
     }

@@ -125,6 +125,8 @@ type Props = {
   onCancelEdit?: () => void;
 
   onSkip?: (id: string) => void;
+  fitIntoRoundIds?: ReadonlyMap<string, unknown>;
+  onFitIntoRound?: (id: string) => void;
   onMoveToNextRound: (
   performanceId: string
 ) => void;
@@ -159,6 +161,7 @@ type SortableRowProps = {
   ) => void;
 
 onSkip?: (id: string) => void;
+onFitIntoRound?: (id: string) => void;
 onMoveToNextRound?: (id: string) => void;
 onRemove?: (id: string) => void;
 onCheckIn?: (id: string) => void;
@@ -187,6 +190,7 @@ function SortableQueueRow({
   editing,
   onStartEdit,
   onSkip,
+  onFitIntoRound,
   onMoveToNextRound,
   onRemove,
   onCheckIn,
@@ -355,6 +359,14 @@ const rowStyle: React.CSSProperties = {
               <span>{item.performanceNote}</span>
             </div>
           )}
+          {onFitIntoRound && (
+            <button type="button" className="btn-small" onClick={(event) => {
+              event.stopPropagation();
+              onFitIntoRound(item.id);
+            }}>
+              Fit into this round
+            </button>
+          )}
         </div>
 
         <div className="sv-host-queue-actions">
@@ -496,6 +508,8 @@ export default function SVHostQueue({
   onMoveSongLater,
   onCancelEdit,
   onSkip,
+  fitIntoRoundIds,
+  onFitIntoRound,
   onMoveToNextRound,
     onRemove,
   onCheckIn,
@@ -877,6 +891,12 @@ const uniqueSingerCount = singerGroups.length;
                     </span>
                   </button>
                   <div className="sv-singer-group-song-moves">
+                    {onFitIntoRound && fitIntoRoundIds?.has(song.id) && (
+                      <button type="button" className="btn-small" onClick={() => onFitIntoRound(song.id)}>
+                        Fit into this round
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       className="btn-small"
@@ -934,6 +954,7 @@ const uniqueSingerCount = singerGroups.length;
 onStartEdit={onStartEdit}
 onSkip={onSkip}
 onMoveToNextRound={onMoveToNextRound}
+onFitIntoRound={fitIntoRoundIds?.has(item.id) ? onFitIntoRound : undefined}
 onRemove={onRemove}
 onCheckIn={onCheckIn}
   onSendToKaraFun={onSendToKaraFun}
