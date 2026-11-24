@@ -5,6 +5,7 @@ import {createKaraFunConnectionAttempt} from '@/lib/karafunConnectionAttempt';
 import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
 import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
+import {useHostDisplayWindow} from '@/hooks/useHostDisplayWindow';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
 import { searchSingaVersions } from '@/lib/singaCatalog';
 import { KaraFunVisibility } from '@/components/dashboard/KaraFunVisibility';
@@ -213,6 +214,20 @@ const [showFirstWelcome, setShowFirstWelcome] =
   useState(false);
 const [karafunChannel, setKarafunChannel] = useState('');
 const [karafunConnected, setKarafunConnected] = useState(false);
+const tvDisplay = useHostDisplayWindow(eventId, 'display');
+const browserSidebarDisplay = useHostDisplayWindow(eventId, 'karafun-display');
+const browserStageDisplay = useHostDisplayWindow(eventId, 'stage-display');
+const [stageDisplay, setStageDisplay] = useState<{eventId: string; close: () => void} | null>(null);
+const closeStageDisplay = browserStageDisplay.isOpen ? browserStageDisplay.close :
+  stageDisplay?.eventId === eventId ? stageDisplay.close : undefined;
+function openStageDisplay() {
+  setStageControlRequested(true);
+  if ((window as any).stagevotesDesktop?.isDesktop) {
+    window.open(`/stage-display/${eventId}`, '_blank', 'noopener,noreferrer');
+  } else {
+    browserStageDisplay.open();
+  }
+}
 const [karafunDisplayOpen, setKarafunDisplayOpen] = useState(false);
 
 const [
@@ -5926,7 +5941,7 @@ if (!isSubscribed) {
   showPaused={Boolean(event?.show_paused_at)}
   pauseBusy={pauseBusy}
   onToggleShowPause={() => { void toggleShowPause(); }}
-  onOpenStageDisplay={() => { setStageControlRequested(true);window.open(`/stage-display/${eventId}`, "_blank", "noopener,noreferrer"); }}
+  onOpenStageDisplay={openStageDisplay}
   judgingEnabled={event?.judging_enabled === true}
   onStartShow={startShow}
   onEndShow={endShow}
@@ -5936,30 +5951,21 @@ if (!isSubscribed) {
   onToggleVoting={() =>
     toggleVoting(!event?.is_voting_open)
   }
-  onOpenDisplay={() =>
-    window.open(
-      `/display/${eventId}`,
-      '_blank'
-    )
-  }
-
-karafunDisplayOpen={karafunDisplayOpen}
-
-onOpenKaraFunDisplay={() => {
-  const desktop =
-    (window as any).stagevotesDesktop;
-
-  if (desktop?.toggleKarafunDisplay) {
-  desktop.toggleKarafunDisplay(eventId);
-  return;
-}
-
-  window.open(
-    `/karafun-display/${eventId}`,
-    "_blank",
-    "noopener,noreferrer"
-  );
-}}
+  onOpenDisplay={tvDisplay.open}
+  onCloseDisplay={tvDisplay.isOpen ? tvDisplay.close : closeStageDisplay ??
+    (karafunDisplayOpen || browserSidebarDisplay.isOpen ? () => {
+      const desktop = (window as any).stagevotesDesktop;
+      if (desktop?.toggleKarafunDisplay) desktop.toggleKarafunDisplay(eventId);
+      else browserSidebarDisplay.close();
+    } : undefined)}
+  onCloseStageDisplay={closeStageDisplay}
+  karafunDisplayOpen={karafunDisplayOpen || browserSidebarDisplay.isOpen}
+  onOpenKaraFunDisplay={() => {
+    const desktop = (window as any).stagevotesDesktop;
+    if (desktop?.toggleKarafunDisplay) desktop.toggleKarafunDisplay(eventId);
+    else if (browserSidebarDisplay.isOpen) browserSidebarDisplay.close();
+    else browserSidebarDisplay.open();
+  }}
 
   onAwards={() =>
     window.open(
@@ -6007,7 +6013,7 @@ karafunPlayerOnline={karafunPlayerOnline}
 />
 
 </div>
-<HostLyricsControls eventId={eventId} requested={stageControlRequested}/>
+<HostLyricsControls eventId={eventId} requested={stageControlRequested} onDisplayChange={setStageDisplay} onOpenDisplay={openStageDisplay}/>
 {isBrandNewEmptyShow ? (
   <SVEmptyQueueState
     onAudienceAccess={() =>
@@ -6211,10 +6217,7 @@ karafunPlayerOnline={karafunPlayerOnline}
     onOpenDisplay={() => {
       setWelcomeDisplayOpened(true);
 
-      window.open(
-        `/display/${eventId}`,
-        '_blank'
-      );
+      tvDisplay.open();
     }}
 
     onShareSignupQr={() => {
