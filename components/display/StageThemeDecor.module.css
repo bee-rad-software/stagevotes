@@ -3,3 +3,11 @@
 .star{position:absolute;right:4%;top:23%;font-size:clamp(45px,7vw,130px);color:#d9b4673d}.smallStar{position:absolute;right:12%;top:21%;font-size:40px;color:#d9b46730}.velvet{position:absolute;bottom:-5%;height:10%;width:100%;background:linear-gradient(0deg,#562a2740,transparent);border-radius:50%}
 .stripes{position:absolute;left:-3%;top:-4%;width:28%;height:8%;background:repeating-linear-gradient(0deg,#ef9867 0 9px,#ad5680 9px 18px,#60355d 18px 27px);transform:rotate(-24deg);opacity:.35}.cassette{position:absolute;bottom:1%;right:2%;width:clamp(90px,12vw,200px);height:auto;transform:rotate(-9deg);opacity:.38}
 .brandArc{position:absolute;right:-12%;top:-25%;width:40vw;height:40vw;border:2px solid color-mix(in srgb,var(--venue-primary) 25%,transparent);border-radius:50%;box-shadow:0 0 0 20px color-mix(in srgb,var(--venue-secondary) 7%,transparent),0 0 0 50px color-mix(in srgb,var(--venue-primary) 5%,transparent)}.brandLine{position:absolute;bottom:0;height:5px;width:100%;background:linear-gradient(90deg,var(--venue-primary),var(--venue-secondary))}
+.holidaySnow{position:absolute;inset:0;width:100%;height:100%;color:#b7e3fd;opacity:.26}
+.holidayLights{position:absolute;top:0;left:0;width:100%;height:clamp(16px,3.2vh,40px)}
+.holidayLights ellipse,.treeLight{filter:drop-shadow(0 0 4px currentColor)}
+.holidayLights ellipse{color:#ffce76}
+.treeLight{color:#ffe1a0}
+.holidayBanks{position:absolute;inset:auto 0 0;width:100%;height:clamp(65px,19vh,250px)}
+.holidayTrees{position:absolute;bottom:-1%;right:0;width:clamp(95px,15vw,310px);height:auto}
+.holidaySnow svg{position:absolute;height:auto;transform:translate(-50%,-50%)}
