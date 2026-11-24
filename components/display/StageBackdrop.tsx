@@ -219,7 +219,12 @@ export default function StageBackdrop({ event, singers, logo, origin, ready, err
         if(!displays.some(d=>d.id===command.displayId))return 'Choose an available TV or monitor.';
         setDisplayId(command.displayId);await fillTV(command.displayId);break;
       case 'restore':await restore();break;
-      case 'close':await (window as any).stagevotesDesktop?.closeStageWindow?.();break;
+      case 'close': {
+        const desktop=(window as any).stagevotesDesktop;
+        if(native && desktop?.closeStageWindow) await desktop.closeStageWindow();
+        else window.close();
+        break;
+      }
     }
   });
 
