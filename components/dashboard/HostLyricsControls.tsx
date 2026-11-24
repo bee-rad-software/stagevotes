@@ -5,7 +5,7 @@ import styles from './HostLyricsControls.module.css';
 type Connected={id:string;seen:number;state:StageDisplayState};
 const views=[['lyrics','Lyrics'],['welcome','Welcome'],['next','Next singer'],['break','Break']] as const;
 const themes=[['classic','Classic'],['halloween','Halloween'],['neon','Neon Night'],['country','Country Night'],['autumn','Fall & Thanksgiving'],['holiday','Holiday'],['vegas','Vegas Lounge'],['mixtape','Retro Mixtape'],['venue','Your Venue']] as const;
-export default function HostLyricsControls({eventId,requested}:{eventId:string;requested:boolean}) {
+export default function HostLyricsControls({eventId,requested,onDisplayChange,onOpenDisplay}:{eventId:string;requested:boolean;onOpenDisplay?:()=>void;onDisplayChange?:(display:{eventId:string;close:()=>void}|null)=>void}) {
  const [screens,setScreens]=useState<Connected[]>([]),[selected,setSelected]=useState(''),[expanded,setExpanded]=useState(true),[message,setMessage]=useState(''),[draft,setDraft]=useState('');
  const [promoDraft,setPromoDraft]=useState('');
  const [shoutoutDraft,setShoutoutDraft]=useState('');
@@ -26,10 +26,18 @@ export default function HostLyricsControls({eventId,requested}:{eventId:string;r
  const screen=screens.find(s=>s.id===selected)||screens[0],state=screen?.state;
  useEffect(()=>{setDraft(screen?.state.announcement||'');setPromoDraft((screen?.state.intermission?.promotions||[]).join('\n'));setShoutoutDraft((screen?.state.intermission?.shoutouts||[]).join('\n'));},[screen?.id,JSON.stringify(screen?.state.intermission)]);
  function send(command:StageDisplayCommand){if(!screen||!channel.current)return;if(pending.current)clearTimeout(pending.current.timer);const id=crypto.randomUUID();if(command.type==='close'){pending.current=null;setMessage('Display close requested.');channel.current.postMessage({type:'command',eventId,targetId:screen.id,commandId:id,command});return;}pending.current={id,timer:setTimeout(()=>{setMessage('No response from the display. Reopen it and try again.');pending.current=null;},4000)};setMessage('');channel.current.postMessage({type:'command',eventId,targetId:screen.id,commandId:id,command});}
+ const screenId=screen?.id;
+ useEffect(()=>{
+  if(!screenId){onDisplayChange?.(null);return;}
+  onDisplayChange?.({eventId,close:()=>{
+   channel.current?.postMessage({type:'command',eventId,targetId:screenId,commandId:crypto.randomUUID(),command:{type:'close'}});
+  }});
+  return()=>onDisplayChange?.(null);
+ },[eventId,screenId,onDisplayChange]);
  if(!requested&&!screens.length)return null;
  return <section className={styles.panel} aria-label="Lyrics display controls">
   <header className={styles.header}><div><span className={styles.kicker}>AUDIENCE SCREEN</span><h2>Lyrics display</h2><span className={styles.status} data-connected={Boolean(state)}>{state?'● Connected':'○ Waiting for display'}</span></div><button className={styles.secondary} type="button" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'Hide controls':'Show controls'}</button></header>
-  {expanded&&<>{!state?<div className={styles.empty}><p>Open the Lyrics backdrop to control it here. Use this same computer and browser session.</p><button className={styles.primary} type="button" onClick={()=>window.open('/stage-display/'+eventId,'_blank','noopener,noreferrer')}>Open Lyrics display</button></div>:<>
+  {expanded&&<>{!state?<div className={styles.empty}><p>Open the Lyrics backdrop to control it here. Use this same computer and browser session.</p><button className={styles.primary} type="button" onClick={onOpenDisplay}>Open Lyrics display</button></div>:<>
    {screens.length>1&&<label className={styles.field}>Display window<select value={screen.id} onChange={e=>setSelected(e.target.value)}>{screens.map((s,i)=><option value={s.id} key={s.id}>Lyrics display {i+1} · {s.state.theme}</option>)}</select></label>}
    <div className={styles.modeRow}>{views.map(([value,label])=><button type="button" key={value} aria-pressed={state.view===value} onClick={()=>send({type:'view',value})}>{label}</button>)}</div>
    <div className={styles.grid}><label className={styles.field}>Theme<select value={state.theme} onChange={e=>send({type:'theme',value:e.target.value as StageDisplayState['theme']})}>{themes.map(([value,label])=><option value={value} key={value}>{label}</option>)}</select></label>
