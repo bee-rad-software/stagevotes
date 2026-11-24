@@ -42,6 +42,9 @@ import {
 import SVFirstPerformanceCelebration from '@/components/singer/SVFirstPerformanceCelebration';
 import {
   buildRotationQueue,
+  assignSignupRound,
+  getRotationProgress,
+  rotationProgressFields,
 } from '@/lib/rotationQueue';
 import type {
   AISongRecommendationsResponse,
@@ -1986,35 +1989,6 @@ const needsCompetitionSong =
   };
 }
 
-  async function getCurrentRound() {
-  const { data, error } = await supabase
-    .from('performances')
-    .select('round, status')
-    .eq('event_id', eventId);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const activePerformances =
-    (data || []).filter(
-      (performance) =>
-        performance.status !== 'completed' &&
-        performance.status !== 'skipped'
-    );
-
-  if (activePerformances.length === 0) {
-    return 1;
-  }
-
-  return Math.min(
-    ...activePerformances.map(
-      (performance) =>
-        performance.round || 1
-    )
-  );
-}
-
   async function getNextQueueDetails() {
     const { data, error } = await supabase
       .from('performances')
@@ -2072,24 +2046,16 @@ const needsCompetitionSong =
   deviceId: string,
   singerName: string
 ) {
-  const { data, error } = await supabase
-  .from('performances')
-  .select(`
-    round,
-    queue_order,
-    singer_name,
-    singer_profile_id,
-    device_id,
-    status
-  `)
-  .eq('event_id', eventId);
-
-  if (error) {
-    throw new Error(error.message);
+  const [queue, currentEvent] = await Promise.all([
+    supabase.from('performances').select(rotationProgressFields).eq('event_id', eventId),
+    supabase.from('events').select('current_performance_id').eq('id', eventId).single(),
+  ]);
+  if (queue.error || currentEvent.error) {
+    throw new Error(queue.error?.message ?? currentEvent.error?.message);
   }
 
   const singerPerformances =
-    (data || []).filter((performance) => {
+    (queue.data || []).filter((performance) => {
       if (
         singerProfileId &&
         performance.singer_profile_id ===
@@ -2154,6 +2120,7 @@ const needsCompetitionSong =
       : null;
 
   return {
+    progress: getRotationProgress(queue.data || [], currentEvent.data?.current_performance_id),
     highestRound,
     originalOrder,
   };
@@ -2658,12 +2625,10 @@ if (!singerProfileId && user) {
   singerProfileId =
     profileRow?.id || null;
 }
-     const currentRound =
-  await getCurrentRound();
-
 const deviceId = getDeviceId();
 
 const {
+  progress,
   highestRound: singerHighestRound,
   originalOrder: singerOriginalOrder,
 } = await getSingerQueueDetails(
@@ -2672,13 +2637,7 @@ const {
   singerName
 );
 
-const assignedRound =
-  singerHighestRound === null
-    ? currentRound
-    : Math.max(
-        currentRound,
-        singerHighestRound + 1
-      );
+const assignedRound = assignSignupRound(progress, singerOriginalOrder, singerHighestRound);
 
 // A singer owns one permanent rotation position
 // for the entire show.
