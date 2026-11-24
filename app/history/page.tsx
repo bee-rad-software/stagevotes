@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import SVShell from '@/components/ui/SVShell';
+import HistoryDisplayButton from '@/components/HistoryDisplayButton';
 
 type EventRow = {
   id: string;
@@ -383,13 +384,7 @@ setTimeout(() => {
     Open Dashboard
   </Link>
 
-  <Link
-    href={`/display/${event.id}`}
-    style={{ textDecoration: 'none' }}
-    className="sv-btn sv-btn-secondary"
-  >
-    Open TV Display
-  </Link>
+  <HistoryDisplayButton eventId={event.id} />
 
   <Link
     href={`/history/${event.id}`}
