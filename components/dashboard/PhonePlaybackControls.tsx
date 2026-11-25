@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase';
 
 type Action = 'play' | 'pause' | 'next';
 type Snapshot = { online?: boolean; busy?: boolean; controls?: Action[]; currentId?: string; nextId?: string; command?: { action: Action; currentId: string; nextId?: string } };
+const offline: Snapshot = {};
+
 type Props = {
   eventId: string;
   connected: boolean;
@@ -19,7 +21,7 @@ export default function PhonePlaybackControls(props: Props) {
   const latest = useRef(props);
   latest.current = props;
   const [enabled, setEnabled] = useState(false);
-  const [snapshot, setSnapshot] = useState<Snapshot>({});
+  const [snapshot, setSnapshot] = useState<Snapshot>(offline);
   const [status, setStatus] = useState('');
   const [sending, setSending] = useState(false);
   const relay = enabled && connected;
@@ -38,7 +40,12 @@ export default function PhonePlaybackControls(props: Props) {
         });
         if (!active) return;
         const result = data as Snapshot | null;
-        setSnapshot(error ? {} : result ?? {});
+        const next = !error && result?.online ? result : offline;
+        setSnapshot(previous =>
+          previous.online === next.online && previous.currentId === next.currentId &&
+          previous.nextId === next.nextId && previous.controls?.join(',') === next.controls?.join(',')
+            ? previous : next
+        );
         if (relay) {
           setStatus(error ? 'Phone remote unavailable.' : result?.busy ? 'Another host window is sharing playback.' : '');
           const cmd = result?.command;
@@ -49,7 +56,7 @@ export default function PhonePlaybackControls(props: Props) {
           }
         }
       } catch {
-        if (active) setSnapshot({});
+        if (active) setSnapshot(offline);
       } finally {
         if (active) timer = setTimeout(poll, relay ? 900 : 2000);
       }
@@ -81,7 +88,9 @@ export default function PhonePlaybackControls(props: Props) {
     }
   }
 
-  return <section className="sv-card" aria-label="Phone playback controls" style={{padding: 16, margin: '12px 0'}}>
+  if (!connected && !snapshot.online) return null;
+
+  return <section id="phone-playback-controls" className="sv-card" aria-label="Phone playback controls" style={{padding: 16, margin: '12px 0'}}>
     <strong>Phone playback controls</strong>
     {connected && <p><label><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)}/> Allow phone control from this host screen</label></p>}
     {relay ? <p>{snapshot.online ? 'Ready. Open this show on your phone using the same login.' : 'Connecting the phone remote…'}</p> :
@@ -91,7 +100,7 @@ export default function PhonePlaybackControls(props: Props) {
             {{play:'Play',pause:'Pause',next:'Next song'}[action]}
           </button>
         )}
-      </div> : <p>Connect KaraFun and allow phone control on the host computer.</p>}
+      </div> : null}
     {status && <p role="status">{status}</p>}
   </section>;
 }
