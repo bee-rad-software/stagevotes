@@ -7,7 +7,8 @@ type Action = 'play' | 'pause' | 'next';
 type Snapshot = { online?: boolean; busy?: boolean; controls?: Action[]; currentId?: string; nextId?: string; command?: { action: Action; currentId: string; nextId?: string } };
 const offline: Snapshot = {};
 
-type Props = {
+type Props = { eventId: string; remoteOnly: true } | {
+  remoteOnly?: false;
   eventId: string;
   connected: boolean;
   controls: Action[];
@@ -17,7 +18,8 @@ type Props = {
 };
 
 export default function PhonePlaybackControls(props: Props) {
-  const { eventId, connected } = props;
+  const { eventId, remoteOnly } = props;
+  const connected = !props.remoteOnly && props.connected;
   const latest = useRef(props);
   latest.current = props;
   const [enabled, setEnabled] = useState(false);
@@ -28,6 +30,7 @@ export default function PhonePlaybackControls(props: Props) {
 
   useEffect(() => {
     let active = true;
+    let authorized = true;
     let timer: ReturnType<typeof setTimeout>;
     const relayId = relay ? crypto.randomUUID() : null;
     async function poll() {
@@ -36,9 +39,11 @@ export default function PhonePlaybackControls(props: Props) {
       try {
         const { data, error } = await supabase.rpc('host_phone_playback_access', {
           p_event_id: eventId, p_operation: relay ? 'tick' : 'read',
-          ...(relay ? { p_relay_id: relayId, p_controls: state.controls, p_current_id: state.currentId, p_next_id: state.nextId } : {}),
+          ...(relay && !state.remoteOnly ? { p_relay_id: relayId, p_controls: state.controls, p_current_id: state.currentId, p_next_id: state.nextId } : {}),
         });
         if (!active) return;
+        // The server checks membership and uses the same host login for both devices.
+        if (remoteOnly && error?.code === 'P0001') authorized = false;
         const result = data as Snapshot | null;
         const next = !error && result?.online ? result : offline;
         setSnapshot(previous =>
@@ -50,7 +55,7 @@ export default function PhonePlaybackControls(props: Props) {
           setStatus(error ? 'Phone remote unavailable.' : result?.busy ? 'Another host window is sharing playback.' : '');
           const cmd = result?.command;
           const current = latest.current;
-          if (cmd && performance.now() - startedAt < 4000 && current.connected && cmd.currentId === current.currentId &&
+          if (cmd && performance.now() - startedAt < 4000 && !current.remoteOnly && current.connected && cmd.currentId === current.currentId &&
               (cmd.action !== 'next' || cmd.nextId === current.nextId) && current.controls.includes(cmd.action)) {
             current.execute(cmd.action);
           }
@@ -58,10 +63,16 @@ export default function PhonePlaybackControls(props: Props) {
       } catch {
         if (active) setSnapshot(offline);
       } finally {
-        if (active) timer = setTimeout(poll, relay ? 900 : 2000);
+        if (active && authorized) timer = setTimeout(poll, relay ? 900 : 2000);
       }
     }
-    void poll();
+    if (remoteOnly) {
+      void supabase.auth.getSession().then(({ data }) => {
+        if (active && data.session) void poll();
+      });
+    } else {
+      void poll();
+    }
     return () => {
       active = false;
       clearTimeout(timer);
@@ -69,7 +80,7 @@ export default function PhonePlaybackControls(props: Props) {
         p_event_id: eventId, p_operation: 'stop', p_relay_id: relayId,
       }).then(() => {});
     };
-  }, [eventId, relay]);
+  }, [eventId, relay, remoteOnly]);
 
   async function send(action: Action) {
     if (sending || !snapshot.online || !snapshot.controls?.includes(action)) return;
@@ -90,16 +101,30 @@ export default function PhonePlaybackControls(props: Props) {
 
   if (!connected && !snapshot.online) return null;
 
+  const remoteButtons = (['play','pause','next'] as const).map(action =>
+    <button key={action} type="button" className={remoteOnly ? 'sv-btn sv-btn-secondary' : undefined}
+      disabled={sending || !snapshot.controls?.includes(action)} onClick={() => void send(action)}>
+      {{play:'Play',pause:'Pause',next:'Next song'}[action]}
+    </button>
+  );
+
+  if (remoteOnly) return (
+    <details className="sv-card" style={{marginBottom:18, padding:'14px 18px'}}>
+      <summary style={{cursor:'pointer', fontWeight:800}}>KaraFun remote · Host only</summary>
+      <div role="group" aria-label="KaraFun playback" style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:12}}>
+        {remoteButtons}
+      </div>
+      {!snapshot.controls?.length && <p>Waiting for KaraFun to be ready on the host computer.</p>}
+      {status && <p role="status">{status}</p>}
+    </details>
+  );
+
   return <div id="phone-playback-controls" role="group" aria-label="Phone playback controls" style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
     {connected && <button type="button" aria-pressed={enabled} onClick={() => setEnabled(value => !value)}>
       {enabled ? 'Turn off phone remote' : 'Enable phone remote'}
     </button>}
     {relay ? <span role="status">{status || (snapshot.online ? 'Phone remote ready' : 'Connecting phone remote…')}</span> :
-      snapshot.online && (['play','pause','next'] as const).map(action =>
-        <button key={action} type="button" disabled={sending || !snapshot.controls?.includes(action)} onClick={() => void send(action)}>
-          {{play:'Play',pause:'Pause',next:'Next song'}[action]}
-        </button>
-      )}
+      snapshot.online && remoteButtons}
     {!relay && status && <span role="status">{status}</span>}
   </div>;
 }
