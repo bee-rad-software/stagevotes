@@ -39,6 +39,7 @@ import SVSingerProfilePrompt from '@/components/singer/SVSingerProfilePrompt';
 import {
   getRotationIdentity,
 } from '@/lib/rotationIdentity';
+import PhonePlaybackControls from '@/components/dashboard/PhonePlaybackControls';
 import SVFirstPerformanceCelebration from '@/components/singer/SVFirstPerformanceCelebration';
 import {
   buildRotationQueue,
@@ -3542,6 +3543,10 @@ function openCompetitionSong() {
           <Trophy size={18} />
           Open My Stage
         </button>
+      )}
+
+      {event && !event.is_show_ended && (
+        <PhonePlaybackControls key={eventId} eventId={eventId} remoteOnly />
       )}
 
             {hasJoined && (
