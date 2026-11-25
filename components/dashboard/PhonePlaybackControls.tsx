@@ -90,17 +90,16 @@ export default function PhonePlaybackControls(props: Props) {
 
   if (!connected && !snapshot.online) return null;
 
-  return <section id="phone-playback-controls" className="sv-card" aria-label="Phone playback controls" style={{padding: 16, margin: '12px 0'}}>
-    <strong>Phone playback controls</strong>
-    {connected && <p><label><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)}/> Allow phone control from this host screen</label></p>}
-    {relay ? <p>{snapshot.online ? 'Ready. Open this show on your phone using the same login.' : 'Connecting the phone remote…'}</p> :
-      snapshot.online ? <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10}}>
-        {(['play','pause','next'] as const).map(action =>
-          <button key={action} type="button" className="sv-btn sv-btn-secondary" disabled={sending || !snapshot.controls?.includes(action)} onClick={() => void send(action)}>
-            {{play:'Play',pause:'Pause',next:'Next song'}[action]}
-          </button>
-        )}
-      </div> : null}
-    {status && <p role="status">{status}</p>}
-  </section>;
+  return <div id="phone-playback-controls" role="group" aria-label="Phone playback controls" style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+    {connected && <button type="button" aria-pressed={enabled} onClick={() => setEnabled(value => !value)}>
+      {enabled ? 'Turn off phone remote' : 'Enable phone remote'}
+    </button>}
+    {relay ? <span role="status">{status || (snapshot.online ? 'Phone remote ready' : 'Connecting phone remote…')}</span> :
+      snapshot.online && (['play','pause','next'] as const).map(action =>
+        <button key={action} type="button" disabled={sending || !snapshot.controls?.includes(action)} onClick={() => void send(action)}>
+          {{play:'Play',pause:'Pause',next:'Next song'}[action]}
+        </button>
+      )}
+    {!relay && status && <span role="status">{status}</span>}
+  </div>;
 }
