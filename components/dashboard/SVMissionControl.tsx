@@ -7,6 +7,7 @@ import { TriangleAlert, Play, Pause, Square, UserPlus, SkipForward, Vote, Monito
 import styles from './SVMissionControl.module.css';
 
 type Props = {
+  phonePlayback?: React.ReactNode;
   onStartShow?: () => void;
   onEndShow?: () => void;
   onToggleShowPause?: () => void;
@@ -102,6 +103,7 @@ export default function SVMissionControl(p: Props) {
     {showKaraFun && error && (!p.karafunConnectionLost || !p.karafunConnectionError) && <p className={styles.error} role="alert">{error}</p>}
     {showKaraFun && !p.karafunConnectionLost && !p.karafunConnecting && p.karafunConnected && !p.karafunPlayerOnline && <p className={styles.notice} role="status">Bring KaraFun to the front and confirm remote control is enabled, then click Retry connection.</p>}
     <div className={styles.utilities}>
+      {p.phonePlayback}
       {p.judgingEnabled && <button type="button" role="switch" aria-checked={Boolean(p.votingOpen)} onClick={p.onToggleVoting} disabled={!p.hasCurrentSinger} title="Open or close judging for the current singer"><Vote size={17}/>Voting: {p.votingOpen ? 'Open' : 'Closed'}</button>}
       <details className={styles.menu} name="show-control-menu"><summary><Monitor size={17}/>Displays<ChevronDown size={14}/></summary><div className={styles.menuItems}>
         <button type="button" onClick={e => closeMenu(e,p.onCloseDisplay ?? p.onOpenDisplay)}>{p.onCloseDisplay ? 'Close' : 'Open'} TV Display</button>
