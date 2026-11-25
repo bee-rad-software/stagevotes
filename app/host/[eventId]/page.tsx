@@ -4,6 +4,7 @@ import {venueAudienceLink} from '@/lib/venueAudienceLink';
 import {createKaraFunConnectionAttempt} from '@/lib/karafunConnectionAttempt';
 import {startPerformanceTimer} from '@/lib/startPerformanceTimer';
 import {initialBreakMusicState,updateBreakMusicState} from '@/lib/breakMusicState';
+import PhonePlaybackControls from '@/components/dashboard/PhonePlaybackControls';
 import HostLyricsControls from '@/components/dashboard/HostLyricsControls';
 import {useHostDisplayWindow} from '@/hooks/useHostDisplayWindow';
 import {useStageLyricsSignal} from '@/hooks/useStageLyricsSignal';
@@ -2783,7 +2784,7 @@ function karaFunSkipTargetReady() {
    normalize(nextItem.title)===normalize(upNext.song_title) && isTournamentPerformanceReady(upNext) ? nextItem.queueItemId : null;
 }
 
-async function controlKaraFun(kind:'pause'|'skip') {
+async function controlKaraFun(kind:'pause'|'skip', alreadyConfirmed = false) {
  if (karafunControlBusyRef.current || karafunPlayPending) return;
  const ws=karafunSocketRef.current;
  if (!karafunConnected || !karafunPlayerOnline || !ws || ws.readyState!==WebSocket.OPEN) {
@@ -2793,7 +2794,7 @@ async function controlKaraFun(kind:'pause'|'skip') {
  if (kind==='skip' && !karaFunSkipTargetReady()) {
   setKarafunControlError('Wait for KaraFun to load the matching next singer in its queue.');return;
  }
- if (kind==='skip' && !window.confirm('Skip the current KaraFun song and move to the next queued song?')) return;
+ if (kind==='skip' && !alreadyConfirmed && !window.confirm('Skip the current KaraFun song and move to the next queued song?')) return;
  karafunControlBusyRef.current=true;
  setKarafunControlPending(kind);
  setKarafunControlError('');
@@ -6013,6 +6014,22 @@ karafunPlayerOnline={karafunPlayerOnline}
 />
 
 </div>
+{event && !event.is_show_ended && (account?.singa_enabled
+  ? <p>Phone playback controls are not available for Singa yet.</p>
+  : <PhonePlaybackControls key={eventId} eventId={eventId}
+      connected={karafunConnected && karafunPlayerOnline}
+      currentId={current?.id} nextId={upNext?.id}
+      controls={current && !event.show_paused_at && !karafunPlayPending && !karafunControlPending ? [
+        ...([3, 5].includes(karafunPlaybackState ?? -1) && karafunPlaybackSinger.trim() &&
+            karafunPlaybackSinger.trim().toLowerCase() === getKaraFunSingerName(current).trim().toLowerCase() ? ['play' as const] : []),
+        ...(karafunPlaybackState === 4 ? ['pause' as const] : []),
+        ...(karaFunSkipTargetReady() ? ['next' as const] : []),
+      ] : []}
+      execute={action => {
+        if (action === 'play') void playKaraFunSong();
+        else void controlKaraFun(action === 'next' ? 'skip' : 'pause', true);
+      }}
+    />)}
 <HostLyricsControls eventId={eventId} requested={stageControlRequested} onDisplayChange={setStageDisplay} onOpenDisplay={openStageDisplay}/>
 {isBrandNewEmptyShow ? (
   <SVEmptyQueueState
