@@ -6011,12 +6011,8 @@ karafunPlayerOnline={karafunPlayerOnline}
   hasCurrentSinger={!!current}
   currentSingerName={current?.singer_name}
   nextSingerName={upNext?.singer_name}
-/>
-
-</div>
-{event && !event.is_show_ended && (account?.singa_enabled
-  ? <p>Phone playback controls are not available for Singa yet.</p>
-  : <PhonePlaybackControls key={eventId} eventId={eventId}
+  phonePlayback={event && !event.is_show_ended && !account?.singa_enabled && (
+    <PhonePlaybackControls key={eventId} eventId={eventId}
       connected={karafunConnected && karafunPlayerOnline}
       currentId={current?.id} nextId={upNext?.id}
       controls={current && !event.show_paused_at && !karafunPlayPending && !karafunControlPending ? [
@@ -6030,6 +6026,9 @@ karafunPlayerOnline={karafunPlayerOnline}
         else void controlKaraFun(action === 'next' ? 'skip' : 'pause', true);
       }}
     />)}
+/>
+
+</div>
 <HostLyricsControls eventId={eventId} requested={stageControlRequested} onDisplayChange={setStageDisplay} onOpenDisplay={openStageDisplay}/>
 {isBrandNewEmptyShow ? (
   <SVEmptyQueueState
